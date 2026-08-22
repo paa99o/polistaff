@@ -41,18 +41,24 @@
     };
 @endphp
 
-<section class="page-intro">
-    <h1>Selamat datang, {{ $firstName }}</h1>
-    <p>
-        @if($pendingActionCount > 0)
-            Anda mempunyai {{ $pendingActionCount }} tindakan yang memerlukan perhatian.
-        @else
-            Semua urusan utama anda telah dikemas kini.
-        @endif
-    </p>
+<section class="page-intro dashboard-hero">
+    <div>
+        <div class="auth-stripe mb-3" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="dashboard-kicker">Selamat datang, {{ $firstName }}</p>
+        <h1 class="brand-hero-title dashboard-brand-title" aria-label="POLISTAFF">
+            <span>POLI</span><span>STAFF</span>
+        </h1>
+        <p>
+            @if($pendingActionCount > 0)
+                Anda mempunyai {{ $pendingActionCount }} tindakan yang memerlukan perhatian.
+            @else
+                Semua urusan utama anda telah dikemas kini.
+            @endif
+        </p>
+    </div>
 </section>
 
-<section aria-label="Ringkasan utama" class="mb-5">
+<section aria-label="Ringkasan utama" class="dashboard-summary mb-5">
     <div class="row g-4">
         @foreach($summaryCards as $summary)
             <div class="col-sm-6 col-xl-3">
@@ -76,10 +82,10 @@
     </div>
 </section>
 
-<section aria-label="Maklumat dashboard">
+<section aria-label="Maklumat dashboard" class="dashboard-details">
     <div class="row g-4">
         <div class="col-xl-5">
-            <article class="card h-100">
+            <article class="card dashboard-panel dashboard-primary-panel">
                 <div class="card-body">
                     <h2 class="panel-title">
                         <span>Tindakan Diperlukan</span>
@@ -114,8 +120,8 @@
                             <a class="btn btn-primary align-self-center" href="{{ route('admin.members.pending') }}">Semak Ahli</a>
                         </div>
                     @else
-                        <div class="text-center py-5">
-                            <span class="stat-icon mx-auto mb-3"><i class="bi bi-check2" aria-hidden="true"></i></span>
+                        <div class="dashboard-empty-state">
+                            <span class="stat-icon"><i class="bi bi-check2" aria-hidden="true"></i></span>
                             <h3 class="h6">Tiada tindakan tertunda</h3>
                             <p class="text-muted small mb-0">Semua urusan utama telah dikemas kini.</p>
                         </div>
@@ -136,7 +142,7 @@
         </div>
 
         <div class="col-xl-4">
-            <article class="card h-100">
+            <article class="card dashboard-panel dashboard-primary-panel">
                 <div class="card-body">
                     <h2 class="panel-title">
                         <span>Aktiviti Akan Datang</span>
@@ -159,8 +165,8 @@
                             </div>
                         </div>
                     @empty
-                        <div class="text-center py-5">
-                            <span class="stat-icon mx-auto mb-3"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
+                        <div class="dashboard-empty-state">
+                            <span class="stat-icon"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
                             <p class="text-muted mb-0">Tiada aktiviti akan datang.</p>
                         </div>
                     @endforelse
@@ -168,15 +174,15 @@
             </article>
         </div>
 
-        <div class="col-xl-3">
-            <article class="card mb-4">
+        <div class="col-xl-3 dashboard-side-column">
+            <article class="card dashboard-panel dashboard-compact-panel">
                 <div class="card-body">
                     <h2 class="panel-title"><span>Status Bayaran</span></h2>
                     @if($latestPayment)
                         <div class="stat-label">Bayaran Terkini</div>
                         <div class="stat-value mt-1">RM {{ number_format((float) $latestPayment->amount, 2) }}</div>
                         <span class="badge mt-3"><i class="bi bi-info-circle" aria-hidden="true"></i>{{ ucfirst($latestPayment->status) }}</span>
-                        <div class="stat-meta mt-3">{{ $latestPayment->payment_date->format('d/m/Y') }} · {{ $latestPayment->payment_method }}</div>
+                        <div class="stat-meta mt-3">{{ $latestPayment->payment_date->format('d/m/Y') }} &middot; {{ $latestPayment->payment_method }}</div>
                     @else
                         <p class="text-muted">Belum ada bayaran dihantar.</p>
                     @endif
@@ -184,7 +190,7 @@
                 </div>
             </article>
 
-            <article class="card">
+            <article class="card dashboard-panel dashboard-compact-panel">
                 <div class="card-body">
                     <h2 class="panel-title">
                         <span>Notifikasi Terkini</span>

@@ -6,7 +6,7 @@
     <meta name="description" content="POLISTAFF — Portal Pengurusan Kelab Staf">
     <title>POLISTAFF · Portal Pengurusan Kelab Staf</title>
     <link rel="icon" href="/favicon.ico" sizes="any">
-    <meta name="theme-color" content="#FFFFFF">
+    <meta name="theme-color" content="#1557D8">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -39,7 +39,9 @@
             <div>
                 <div class="auth-stripe mb-4" aria-hidden="true"><span></span><span></span><span></span></div>
                 <p class="public-eyebrow">Pengurusan kelab staf yang tersusun</p>
-                <h1 class="public-title">Satu portal.<br>Semua urusan staf.</h1>
+                <h1 class="public-title brand-hero-title" aria-label="POLISTAFF">
+                    <span>POLI</span><span>STAFF</span>
+                </h1>
                 <p class="public-lead">Urus keahlian, aktiviti, bayaran, tuntutan dan kehadiran melalui pengalaman digital yang jelas dan tepat.</p>
                 <div class="d-flex flex-wrap gap-3">
                     @auth

@@ -1,18 +1,5 @@
 const appShell = document.querySelector('.app-shell');
-const sidebar = document.querySelector('.sidebar');
 const hasSeenAuthenticatedMotion = sessionStorage.getItem('polistaff-auth-motion-seen') === 'true';
-
-if (sidebar) {
-    const storedSidebarPosition = sessionStorage.getItem('polistaff-sidebar-scroll');
-
-    if (storedSidebarPosition !== null) {
-        sidebar.scrollTop = Number(storedSidebarPosition);
-    }
-
-    sidebar.addEventListener('scroll', () => {
-        sessionStorage.setItem('polistaff-sidebar-scroll', String(sidebar.scrollTop));
-    }, { passive: true });
-}
 
 if (!appShell || !hasSeenAuthenticatedMotion) {
     document.documentElement.classList.add('motion-ready');
