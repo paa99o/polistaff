@@ -1,0 +1,4 @@
+@extends('layouts.app', ['title' => 'Change Password'])
+@section('content')
+<div class="card"><div class="card-body"><h1 class="h4 soft-panel-title">Change Password</h1><form method="post" action="{{ route('profile.password.update') }}">@csrf @method('put')<div class="row g-3"><div class="col-md-4"><label class="form-label">Current Password</label><input class="form-control" type="password" name="current_password" required></div><div class="col-md-4"><label class="form-label">New Password</label><input class="form-control" type="password" name="password" required></div><div class="col-md-4"><label class="form-label">Confirm Password</label><input class="form-control" type="password" name="password_confirmation" required></div></div><button class="btn btn-danger mt-3">Update Password</button></form></div></div>
+@endsection

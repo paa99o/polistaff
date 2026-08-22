@@ -1,0 +1,4 @@
+@extends('layouts.app', ['title' => 'Profil'])
+@section('content')
+<div class="card"><div class="card-body"><div class="d-flex justify-content-between"><h1 class="h4">Profil Saya</h1><div class="d-flex gap-2"><a class="btn btn-outline-danger" href="{{ route('profile.password') }}">Password</a><a class="btn btn-outline-danger" href="{{ route('profile.edit') }}">Edit</a></div></div><dl class="row mt-3"><dt class="col-sm-3">Nama</dt><dd class="col-sm-9">{{ $user->name }}</dd><dt class="col-sm-3">Emel</dt><dd class="col-sm-9">{{ $user->email }}</dd><dt class="col-sm-3">IC</dt><dd class="col-sm-9">{{ $user->ic_number }}</dd><dt class="col-sm-3">Jabatan</dt><dd class="col-sm-9">{{ $user->department }}</dd><dt class="col-sm-3">Telefon</dt><dd class="col-sm-9">{{ $user->phone }}</dd><dt class="col-sm-3">Peranan</dt><dd class="col-sm-9">{{ $user->role }}</dd></dl></div></div>
+@endsection

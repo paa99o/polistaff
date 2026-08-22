@@ -1,0 +1,6 @@
+@extends('layouts.app', ['title' => 'Aktiviti'])
+@section('content')
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3">Aktiviti</h1>@can('manage-activities')<a class="btn btn-danger" href="{{ route('activities.create') }}">Aktiviti Baru</a>@endcan</div>
+<form class="row g-2 mb-3"><div class="col-auto"><input class="form-control" type="date" name="date" value="{{ request('date') }}"></div><div class="col-auto"><button class="btn btn-outline-secondary">Tapis</button></div></form>
+<div class="card"><div class="table-responsive"><table class="table mobile-records mb-0"><thead><tr><th>Tajuk</th><th>Tarikh</th><th>Lokasi</th><th>Status</th><th></th></tr></thead><tbody>@forelse($activities as $activity)<tr><td data-label="Aktiviti">{{ $activity->title }}</td><td data-label="Tarikh">{{ $activity->date_time->format('d/m/Y h:i A') }}</td><td data-label="Lokasi">{{ $activity->location }}</td><td data-label="Status"><span class="badge bg-secondary">{{ $activity->status }}</span></td><td data-label="Tindakan"><a class="btn btn-sm btn-outline-danger" href="{{ route('activities.show',$activity) }}">Lihat</a></td></tr>@empty<tr><td colspan="5" class="text-muted">Tiada aktiviti.</td></tr>@endforelse</tbody></table></div></div><div class="mt-3">{{ $activities->links() }}</div>
+@endsection

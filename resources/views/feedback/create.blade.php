@@ -1,0 +1,4 @@
+@extends('layouts.app', ['title' => 'Maklum Balas'])
+@section('content')
+<div class="card"><div class="card-body"><h1 class="h4">Borang Maklum Balas</h1><form method="post" action="{{ route('feedback.store') }}">@csrf<div class="mb-3"><label class="form-label">Aktiviti</label><select class="form-select" name="activity_id"><option value="">Umum</option>@foreach($activities as $activity)<option value="{{ $activity->id }}">{{ $activity->title }}</option>@endforeach</select></div><div class="mb-3"><label class="form-label">Rating</label><select class="form-select" name="rating">@for($i=5;$i>=1;$i--)<option value="{{ $i }}">{{ $i }}</option>@endfor</select></div><div class="mb-3"><label class="form-label">Cadangan / Aduan</label><textarea class="form-control" name="content" rows="5" required></textarea></div><button class="btn btn-danger">Hantar</button></form></div></div>
+@endsection

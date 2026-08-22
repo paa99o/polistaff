@@ -1,0 +1,9 @@
+{
+  "name": "PoliBest Staff Portal",
+  "short_name": "PoliBest",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#38BDF8",
+  "icons": []
+}
