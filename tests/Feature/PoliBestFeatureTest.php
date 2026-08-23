@@ -18,19 +18,37 @@ class PoliBestFeatureTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_staff_can_register_as_pending_member(): void
+    public function test_user_can_register_basic_account(): void
     {
         $this->post('/register', [
             'name' => 'Ali Staff',
-            'ic_number' => '900101111111',
             'email' => 'ali@example.test',
-            'department' => 'JTMK',
             'phone' => '0111111111',
             'password' => 'password',
             'password_confirmation' => 'password',
         ])->assertRedirect('/dashboard');
 
-        $this->assertDatabaseHas('users', ['email' => 'ali@example.test', 'membership_status' => 'pending', 'role' => 'member']);
+        $this->assertDatabaseHas('users', ['email' => 'ali@example.test', 'membership_status' => 'inactive', 'role' => 'member']);
+    }
+
+    public function test_user_can_apply_for_club_staff_membership(): void
+    {
+        $user = User::factory()->create(['membership_status' => 'inactive', 'ic_number' => null, 'department' => null, 'address' => null]);
+
+        $this->actingAs($user)->post(route('membership.store'), [
+            'name' => 'Ali Staff',
+            'ic_number' => '900101111111',
+            'department' => 'JTMK',
+            'phone' => '0111111111',
+            'address' => 'No 1, Jalan Politeknik, 06000 Jitra, Kedah',
+        ])->assertRedirect('/dashboard');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'ic_number' => '900101111111',
+            'department' => 'JTMK',
+            'membership_status' => 'pending',
+        ]);
     }
 
     public function test_member_can_record_attendance_by_token(): void
@@ -62,6 +80,45 @@ class PoliBestFeatureTest extends TestCase
         $this->actingAs($user)->post(route('activities.register', $activity))->assertRedirect();
 
         $this->assertDatabaseHas('activity_registrations', ['user_id' => $user->id, 'activity_id' => $activity->id, 'status' => 'registered']);
+    }
+
+    public function test_admin_can_create_and_update_activity_with_evidence_photo(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->post(route('activities.store'), [
+            'title' => 'Gotong Royong',
+            'description' => 'Aktiviti membersihkan kawasan kolej.',
+            'date_time' => now()->addWeek()->format('Y-m-d H:i:s'),
+            'location' => 'Dewan Utama',
+            'max_participants' => 30,
+            'status' => 'draft',
+            'evidence_photo' => UploadedFile::fake()->image('bukti-awal.jpg'),
+        ])->assertRedirect();
+
+        $activity = Activity::where('title', 'Gotong Royong')->firstOrFail();
+        $firstPhoto = $activity->evidence_photo_path;
+
+        $this->assertNotNull($firstPhoto);
+        Storage::disk('public')->assertExists($firstPhoto);
+
+        $this->actingAs($admin)->put(route('activities.update', $activity), [
+            'title' => 'Gotong Royong Perdana',
+            'description' => 'Aktiviti membersihkan kawasan kolej dan pejabat.',
+            'date_time' => now()->addWeeks(2)->format('Y-m-d H:i:s'),
+            'location' => 'Dewan Seminar',
+            'max_participants' => 40,
+            'status' => 'pending_approval',
+            'evidence_photo' => UploadedFile::fake()->image('bukti-baru.jpg'),
+        ])->assertRedirect(route('activities.show', $activity));
+
+        $activity->refresh();
+
+        $this->assertSame('Gotong Royong Perdana', $activity->title);
+        $this->assertSame('Dewan Seminar', $activity->location);
+        Storage::disk('public')->assertMissing($firstPhoto);
+        Storage::disk('public')->assertExists($activity->evidence_photo_path);
     }
 
     public function test_treasurer_can_create_fee_transaction_and_reduce_balance(): void

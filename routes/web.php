@@ -10,6 +10,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseClaimController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\MembershipApplicationController;
 use App\Http\Controllers\MemberDocumentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentSubmissionController;
@@ -34,6 +35,8 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/membership/apply', [MembershipApplicationController::class, 'create'])->name('membership.apply');
+    Route::post('/membership/apply', [MembershipApplicationController::class, 'store'])->name('membership.store');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');

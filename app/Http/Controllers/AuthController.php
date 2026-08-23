@@ -26,13 +26,13 @@ class AuthController extends Controller
             ...$request->validated(),
             'password' => Hash::make($request->validated('password')),
             'role' => 'member',
-            'membership_status' => 'pending',
+            'membership_status' => 'inactive',
         ]);
 
         Auth::login($user);
-        AuditLog::create(['user_id' => $user->id, 'action' => 'registered', 'module' => 'Authentication', 'record_type' => User::class, 'record_id' => $user->id, 'description' => 'New member registered and logged in.', 'changes' => ['email' => $user->email, 'membership_status' => $user->membership_status], 'ip_address' => $request->ip()]);
+        AuditLog::create(['user_id' => $user->id, 'action' => 'registered', 'module' => 'Authentication', 'record_type' => User::class, 'record_id' => $user->id, 'description' => 'New account registered and logged in.', 'changes' => ['email' => $user->email, 'membership_status' => $user->membership_status], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('dashboard')->with('status', 'Pendaftaran berjaya. Akaun menunggu kelulusan admin.');
+        return redirect()->route('dashboard')->with('status', 'Pendaftaran akaun berjaya.');
     }
 
     public function showLogin(): View

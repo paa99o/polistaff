@@ -9,5 +9,45 @@
     <div class="col-md-6"><label class="form-label">Attendance Opens</label><input class="form-control" type="datetime-local" name="attendance_opens_at" value="{{ old('attendance_opens_at', isset($activity) && $activity->attendance_opens_at ? $activity->attendance_opens_at->format('Y-m-d\TH:i') : '') }}"></div>
     <div class="col-md-6"><label class="form-label">Attendance Closes</label><input class="form-control" type="datetime-local" name="attendance_closes_at" value="{{ old('attendance_closes_at', isset($activity) && $activity->attendance_closes_at ? $activity->attendance_closes_at->format('Y-m-d\TH:i') : '') }}"></div>
     <div class="col-12"><label class="form-label">Penerangan</label><textarea class="form-control" name="description" rows="4">{{ old('description', $activity->description ?? '') }}</textarea></div>
+    <div class="col-12">
+        <label class="form-label" for="evidence_photo">Foto bukti aktiviti</label>
+        <input class="form-control" id="evidence_photo" type="file" name="evidence_photo" accept="image/*">
+        @include('partials.errors', ['name' => 'evidence_photo'])
+        <div class="mt-3 d-none" id="evidence-photo-preview-wrap">
+            <img class="activity-evidence-preview" id="evidence-photo-preview" src="" alt="Pratonton foto bukti aktiviti">
+        </div>
+        @if(! empty($activity?->evidence_photo_path))
+            <div class="mt-3">
+                <img class="activity-evidence-preview" src="{{ Storage::url($activity->evidence_photo_path) }}" alt="Foto bukti aktiviti semasa">
+            </div>
+        @endif
+    </div>
 </div>
 <button class="btn btn-danger mt-3">Simpan</button>
+
+@pushOnce('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('evidence_photo');
+        const preview = document.getElementById('evidence-photo-preview');
+        const previewWrap = document.getElementById('evidence-photo-preview-wrap');
+
+        if (!input || !preview || !previewWrap) {
+            return;
+        }
+
+        input.addEventListener('change', () => {
+            const [file] = input.files;
+
+            if (!file) {
+                preview.removeAttribute('src');
+                previewWrap.classList.add('d-none');
+                return;
+            }
+
+            preview.src = URL.createObjectURL(file);
+            previewWrap.classList.remove('d-none');
+        });
+    });
+</script>
+@endPushOnce

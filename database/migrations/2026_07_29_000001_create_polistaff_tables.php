@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedInteger('max_participants')->nullable();
             $table->enum('status', ['draft', 'pending_approval', 'approved', 'cancelled'])->default('draft');
             $table->string('qr_code_token')->unique();
+            $table->string('evidence_photo_path')->nullable();
             $table->timestamps();
         });
 

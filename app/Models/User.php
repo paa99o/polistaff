@@ -22,6 +22,7 @@ class User extends Authenticatable
         'role',
         'department',
         'phone',
+        'address',
         'membership_status',
         'joined_date',
         'fee_balance',

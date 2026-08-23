@@ -398,6 +398,14 @@ a:hover { color: var(--color-primary); opacity: .8; }
 .icon-button:hover { background: var(--color-secondary); transform: translate3d(0, -2px, 0) scale(1.04); }
 .icon-button:active { transform: translate3d(0, 0, 0) scale(.94); }
 
+.membership-apply-button {
+    color: var(--color-primary);
+}
+
+.membership-apply-button.is-pending {
+    color: var(--color-orange);
+}
+
 .notification-count {
     align-items: center;
     background: var(--color-red);
@@ -461,6 +469,30 @@ a:hover { color: var(--color-primary); opacity: .8; }
     border: 1px solid var(--color-border);
     height: 100%;
     padding: 16px;
+}
+
+.activity-evidence {
+    margin: 0;
+}
+
+.activity-evidence img,
+.activity-evidence-preview {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    display: block;
+    max-height: 360px;
+    object-fit: cover;
+    width: 100%;
+}
+
+.activity-evidence figcaption {
+    color: var(--color-muted);
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.activity-evidence-preview {
+    max-width: 420px;
 }
 
 .notification-menu { min-width: 320px; }

@@ -21,8 +21,11 @@ return new class extends Migration
             if (! Schema::hasColumn('users', 'phone')) {
                 $table->string('phone')->nullable()->after('department');
             }
+            if (! Schema::hasColumn('users', 'address')) {
+                $table->text('address')->nullable()->after('phone');
+            }
             if (! Schema::hasColumn('users', 'membership_status')) {
-                $table->enum('membership_status', ['pending', 'active', 'inactive'])->default('pending')->after('phone');
+                $table->enum('membership_status', ['pending', 'active', 'inactive'])->default('pending')->after('address');
             }
             if (! Schema::hasColumn('users', 'joined_date')) {
                 $table->date('joined_date')->nullable()->after('membership_status');
@@ -36,7 +39,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table): void {
-            foreach (['ic_number', 'role', 'department', 'phone', 'membership_status', 'joined_date', 'fee_balance'] as $column) {
+            foreach (['ic_number', 'role', 'department', 'phone', 'address', 'membership_status', 'joined_date', 'fee_balance'] as $column) {
                 if (Schema::hasColumn('users', $column)) {
                     $table->dropColumn($column);
                 }

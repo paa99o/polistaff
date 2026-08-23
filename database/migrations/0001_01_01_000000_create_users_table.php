@@ -21,6 +21,7 @@ return new class extends Migration
             $table->enum('role', ['member', 'treasurer', 'chairman', 'admin'])->default('member');
             $table->string('department')->nullable();
             $table->string('phone')->nullable();
+            $table->text('address')->nullable();
             $table->enum('membership_status', ['pending', 'active', 'inactive'])->default('pending');
             $table->date('joined_date')->nullable();
             $table->decimal('fee_balance', 10, 2)->default(0);

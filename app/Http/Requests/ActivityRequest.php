@@ -19,6 +19,7 @@ class ActivityRequest extends FormRequest
             'attendance_opens_at' => ['nullable', 'date'],
             'attendance_closes_at' => ['nullable', 'date', 'after_or_equal:attendance_opens_at'],
             'status' => ['required', 'in:draft,pending_approval,approved,cancelled'],
+            'evidence_photo' => ['nullable', 'image', 'max:4096'],
         ];
     }
 }

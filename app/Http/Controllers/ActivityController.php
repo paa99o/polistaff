@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -35,7 +36,14 @@ class ActivityController extends Controller
     {
         Gate::authorize('manage-activities');
 
-        $activity = Activity::create([...$request->validated(), 'qr_code_token' => Str::uuid()->toString()]);
+        $data = $request->validated();
+        unset($data['evidence_photo']);
+
+        if ($request->hasFile('evidence_photo')) {
+            $data['evidence_photo_path'] = $request->file('evidence_photo')->store('activity-evidence', 'public');
+        }
+
+        $activity = Activity::create([...$data, 'qr_code_token' => Str::uuid()->toString()]);
 
         return redirect()->route('activities.show', $activity)->with('status', 'Aktiviti berjaya dicipta.');
     }
@@ -59,7 +67,18 @@ class ActivityController extends Controller
         Gate::authorize('manage-activities');
 
         $beforeStatus = $activity->status;
-        $activity->update($request->validated());
+        $data = $request->validated();
+        unset($data['evidence_photo']);
+
+        if ($request->hasFile('evidence_photo')) {
+            if ($activity->evidence_photo_path) {
+                Storage::disk('public')->delete($activity->evidence_photo_path);
+            }
+
+            $data['evidence_photo_path'] = $request->file('evidence_photo')->store('activity-evidence', 'public');
+        }
+
+        $activity->update($data);
 
         if ($beforeStatus !== 'cancelled' && $activity->status === 'cancelled') {
             foreach ($activity->registrations()->whereIn('status', ['registered', 'waitlisted'])->with('user')->get() as $registration) {

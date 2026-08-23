@@ -19,11 +19,25 @@
                         <p class="text-muted mb-0">{{ $activity->date_time->format('d/m/Y h:i A') }} · {{ $activity->location }}</p>
                     </div>
                     <div class="d-flex gap-2">
-                        @if(auth()->user()->hasRole('chairman','admin') && $activity->status !== 'approved')<form method="post" action="{{ route('activities.approve',$activity) }}">@csrf @method('patch')<button class="btn btn-sm btn-danger">Approve</button></form>@endif
-                        @can('manage-activities')<a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit',$activity) }}">Edit</a>@endcan
+                        @if(auth()->user()->hasRole('chairman','admin') && $activity->status !== 'approved')
+                            <form method="post" action="{{ route('activities.approve',$activity) }}">
+                                @csrf
+                                @method('patch')
+                                <button class="btn btn-sm btn-danger">Approve</button>
+                            </form>
+                        @endif
+                        @can('manage-activities')
+                            <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit',$activity) }}">Edit</a>
+                        @endcan
                     </div>
                 </div>
                 <hr>
+                @if($activity->evidence_photo_path)
+                    <figure class="activity-evidence mb-4">
+                        <img src="{{ Storage::url($activity->evidence_photo_path) }}" alt="Foto bukti untuk {{ $activity->title }}">
+                        <figcaption>Foto bukti aktiviti</figcaption>
+                    </figure>
+                @endif
                 <p>{{ $activity->description }}</p>
 
                 <div class="row g-3 my-3">
@@ -61,7 +75,16 @@
                 @empty
                     <p class="text-muted mb-0">Belum ada pendaftaran.</p>
                 @endforelse
-                @if($waitlistedCount > 0)<hr><h3 class="h6">Waiting List ({{ $waitlistedCount }})</h3>@foreach($activity->waitlistedRegistrations as $item)<div class="border-bottom py-2"><strong>{{ $item->user->name }}</strong><div class="small text-muted">Joined {{ $item->registered_at->format('d/m/Y h:i A') }}</div></div>@endforeach@endif
+                @if($waitlistedCount > 0)
+                    <hr>
+                    <h3 class="h6">Waiting List ({{ $waitlistedCount }})</h3>
+                    @foreach($activity->waitlistedRegistrations as $item)
+                        <div class="border-bottom py-2">
+                            <strong>{{ $item->user->name }}</strong>
+                            <div class="small text-muted">Joined {{ $item->registered_at->format('d/m/Y h:i A') }}</div>
+                        </div>
+                    @endforeach
+                @endif
             </div>
         </div>
     </div>

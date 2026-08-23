@@ -126,6 +126,16 @@
                 </div>
 
                 <div class="topbar-actions">
+                    @if(auth()->user()->membership_status === 'inactive')
+                        <a class="icon-button membership-apply-button" href="{{ route('membership.apply') }}" aria-label="Mohon ahli kelab staf" title="Mohon ahli kelab staf">
+                            <i class="bi bi-person-vcard fs-5" aria-hidden="true"></i>
+                        </a>
+                    @elseif(auth()->user()->membership_status === 'pending')
+                        <a class="icon-button membership-apply-button is-pending" href="{{ route('membership.apply') }}" aria-label="Permohonan ahli sedang disemak" title="Permohonan ahli sedang disemak">
+                            <i class="bi bi-hourglass-split fs-5" aria-hidden="true"></i>
+                        </a>
+                    @endif
+
                     <div class="dropdown">
                         <button class="icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifikasi">
                             <i class="bi bi-bell fs-5" aria-hidden="true"></i>

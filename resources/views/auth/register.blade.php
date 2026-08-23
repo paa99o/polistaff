@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => 'Daftar Ahli'])
+@extends('layouts.app', ['title' => 'Daftar Akaun'])
 
 @section('content')
 <div class="card auth-card">
@@ -15,8 +15,8 @@
                     </a>
                     <div class="auth-stripe mt-4" aria-hidden="true"><span></span><span></span><span></span></div>
                     <div class="mt-5 auth-brand-copy">
-                        <h2 class="mb-3">Sertai komuniti kelab staf.</h2>
-                        <p class="mb-0">Lengkapkan maklumat anda. Permohonan akan disemak oleh pentadbir sebelum akaun diaktifkan.</p>
+                        <h2 class="mb-3">Cipta akaun POLISTAFF.</h2>
+                        <p class="mb-0">Daftar akaun asas dahulu. Permohonan menjadi ahli kelab staf boleh dibuat selepas log masuk.</p>
                     </div>
                 </div>
                 <a class="home-link" href="{{ url('/') }}">
@@ -29,9 +29,9 @@
         <div class="col-md-8">
             <section class="auth-form-panel">
                 <div>
-                    <span class="badge mb-3"><i class="bi bi-person-plus" aria-hidden="true"></i> Ahli Baharu</span>
+                    <span class="badge mb-3"><i class="bi bi-person-plus" aria-hidden="true"></i> Akaun Baharu</span>
                     <h1>Daftar akaun</h1>
-                    <p>Semua ruangan bertanda wajib perlu dilengkapkan.</p>
+                    <p>Lengkapkan maklumat asas untuk mula menggunakan portal.</p>
 
                     <form method="post" action="{{ route('register') }}">
                         @csrf
@@ -42,22 +42,14 @@
                                 @include('partials.errors', ['name' => 'name'])
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="ic_number">Nombor kad pengenalan</label>
-                                <input class="form-control" id="ic_number" name="ic_number" value="{{ old('ic_number') }}" required>
-                                @include('partials.errors', ['name' => 'ic_number'])
-                            </div>
-                            <div class="col-md-6">
                                 <label class="form-label" for="email">Alamat emel</label>
                                 <input class="form-control" id="email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required>
                                 @include('partials.errors', ['name' => 'email'])
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="department">Jabatan</label>
-                                <input class="form-control" id="department" name="department" value="{{ old('department') }}" required>
-                            </div>
-                            <div class="col-md-6">
                                 <label class="form-label" for="phone">Nombor telefon</label>
-                                <input class="form-control" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel">
+                                <input class="form-control" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel" required>
+                                @include('partials.errors', ['name' => 'phone'])
                             </div>
                             <div class="col-md-6"></div>
                             <div class="col-md-6">
