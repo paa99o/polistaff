@@ -115,6 +115,19 @@ a:hover { color: var(--color-primary); opacity: .8; }
     letter-spacing: .08em;
 }
 
+.brand-mark-logo {
+    background: transparent;
+    overflow: hidden;
+    padding: 0;
+}
+
+.brand-mark-logo img {
+    display: block;
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+}
+
 .brand-name {
     display: block;
     font-family: var(--font-primary);
@@ -1538,5 +1551,356 @@ a:hover { color: var(--color-primary); opacity: .8; }
     .motion-ready [data-reveal] {
         opacity: 1;
         transform: none;
+    }
+}
+
+.dashboard-polimart {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1280px;
+}
+
+.dashboard-polimart-card {
+    align-items: center;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.12), transparent 42%),
+        #c81e1e;
+    border: 1px solid rgba(255,255,255,.24);
+    color: var(--color-surface);
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+    min-height: 220px;
+    padding: 32px;
+}
+
+.dashboard-polimart-card .stat-icon {
+    background: rgba(255,255,255,.16);
+    color: var(--color-surface);
+    margin-bottom: 18px;
+}
+
+.dashboard-polimart-card h2 {
+    color: var(--color-surface);
+    font-size: clamp(32px, 6vw, 72px);
+    line-height: .9;
+    margin: 0 0 14px;
+}
+
+.dashboard-polimart-card p {
+    color: rgba(255,255,255,.86);
+    margin: 0;
+    max-width: 640px;
+}
+
+.dashboard-polimart-kicker {
+    font-family: var(--font-primary);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    margin-bottom: 8px !important;
+    text-transform: uppercase;
+}
+
+.polimart-page {
+    background-color: #c81e1e;
+    background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(90deg, rgba(70,0,0,.06) 0 1px, transparent 1px 8px);
+    color: var(--color-surface);
+    min-height: calc(100vh - 72px);
+    padding: 56px 32px 96px;
+}
+
+.app-shell:has(.polimart-page) {
+    background-color: #c81e1e;
+    background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(90deg, rgba(70,0,0,.06) 0 1px, transparent 1px 8px);
+}
+
+.content-wrap:has(.polimart-page) {
+    max-width: none;
+    padding: 0;
+}
+
+.polimart-hero,
+.polimart-market,
+.polimart-form-shell {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1280px;
+}
+
+.polimart-hero {
+    align-items: end;
+    display: grid;
+    min-height: 320px;
+    padding-bottom: 48px;
+}
+
+.polimart-kicker {
+    color: rgba(255,255,255,.84);
+    font-family: var(--font-primary);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+.polimart-title {
+    color: var(--color-surface);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: clamp(64px, 12vw, 160px);
+    line-height: .8;
+    margin-bottom: 24px;
+}
+
+.polimart-title span + span {
+    color: #ffb020;
+    margin-left: .08em;
+}
+
+.polimart-hero p {
+    color: rgba(255,255,255,.86);
+    font-size: 20px;
+    max-width: 760px;
+}
+
+.polimart-stripe span:nth-child(1) { background: var(--color-surface); }
+.polimart-stripe span:nth-child(2) { background: #ffb020; }
+.polimart-stripe span:nth-child(3) { background: #172033; }
+
+.polimart-market {
+    display: grid;
+    gap: 32px;
+    grid-template-columns: minmax(260px, 340px) 1fr;
+}
+
+.polimart-sell-panel,
+.polimart-start-card,
+.polimart-item,
+.polimart-empty {
+    background: var(--color-surface);
+    border: 1px solid rgba(23, 32, 51, .14);
+    color: var(--color-text);
+}
+
+.polimart-start-card {
+    align-self: start;
+    padding: 24px;
+    position: sticky;
+    top: 104px;
+}
+
+.polimart-start-card .stat-icon {
+    background: #fff1f1;
+    color: #c81e1e;
+    margin-bottom: 18px;
+}
+
+.polimart-start-card h2 {
+    font-size: 24px;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+}
+
+.polimart-start-card p {
+    color: var(--color-muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.polimart-products {
+    min-width: 0;
+}
+
+.polimart-sell-panel {
+    align-self: start;
+    padding: 24px;
+}
+
+.polimart-sell-panel-wide {
+    margin: 0 auto;
+    max-width: 860px;
+    width: 100%;
+}
+
+.polimart-form-shell {
+    padding-top: 48px;
+}
+
+.polimart-back-button {
+    border-color: rgba(255,255,255,.72);
+    color: #c81e1e;
+}
+
+.polimart-sell-panel h2,
+.polimart-sell-panel h1,
+.polimart-section-heading h2 {
+    font-size: 22px;
+    margin: 0 0 20px;
+    text-transform: uppercase;
+}
+
+.polimart-section-heading {
+    align-items: center;
+    color: var(--color-surface);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.polimart-section-heading h2 {
+    color: var(--color-surface);
+    margin: 0;
+}
+
+.polimart-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.polimart-item {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.polimart-item img,
+.polimart-item-placeholder {
+    aspect-ratio: 4 / 3;
+    background: #fff1f1;
+    object-fit: cover;
+    width: 100%;
+}
+
+.polimart-item-placeholder {
+    align-items: center;
+    color: #c81e1e;
+    display: flex;
+    font-size: 44px;
+    justify-content: center;
+}
+
+.polimart-item-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 18px;
+}
+
+.polimart-category {
+    color: var(--color-muted);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.polimart-item h3 {
+    font-size: 18px;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.polimart-price {
+    color: #c81e1e;
+    white-space: nowrap;
+}
+
+.polimart-item p {
+    color: var(--color-muted);
+    font-size: 14px;
+    margin: 14px 0;
+}
+
+.polimart-seller {
+    border-top: 1px solid var(--color-border);
+    display: grid;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 14px;
+}
+
+.polimart-seller span {
+    align-items: center;
+    color: var(--color-muted);
+    display: flex;
+    font-size: 13px;
+    gap: 8px;
+}
+
+.polimart-empty {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    grid-column: 1 / -1;
+    justify-content: center;
+    min-height: 260px;
+    padding: 32px;
+    text-align: center;
+}
+
+.polimart-empty i {
+    color: #c81e1e;
+    font-size: 44px;
+}
+
+.polimart-empty p {
+    color: var(--color-muted);
+    margin: 0;
+}
+
+@media (max-width: 991.98px) {
+    .polimart-market {
+        grid-template-columns: 1fr;
+    }
+
+    .polimart-start-card {
+        position: static;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-polimart-card {
+        align-items: stretch;
+        flex-direction: column;
+        min-height: auto;
+        padding: 24px;
+    }
+
+    .dashboard-polimart-card .btn {
+        width: 100%;
+    }
+
+    .polimart-page { padding: 32px 16px 48px; }
+
+    .polimart-hero {
+        min-height: 240px;
+        padding-bottom: 32px;
+    }
+
+    .polimart-title {
+        display: block;
+        font-size: clamp(54px, 17vw, 86px);
+    }
+
+    .polimart-title span + span {
+        margin-left: 0;
+    }
+
+    .polimart-hero p {
+        font-size: 16px;
+    }
+
+    .polimart-grid {
+        grid-template-columns: 1fr;
     }
 }

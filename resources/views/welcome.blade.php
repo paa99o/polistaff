@@ -16,21 +16,12 @@
     <header class="public-nav">
         <div class="public-container d-flex align-items-center justify-content-between w-100">
             <a class="public-brand" href="{{ url('/') }}">
-                <span class="brand-mark" aria-hidden="true">PS</span>
+                @include('partials.brand-mark')
                 <span>
                     <span class="brand-name">POLISTAFF</span>
                     <span class="brand-description text-muted">Portal Pengurusan Kelab Staf</span>
                 </span>
             </a>
-
-            <div class="d-flex gap-2">
-                @auth
-                    <a class="btn btn-primary" href="{{ route('dashboard') }}">Dashboard</a>
-                @else
-                    <a class="btn btn-outline-primary" href="{{ route('login') }}">Log Masuk</a>
-                    <a class="btn btn-primary d-none d-sm-inline-flex" href="{{ route('register') }}">Daftar Ahli</a>
-                @endauth
-            </div>
         </div>
     </header>
 

@@ -55,6 +55,11 @@ class User extends Authenticatable
         return $this->hasMany(MemberDocument::class);
     }
 
+    public function polimartItems(): HasMany
+    {
+        return $this->hasMany(PolimartItem::class);
+    }
+
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);

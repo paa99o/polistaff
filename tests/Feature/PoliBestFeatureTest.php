@@ -5,8 +5,9 @@ namespace Tests\Feature;
 use App\Models\Activity;
 use App\Models\ActivityRegistration;
 use App\Models\ExpenseClaim;
-use App\Models\SystemSetting;
 use App\Models\PaymentSubmission;
+use App\Models\PolimartItem;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -162,6 +163,26 @@ class PoliBestFeatureTest extends TestCase
         $this->assertNotNull($payment);
         Storage::disk('public')->assertExists($payment->proof_path);
         $this->assertSame('pending', $payment->status);
+    }
+
+    public function test_staff_can_create_polimart_listing(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create(['phone' => '0123456789']);
+
+        $this->actingAs($user)->post(route('polimart.store'), [
+            'name' => 'Kuih Raya',
+            'category' => 'Makanan',
+            'price' => 25,
+            'contact' => '0123456789',
+            'description' => 'Balang sederhana untuk pickup di pejabat.',
+            'image' => UploadedFile::fake()->image('kuih-raya.jpg'),
+        ])->assertRedirect();
+
+        $item = PolimartItem::where('name', 'Kuih Raya')->first();
+        $this->assertNotNull($item);
+        $this->assertSame($user->id, $item->user_id);
+        Storage::disk('public')->assertExists($item->image_path);
     }
 
     public function test_treasurer_can_approve_payment_and_generate_transaction(): void

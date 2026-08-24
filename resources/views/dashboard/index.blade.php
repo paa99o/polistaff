@@ -82,6 +82,20 @@
     </div>
 </section>
 
+<section aria-label="PoliMart" class="dashboard-polimart mb-5">
+    <article class="dashboard-polimart-card">
+        <div>
+            <span class="stat-icon"><i class="bi bi-shop" aria-hidden="true"></i></span>
+            <p class="dashboard-polimart-kicker">Marketplace staf</p>
+            <h2>POLIMART</h2>
+            <p>Jual makanan, servis, produk kecil atau barangan pre-loved kepada komuniti POLISTAFF.</p>
+        </div>
+        <a class="btn btn-light" href="{{ route('polimart.index') }}">
+            Masuk PoliMart <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
+        </a>
+    </article>
+</section>
+
 <section aria-label="Maklumat dashboard" class="dashboard-details">
     <div class="row g-4">
         <div class="col-xl-5">

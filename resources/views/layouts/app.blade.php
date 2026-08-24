@@ -32,7 +32,7 @@
         <div class="main-panel">
             <header class="topbar app-navbar no-print">
                 <a class="app-navbar-brand" href="{{ route('dashboard') }}">
-                    <span class="brand-mark" aria-hidden="true">PS</span>
+                    @include('partials.brand-mark')
                     <span>
                         <span class="brand-name">POLISTAFF</span>
                         <span class="brand-description">Portal Pengurusan Kelab Staf</span>
@@ -64,7 +64,7 @@
                         </div>
                     </div>
 
-                    <div class="mega-nav-item {{ request()->routeIs('dashboard') || request()->routeIs('profile.*') || request()->routeIs('notifications.*') || request()->routeIs('documents.*') || request()->routeIs('feedback.*') || request()->routeIs('transactions.*') || request()->routeIs('reports.*') || request()->routeIs('attendance.index') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('dashboard') || request()->routeIs('profile.*') || request()->routeIs('notifications.*') || request()->routeIs('documents.*') || request()->routeIs('polimart.*') || request()->routeIs('feedback.*') || request()->routeIs('transactions.*') || request()->routeIs('reports.*') || request()->routeIs('attendance.index') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Pengurusan</button>
                         <div class="mega-menu mega-menu-wide">
                             <a class="mega-menu-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
@@ -78,6 +78,9 @@
                             </a>
                             <a class="mega-menu-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}">
                                 <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span>Dokumen</span>
+                            </a>
+                            <a class="mega-menu-link {{ request()->routeIs('polimart.*') ? 'active' : '' }}" href="{{ route('polimart.index') }}">
+                                <i class="bi bi-shop" aria-hidden="true"></i><span>PoliMart</span>
                             </a>
                             <a class="mega-menu-link {{ request()->routeIs('feedback.*') ? 'active' : '' }}" href="{{ route('feedback.create') }}">
                                 <i class="bi bi-chat-left-text" aria-hidden="true"></i><span>Maklum Balas</span>

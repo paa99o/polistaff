@@ -15,6 +15,7 @@ use App\Http\Controllers\MemberDocumentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentSubmissionController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\PolimartController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SystemSettingController;
@@ -47,6 +48,10 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/documents', [MemberDocumentController::class, 'store'])->name('documents.store');
     Route::get('/documents/{document}', [MemberDocumentController::class, 'show'])->name('documents.show');
     Route::delete('/documents/{document}', [MemberDocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::get('/polimart', [PolimartController::class, 'index'])->name('polimart.index');
+    Route::get('/polimart/create', [PolimartController::class, 'create'])->name('polimart.create');
+    Route::post('/polimart', [PolimartController::class, 'store'])->name('polimart.store');
+    Route::delete('/polimart/{polimartItem}', [PolimartController::class, 'destroy'])->name('polimart.destroy');
 
     Route::get('/admin/members/pending', [AdminMemberController::class, 'pending'])->middleware('role:admin')->name('admin.members.pending');
     Route::patch('/admin/members/{user}/approve', [AdminMemberController::class, 'approve'])->middleware('role:admin')->name('admin.members.approve');

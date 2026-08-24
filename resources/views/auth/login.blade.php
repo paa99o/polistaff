@@ -7,7 +7,7 @@
             <section class="auth-brand-panel">
                 <div>
                     <a class="d-inline-flex align-items-center gap-3 text-dark" href="{{ url('/') }}">
-                        <span class="brand-mark" aria-hidden="true">PS</span>
+                        @include('partials.brand-mark')
                         <span>
                             <span class="brand-name">POLISTAFF</span>
                             <span class="brand-description">Portal Pengurusan Kelab Staf</span>
