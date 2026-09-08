@@ -22,6 +22,8 @@ class EmailDeliveryService
         $delivery = EmailDelivery::create([
             'user_id' => $user?->id,
             'notification_id' => $record instanceof PortalNotification ? $record->id : null,
+            'record_type' => $record instanceof Model ? $record::class : null,
+            'record_id' => $record instanceof Model ? $record->getKey() : null,
             'event' => $event,
             'recipient' => $recipient,
             'mailable' => $mailable::class,

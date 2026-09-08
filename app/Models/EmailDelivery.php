@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class EmailDelivery extends Model
 {
-    protected $fillable = ['user_id', 'notification_id', 'event', 'recipient', 'mailable', 'status', 'attempts', 'sent_at', 'error'];
+    protected $fillable = ['user_id', 'notification_id', 'record_type', 'record_id', 'event', 'recipient', 'mailable', 'status', 'attempts', 'sent_at', 'error'];
 
     protected function casts(): array
     {
@@ -16,4 +17,5 @@ class EmailDelivery extends Model
 
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
     public function notification(): BelongsTo { return $this->belongsTo(PortalNotification::class, 'notification_id'); }
+    public function record(): MorphTo { return $this->morphTo(); }
 }

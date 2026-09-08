@@ -6,7 +6,20 @@ use App\Http\Requests\NotificationRequest;
 use App\Mail\PortalNotificationMail;
 use App\Models\PortalNotification;
 use App\Models\EmailDelivery;
+use App\Models\Activity;
+use App\Models\ExpenseClaim;
+use App\Models\PaymentSubmission;
 use App\Models\User;
+use App\Mail\ActivityApprovedMail;
+use App\Mail\ActivityCancelledMail;
+use App\Mail\ExpenseClaimApprovedMail;
+use App\Mail\ExpenseClaimRejectedMail;
+use App\Mail\ExpenseClaimVerifiedMail;
+use App\Mail\FeeReminderMail;
+use App\Mail\MembershipApprovedMail;
+use App\Mail\MembershipRejectedMail;
+use App\Mail\PaymentApprovedMail;
+use App\Mail\PaymentRejectedMail;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use App\Services\EmailAuditService;
@@ -60,10 +73,31 @@ class NotificationController extends Controller
             abort_unless($user, 404, 'Penerima email tidak lagi wujud.');
             $user->sendEmailVerificationNotification();
         } else {
-            abort(422, 'Jenis email ini tidak menyokong retry melalui monitor.');
+            $mailable = $this->retryableMailable($delivery);
+            abort_unless($mailable, 422, 'Jenis email ini tidak menyokong retry melalui monitor.');
+            $this->emailDeliveryService->send($delivery->user, $delivery->event.' retry', $mailable, $delivery->record);
         }
 
         return back()->with('status', 'Email dimasukkan semula untuk dihantar.');
+    }
+
+    private function retryableMailable(EmailDelivery $delivery): ?\Illuminate\Contracts\Mail\Mailable
+    {
+        $record = $delivery->record;
+
+        return match ($delivery->mailable) {
+            PaymentApprovedMail::class => $record instanceof PaymentSubmission ? new PaymentApprovedMail($record->load('transaction')) : null,
+            PaymentRejectedMail::class => $record instanceof PaymentSubmission ? new PaymentRejectedMail($record) : null,
+            ExpenseClaimApprovedMail::class => $record instanceof ExpenseClaim ? new ExpenseClaimApprovedMail($record) : null,
+            ExpenseClaimRejectedMail::class => $record instanceof ExpenseClaim ? new ExpenseClaimRejectedMail($record) : null,
+            ExpenseClaimVerifiedMail::class => $record instanceof ExpenseClaim ? new ExpenseClaimVerifiedMail($record) : null,
+            ActivityApprovedMail::class => $record instanceof Activity ? new ActivityApprovedMail($record) : null,
+            ActivityCancelledMail::class => $record instanceof Activity ? new ActivityCancelledMail($record) : null,
+            MembershipApprovedMail::class => $record instanceof User ? new MembershipApprovedMail($record) : null,
+            MembershipRejectedMail::class => $record instanceof User ? new MembershipRejectedMail($record, $record->membership_review_notes ?? 'Permohonan ahli ditolak.') : null,
+            FeeReminderMail::class => $record instanceof User ? new FeeReminderMail($record) : null,
+            default => null,
+        };
     }
 
     public function create(): View
