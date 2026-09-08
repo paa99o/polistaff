@@ -36,7 +36,7 @@
 
                 @if($activity->evidence_photo_path)
                     <figure class="activity-evidence mb-4">
-                        <img src="{{ Storage::url($activity->evidence_photo_path) }}" alt="Foto bukti untuk {{ $activity->title }}">
+                        <img src="{{ Storage::disk('public')->url($activity->evidence_photo_path) }}" alt="Foto bukti untuk {{ $activity->title }}">
                         <figcaption>Foto bukti aktiviti</figcaption>
                     </figure>
                 @endif

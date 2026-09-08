@@ -59,13 +59,15 @@ class SystemBackupService
             ])
             ->all();
 
-        $files = collect(Storage::disk('public')->allFiles())
-            ->reject(fn (string $path): bool => str_starts_with(basename($path), '.'))
-            ->map(fn (string $path): array => [
-                'path' => $path,
-                'size_bytes' => Storage::disk('public')->size($path),
-                'sha256' => hash_file('sha256', Storage::disk('public')->path($path)),
-            ])
+        $files = collect(['public', 'private'])
+            ->flatMap(fn (string $disk): array => collect(Storage::disk($disk)->allFiles())
+                ->reject(fn (string $path): bool => str_starts_with(basename($path), '.'))
+                ->map(fn (string $path): array => [
+                    'disk' => $disk,
+                    'path' => $path,
+                    'size_bytes' => Storage::disk($disk)->size($path),
+                    'sha256' => hash_file('sha256', Storage::disk($disk)->path($path)),
+                ])->all())
             ->values()
             ->all();
 
@@ -150,15 +152,20 @@ class SystemBackupService
         );
 
         foreach ($manifest['files'] as $file) {
+            $disk = $file['disk'] ?? 'public';
             $path = $file['path'];
 
-            if (str_contains($path, '..') || ! Storage::disk('public')->exists($path)) {
+            if (! in_array($disk, ['public', 'private'], true) || str_contains($path, '..') || ! Storage::disk($disk)->exists($path)) {
                 continue;
             }
 
+            $archivePath = $disk === 'public'
+                ? 'uploads/'.str_replace('\\', '/', ltrim($path, '/\\'))
+                : 'uploads/'.$disk.'/'.str_replace('\\', '/', ltrim($path, '/\\'));
+
             $zip->addFileFromPath(
-                fileName: 'uploads/'.str_replace('\\', '/', ltrim($path, '/\\')),
-                path: Storage::disk('public')->path($path),
+                fileName: $archivePath,
+                path: Storage::disk($disk)->path($path),
             );
         }
 

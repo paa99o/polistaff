@@ -22,7 +22,7 @@
                 <aside class="profile-photo-upload">
                     <div class="profile-photo-frame profile-photo-frame-large">
                         @if($user->profile_photo_path)
-                            <img src="{{ Storage::url($user->profile_photo_path) }}" alt="Gambar profil {{ $user->name }}">
+                            <img src="{{ Storage::disk('public')->url($user->profile_photo_path) }}" alt="Gambar profil {{ $user->name }}">
                         @else
                             <span>{{ $initials ?: 'PS' }}</span>
                         @endif

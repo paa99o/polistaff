@@ -228,7 +228,16 @@ class BackupInspectionService
                     continue;
                 }
 
-                $archivePath = 'uploads/'.str_replace('\\', '/', ltrim($file['path'], '/\\'));
+                $disk = $file['disk'] ?? 'public';
+                if (! in_array($disk, ['public', 'private'], true)) {
+                    $result['errors'][] = "Disk fail upload tidak sah: {$disk}";
+
+                    continue;
+                }
+
+                $archivePath = $disk === 'public'
+                    ? 'uploads/'.str_replace('\\', '/', ltrim($file['path'], '/\\'))
+                    : 'uploads/'.$disk.'/'.str_replace('\\', '/', ltrim($file['path'], '/\\'));
                 if (! $this->isSafeRelativePath($archivePath)) {
                     $result['errors'][] = "Laluan fail upload tidak selamat: {$file['path']}";
 

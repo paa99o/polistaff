@@ -15,9 +15,9 @@ class ActivityRequest extends FormRequest
             'location' => ['required', 'string', 'max:255'],
             'max_participants' => ['nullable', 'integer', 'min:1'],
             'registration_opens_at' => ['nullable', 'date'],
-            'registration_closes_at' => ['nullable', 'date', 'after_or_equal:registration_opens_at'],
-            'attendance_opens_at' => ['nullable', 'date'],
-            'attendance_closes_at' => ['nullable', 'date', 'after_or_equal:attendance_opens_at'],
+            'registration_closes_at' => ['nullable', 'date', 'after_or_equal:registration_opens_at', 'before_or_equal:date_time'],
+            'attendance_opens_at' => ['nullable', 'date', 'before_or_equal:date_time'],
+            'attendance_closes_at' => ['nullable', 'date', 'after_or_equal:attendance_opens_at', 'after_or_equal:date_time'],
             'status' => ['required', 'in:draft,pending_approval,approved,cancelled'],
             'evidence_photo' => ['nullable', 'image', 'max:4096'],
         ];
@@ -27,6 +27,8 @@ class ActivityRequest extends FormRequest
     {
         return [
             'registration_closes_at.after_or_equal' => 'Registration Closes mesti sama atau selepas Registration Opens.',
+            'registration_closes_at.before_or_equal' => 'Registration Closes mesti pada atau sebelum tarikh aktiviti.',
+            'attendance_opens_at.before_or_equal' => 'Attendance Opens mesti pada atau sebelum tarikh aktiviti.',
             'attendance_closes_at.after_or_equal' => 'Attendance Closes mesti sama atau selepas Attendance Opens.',
             'evidence_photo.image' => 'Foto bukti aktiviti mesti dalam format gambar.',
             'evidence_photo.max' => 'Foto bukti aktiviti tidak boleh melebihi 4MB.',

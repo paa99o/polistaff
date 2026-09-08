@@ -7,8 +7,11 @@ use App\Mail\PortalNotificationMail;
 use App\Models\PortalNotification;
 use App\Models\EmailDelivery;
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyEmailNotification;
 use App\Services\EmailAuditService;
 use App\Services\EmailDeliveryService;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -42,6 +45,25 @@ class NotificationController extends Controller
         $this->emailDeliveryService->send($notification->user, 'portal notification retry', new PortalNotificationMail($notification), $notification);
 
         return back()->with('status', 'Email dimasukkan semula ke queue.');
+    }
+
+    public function retryDelivery(Request $request, EmailDelivery $delivery): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('admin'), 403);
+        abort_unless($delivery->status === 'failed', 422, 'Hanya email yang gagal boleh dicuba semula.');
+
+        if ($delivery->mailable === ResetPasswordNotification::class) {
+            $status = Password::sendResetLink(['email' => $delivery->recipient]);
+            abort_unless($status === Password::RESET_LINK_SENT, 422, 'Pautan reset tidak dapat dihantar semula.');
+        } elseif ($delivery->mailable === VerifyEmailNotification::class) {
+            $user = $delivery->user;
+            abort_unless($user, 404, 'Penerima email tidak lagi wujud.');
+            $user->sendEmailVerificationNotification();
+        } else {
+            abort(422, 'Jenis email ini tidak menyokong retry melalui monitor.');
+        }
+
+        return back()->with('status', 'Email dimasukkan semula untuk dihantar.');
     }
 
     public function create(): View

@@ -29,7 +29,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="claim_date">Tarikh</label>
-                    <input class="form-control @error('claim_date') is-invalid @enderror" id="claim_date" type="date" name="claim_date" value="{{ old('claim_date', $claim?->claim_date?->format('Y-m-d') ?? now()->toDateString()) }}" required>
+                    <input class="form-control @error('claim_date') is-invalid @enderror" id="claim_date" type="date" name="claim_date" value="{{ old('claim_date', $claim?->claim_date?->format('Y-m-d') ?? now()->toDateString()) }}" max="{{ now()->toDateString() }}" required>
                     @include('partials.errors', ['name' => 'claim_date'])
                 </div>
                 <div class="col-md-6">

@@ -31,13 +31,13 @@ Route::get('/', function () {
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->name('password.email');
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->middleware('throttle:6,1')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -127,6 +127,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/admin/notifications/delivery', [NotificationController::class, 'deliveryMonitor'])->middleware('role:admin')->name('admin.notifications.delivery');
+    Route::post('/admin/email-deliveries/{delivery}/retry', [NotificationController::class, 'retryDelivery'])->middleware('role:admin')->name('admin.email-deliveries.retry');
     Route::post('/admin/notifications/{notification}/retry', [NotificationController::class, 'retryEmail'])->middleware('role:admin')->name('admin.notifications.retry');
     Route::get('/notifications/create', [NotificationController::class, 'create'])->middleware('role:admin,chairman')->name('notifications.create');
     Route::post('/notifications', [NotificationController::class, 'store'])->middleware('role:admin,chairman')->name('notifications.store');

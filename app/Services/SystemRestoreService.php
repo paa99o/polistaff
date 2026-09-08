@@ -34,7 +34,7 @@ class SystemRestoreService
                 $currentFiles = $this->copyCurrentUploads($workspace.'/rollback');
 
                 try {
-                    $this->replaceUploads($workspace.'/incoming', array_column($manifest['files'], 'path'));
+                $this->replaceUploads($workspace.'/incoming', $manifest['files']);
                     $this->restoreDatabase($tables);
                     $restoredFiles = count($manifest['files']);
                 } catch (Throwable $exception) {
@@ -153,11 +153,19 @@ class SystemRestoreService
     private function stageUploads(ZipFile $zip, array $files, string $directory): void
     {
         foreach ($files as $file) {
-            $stream = $zip->getEntryStream('uploads/'.$file['path']);
+            $disk = $file['disk'] ?? 'public';
+            $path = $file['path'];
+            $archivePath = 'uploads/'.$disk.'/'.$path;
+
+            if (! $zip->hasEntry($archivePath)) {
+                $archivePath = 'uploads/'.$path;
+            }
+
+            $stream = $zip->getEntryStream($archivePath);
 
             try {
-                if (! Storage::disk('local')->writeStream($directory.'/'.$file['path'], $stream)) {
-                    throw new RuntimeException("Fail {$file['path']} gagal disediakan untuk pemulihan.");
+                if (! Storage::disk('local')->writeStream($directory.'/'.$disk.'/'.$path, $stream)) {
+                    throw new RuntimeException("Fail {$path} gagal disediakan untuk pemulihan.");
                 }
             } finally {
                 if (is_resource($stream)) {
@@ -169,20 +177,23 @@ class SystemRestoreService
 
     private function copyCurrentUploads(string $directory): array
     {
-        $public = Storage::disk('public');
-        $files = collect($public->allFiles())
-            ->reject(fn (string $path): bool => str_starts_with(basename($path), '.'))
+        $files = collect(['public', 'private'])
+            ->flatMap(fn (string $disk): array => collect(Storage::disk($disk)->allFiles())
+                ->reject(fn (string $path): bool => str_starts_with(basename($path), '.'))
+                ->map(fn (string $path): array => ['disk' => $disk, 'path' => $path])->all())
             ->values()
             ->all();
 
-        foreach ($files as $path) {
-            $stream = $public->readStream($path);
+        foreach ($files as $file) {
+            $disk = Storage::disk($file['disk']);
+            $path = $file['path'];
+            $stream = $disk->readStream($path);
             if ($stream === false) {
                 throw new RuntimeException("Fail semasa {$path} tidak dapat disalin.");
             }
 
             try {
-                if (! Storage::disk('local')->writeStream($directory.'/'.$path, $stream)) {
+                if (! Storage::disk('local')->writeStream($directory.'/'.$file['disk'].'/'.$path, $stream)) {
                     throw new RuntimeException("Fail semasa {$path} tidak dapat disimpan untuk rollback.");
                 }
             } finally {
@@ -197,19 +208,23 @@ class SystemRestoreService
 
     private function replaceUploads(string $sourceDirectory, array $files): void
     {
-        $public = Storage::disk('public');
-        $public->delete(collect($public->allFiles())
-            ->reject(fn (string $path): bool => str_starts_with(basename($path), '.'))
-            ->all());
+        foreach (['public', 'private'] as $diskName) {
+            $disk = Storage::disk($diskName);
+            $disk->delete(collect($disk->allFiles())
+                ->reject(fn (string $path): bool => str_starts_with(basename($path), '.'))
+                ->all());
+        }
 
-        foreach ($files as $path) {
-            $stream = Storage::disk('local')->readStream($sourceDirectory.'/'.$path);
+        foreach ($files as $file) {
+            $diskName = $file['disk'] ?? 'public';
+            $path = $file['path'];
+            $stream = Storage::disk('local')->readStream($sourceDirectory.'/'.$diskName.'/'.$path);
             if ($stream === false) {
                 throw new RuntimeException("Fail {$path} tidak dapat dibaca semasa pemulihan.");
             }
 
             try {
-                if (! $public->writeStream($path, $stream)) {
+                if (! Storage::disk($diskName)->writeStream($path, $stream)) {
                     throw new RuntimeException("Fail {$path} gagal dipulihkan.");
                 }
             } finally {

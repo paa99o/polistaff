@@ -402,6 +402,32 @@ class PoliBestFeatureTest extends TestCase
         ]);
     }
 
+    public function test_inactive_member_cannot_access_member_features_before_approval(): void
+    {
+        $user = User::factory()->create(['membership_status' => 'inactive']);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertRedirect(route('membership.apply'));
+
+        $this->actingAs($user)->get(route('payments.index'))
+            ->assertRedirect(route('membership.apply'));
+
+        $this->actingAs($user)->get(route('membership.apply'))
+            ->assertOk();
+    }
+
+    public function test_management_roles_can_access_dashboard_without_active_membership(): void
+    {
+        foreach (['admin', 'chairman', 'treasurer'] as $role) {
+            $user = User::factory()->create([
+                'role' => $role,
+                'membership_status' => 'inactive',
+            ]);
+
+            $this->actingAs($user)->get(route('dashboard'))->assertOk();
+        }
+    }
+
     public function test_admin_can_approve_membership_and_email_member(): void
     {
         Mail::fake();
@@ -509,6 +535,43 @@ class PoliBestFeatureTest extends TestCase
             ->assertSee('RM 40.00')
             ->assertSee('Taklimat Dashboard')
             ->assertSee('profile-photos/member.jpg');
+    }
+
+    public function test_admin_dashboard_net_balance_ignores_reversed_transactions(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Transaction::create([
+            'type' => 'income',
+            'amount' => 100,
+            'description' => 'Income reversed',
+            'receipt_number' => 'PB-REV-IN',
+            'transaction_date' => now()->toDateString(),
+            'category' => 'Yuran',
+            'status' => 'reversed',
+        ]);
+        Transaction::create([
+            'type' => 'income',
+            'amount' => 25,
+            'description' => 'Income active',
+            'receipt_number' => 'PB-ACT-IN',
+            'transaction_date' => now()->toDateString(),
+            'category' => 'Yuran',
+            'status' => 'active',
+        ]);
+        Transaction::create([
+            'type' => 'expense',
+            'amount' => 10,
+            'description' => 'Expense reversed',
+            'receipt_number' => 'PB-REV-OUT',
+            'transaction_date' => now()->toDateString(),
+            'category' => 'Operasi',
+            'status' => 'reversed',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('RM 25.00');
     }
 
     public function test_role_dashboard_shows_relevant_pending_actions(): void
@@ -748,6 +811,49 @@ class PoliBestFeatureTest extends TestCase
         $this->assertDatabaseHas('activity_registrations', ['user_id' => $user->id, 'activity_id' => $activity->id, 'status' => 'registered']);
     }
 
+    public function test_only_members_who_attended_can_submit_one_activity_feedback(): void
+    {
+        $member = User::factory()->create();
+        $activity = Activity::create([
+            'title' => 'Aktiviti Feedback',
+            'date_time' => now()->subDay(),
+            'location' => 'Dewan',
+            'status' => 'approved',
+            'qr_code_token' => Str::uuid()->toString(),
+        ]);
+
+        $this->actingAs($member)->post(route('feedback.store'), [
+            'activity_id' => $activity->id,
+            'rating' => 5,
+            'content' => 'Aktiviti sangat baik.',
+        ])->assertSessionHasErrors([
+            'activity_id' => 'Anda hanya boleh memberi maklum balas selepas hadir ke aktiviti tersebut.',
+        ]);
+
+        Attendance::create([
+            'user_id' => $member->id,
+            'activity_id' => $activity->id,
+            'scanned_at' => now()->subDay(),
+            'qr_code_token' => $activity->qr_code_token,
+        ]);
+
+        $this->actingAs($member)->post(route('feedback.store'), [
+            'activity_id' => $activity->id,
+            'rating' => 5,
+            'content' => 'Aktiviti sangat baik.',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->actingAs($member)->post(route('feedback.store'), [
+            'activity_id' => $activity->id,
+            'rating' => 4,
+            'content' => 'Maklum balas kedua.',
+        ])->assertSessionHasErrors([
+            'activity_id' => 'Anda sudah menghantar maklum balas untuk aktiviti ini.',
+        ]);
+
+        $this->assertDatabaseCount('feedbacks', 1);
+    }
+
     public function test_admin_can_create_and_update_activity_with_evidence_photo(): void
     {
         Storage::fake('public');
@@ -802,6 +908,33 @@ class PoliBestFeatureTest extends TestCase
             'registration_closes_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
         ])->assertSessionHasErrors([
             'registration_closes_at' => 'Registration Closes mesti sama atau selepas Registration Opens.',
+        ]);
+    }
+
+    public function test_activity_windows_must_surround_the_activity_time(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $activityTime = now()->addWeek();
+
+        $this->actingAs($admin)->post(route('activities.store'), [
+            'title' => 'Program Window',
+            'date_time' => $activityTime->format('Y-m-d H:i:s'),
+            'location' => 'Dewan',
+            'status' => 'pending_approval',
+            'registration_closes_at' => $activityTime->copy()->addHour()->format('Y-m-d H:i:s'),
+        ])->assertSessionHasErrors([
+            'registration_closes_at' => 'Registration Closes mesti pada atau sebelum tarikh aktiviti.',
+        ]);
+
+        $this->actingAs($admin)->post(route('activities.store'), [
+            'title' => 'Program Attendance Window',
+            'date_time' => $activityTime->format('Y-m-d H:i:s'),
+            'location' => 'Dewan',
+            'status' => 'pending_approval',
+            'attendance_opens_at' => $activityTime->copy()->addHour()->format('Y-m-d H:i:s'),
+            'attendance_closes_at' => $activityTime->copy()->addHours(2)->format('Y-m-d H:i:s'),
+        ])->assertSessionHasErrors([
+            'attendance_opens_at' => 'Attendance Opens mesti pada atau sebelum tarikh aktiviti.',
         ]);
     }
 
@@ -897,6 +1030,61 @@ class PoliBestFeatureTest extends TestCase
         $this->assertSame('30.00', $member->fresh()->fee_balance);
     }
 
+    public function test_editing_fee_transaction_adjusts_only_the_difference(): void
+    {
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $member = User::factory()->create(['fee_balance' => 50]);
+
+        $this->actingAs($treasurer)->post('/transactions', [
+            'user_id' => $member->id,
+            'type' => 'income',
+            'amount' => 20,
+            'description' => 'Bayaran yuran bulanan',
+            'transaction_date' => now()->toDateString(),
+            'category' => 'Yuran',
+            'payment_method' => 'Tunai',
+        ])->assertRedirect();
+
+        $transaction = Transaction::firstOrFail();
+
+        $this->actingAs($treasurer)->put(route('transactions.update', $transaction), [
+            'user_id' => $member->id,
+            'type' => 'income',
+            'amount' => 30,
+            'description' => 'Bayaran yuran dikemas kini',
+            'transaction_date' => now()->toDateString(),
+            'category' => 'Yuran',
+            'payment_method' => 'Tunai',
+        ])->assertRedirect();
+
+        $this->assertSame('20.00', $member->fresh()->fee_balance);
+    }
+
+    public function test_reversing_fee_transaction_restores_the_reduced_balance(): void
+    {
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $member = User::factory()->create(['fee_balance' => 50]);
+
+        $this->actingAs($treasurer)->post('/transactions', [
+            'user_id' => $member->id,
+            'type' => 'income',
+            'amount' => 20,
+            'description' => 'Bayaran yuran bulanan',
+            'transaction_date' => now()->toDateString(),
+            'category' => 'Yuran',
+            'payment_method' => 'Tunai',
+        ])->assertRedirect();
+
+        $transaction = Transaction::firstOrFail();
+
+        $this->actingAs($treasurer)->delete(route('transactions.destroy', $transaction), [
+            'reversal_reason' => 'Pembetulan rekod',
+        ])->assertRedirect();
+
+        $this->assertSame('50.00', $member->fresh()->fee_balance);
+        $this->assertSame('reversed', $transaction->fresh()->status);
+    }
+
     public function test_member_cannot_access_financial_module(): void
     {
         $this->actingAs(User::factory()->create())->get('/transactions')->assertForbidden();
@@ -904,7 +1092,7 @@ class PoliBestFeatureTest extends TestCase
 
     public function test_member_can_submit_payment_proof(): void
     {
-        Storage::fake('public');
+        Storage::fake('private');
         $user = User::factory()->create(['fee_balance' => 20]);
 
         $this->actingAs($user)->post('/payments', [
@@ -917,7 +1105,7 @@ class PoliBestFeatureTest extends TestCase
 
         $payment = PaymentSubmission::first();
         $this->assertNotNull($payment);
-        Storage::disk('public')->assertExists($payment->proof_path);
+        Storage::disk('private')->assertExists($payment->proof_path);
         $this->assertSame('pending', $payment->status);
     }
 
@@ -939,10 +1127,10 @@ class PoliBestFeatureTest extends TestCase
 
     public function test_member_can_resubmit_rejected_payment_proof(): void
     {
-        Storage::fake('public');
+        Storage::fake('private');
         $user = User::factory()->create(['fee_balance' => 20]);
         $oldProof = UploadedFile::fake()->create('old-proof.pdf', 120, 'application/pdf');
-        $oldPath = $oldProof->store('payment-proofs', 'public');
+        $oldPath = $oldProof->store('payment-proofs', 'private');
         $payment = PaymentSubmission::create([
             'user_id' => $user->id,
             'amount' => 20,
@@ -965,8 +1153,8 @@ class PoliBestFeatureTest extends TestCase
         $this->assertSame('pending', $payment->status);
         $this->assertNull($payment->review_notes);
         $this->assertNotSame($oldPath, $payment->proof_path);
-        Storage::disk('public')->assertMissing($oldPath);
-        Storage::disk('public')->assertExists($payment->proof_path);
+        Storage::disk('private')->assertMissing($oldPath);
+        Storage::disk('private')->assertExists($payment->proof_path);
     }
 
     public function test_member_can_cancel_pending_payment_without_deleting_history(): void
@@ -1165,11 +1353,36 @@ class PoliBestFeatureTest extends TestCase
         ]);
     }
 
+    public function test_payment_and_claim_dates_cannot_be_in_the_future(): void
+    {
+        $user = User::factory()->create();
+        $future = now()->addDay()->toDateString();
+
+        $this->actingAs($user)->post(route('payments.store'), [
+            'amount' => 20,
+            'payment_method' => 'Online Transfer',
+            'payment_date' => $future,
+            'proof' => UploadedFile::fake()->create('proof.pdf', 120, 'application/pdf'),
+        ])->assertSessionHasErrors([
+            'payment_date' => 'Tarikh bayaran tidak boleh melebihi hari ini.',
+        ]);
+
+        $this->actingAs($user)->post(route('claims.store'), [
+            'title' => 'Tuntutan masa hadapan',
+            'amount' => 20,
+            'category' => 'Makanan',
+            'claim_date' => $future,
+            'receipt' => UploadedFile::fake()->create('receipt.pdf', 120, 'application/pdf'),
+        ])->assertSessionHasErrors([
+            'claim_date' => 'Tarikh tuntutan tidak boleh melebihi hari ini.',
+        ]);
+    }
+
     public function test_member_can_edit_pending_claim_and_replace_receipt(): void
     {
-        Storage::fake('public');
+        Storage::fake('private');
         $user = User::factory()->create();
-        $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'public');
+        $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'private');
         $claim = ExpenseClaim::create([
             'user_id' => $user->id,
             'title' => 'Tuntutan lama',
@@ -1193,15 +1406,15 @@ class PoliBestFeatureTest extends TestCase
         $claim = $claim->fresh();
         $this->assertSame('Tuntutan dikemas kini', $claim->title);
         $this->assertNotSame($oldPath, $claim->receipt_path);
-        Storage::disk('public')->assertMissing($oldPath);
-        Storage::disk('public')->assertExists($claim->receipt_path);
+        Storage::disk('private')->assertMissing($oldPath);
+        Storage::disk('private')->assertExists($claim->receipt_path);
     }
 
     public function test_rejected_claim_can_be_resubmitted_with_new_receipt(): void
     {
-        Storage::fake('public');
+        Storage::fake('private');
         $user = User::factory()->create();
-        $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'public');
+        $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'private');
         $claim = ExpenseClaim::create([
             'user_id' => $user->id,
             'title' => 'Tuntutan ditolak',
@@ -1225,8 +1438,8 @@ class PoliBestFeatureTest extends TestCase
         $claim = $claim->fresh();
         $this->assertSame('pending', $claim->status);
         $this->assertNull($claim->review_notes);
-        Storage::disk('public')->assertMissing($oldPath);
-        Storage::disk('public')->assertExists($claim->receipt_path);
+        Storage::disk('private')->assertMissing($oldPath);
+        Storage::disk('private')->assertExists($claim->receipt_path);
     }
 
     public function test_member_can_delete_pending_claim_but_not_approved_claim(): void
@@ -1583,6 +1796,7 @@ class PoliBestFeatureTest extends TestCase
     public function test_admin_can_download_full_system_backup(): void
     {
         Storage::fake('public');
+        Storage::fake('private');
         Storage::disk('public')->put('profile-photos/member.jpg', 'fake-image-content');
 
         $admin = User::factory()->create(['role' => 'admin']);
@@ -1611,6 +1825,7 @@ class PoliBestFeatureTest extends TestCase
     {
         Storage::fake('local');
         Storage::fake('public');
+        Storage::fake('private');
         Storage::disk('public')->put('profile-photos/member.jpg', 'verified-image-content');
 
         $admin = User::factory()->create(['role' => 'admin']);
@@ -1645,6 +1860,7 @@ class PoliBestFeatureTest extends TestCase
     {
         Storage::fake('local');
         Storage::fake('public');
+        Storage::fake('private');
         Storage::disk('public')->put('documents/original.txt', 'original-file');
 
         $admin = User::factory()->create(['role' => 'admin']);

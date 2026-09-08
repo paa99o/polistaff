@@ -62,7 +62,7 @@
         </div>
         @if(! empty($activity?->evidence_photo_path))
             <div class="mt-3">
-                <img class="activity-evidence-preview" src="{{ Storage::url($activity->evidence_photo_path) }}" alt="Foto bukti aktiviti semasa">
+                <img class="activity-evidence-preview" src="{{ Storage::disk('public')->url($activity->evidence_photo_path) }}" alt="Foto bukti aktiviti semasa">
             </div>
         @endif
     </div>

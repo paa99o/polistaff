@@ -22,7 +22,7 @@
             <div class="profile-hero-main">
                 <div class="profile-photo-frame">
                     @if($user->profile_photo_path)
-                        <img src="{{ Storage::url($user->profile_photo_path) }}" alt="Gambar profil {{ $user->name }}">
+                        <img src="{{ Storage::disk('public')->url($user->profile_photo_path) }}" alt="Gambar profil {{ $user->name }}">
                     @else
                         <span>{{ $initials ?: 'PS' }}</span>
                     @endif
@@ -59,7 +59,7 @@
             <div class="member-card-profile">
                 <div class="member-card-photo">
                     @if($user->profile_photo_path)
-                        <img src="{{ Storage::url($user->profile_photo_path) }}" alt="Gambar profil {{ $user->name }}">
+                        <img src="{{ Storage::disk('public')->url($user->profile_photo_path) }}" alt="Gambar profil {{ $user->name }}">
                     @else
                         <span>{{ $initials ?: 'PS' }}</span>
                     @endif

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\EnsureActiveMembership;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureSystemIsAvailable;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             EnsureSystemIsAvailable::class,
             EnsureEmailIsVerified::class,
+            EnsureActiveMembership::class,
         ]);
 
         $middleware->alias([

@@ -45,7 +45,7 @@ class TransactionController extends Controller
         Gate::authorize('manage-finances');
 
         $transaction = Transaction::create([...$request->validated(), 'receipt_number' => $this->receiptNumber(), 'status' => 'active']);
-        $this->syncFeeBalance($transaction);
+        $this->syncFeeBalance(null, $transaction);
 
         AuditLog::create([
             'user_id' => $request->user()->id,
@@ -94,9 +94,10 @@ class TransactionController extends Controller
     {
         Gate::authorize('manage-finances');
 
-        $before = $transaction->only(['type', 'amount', 'description', 'transaction_date', 'category', 'payment_method']);
+        $before = $transaction->replicate();
+        $beforeAttributes = $transaction->only(['type', 'amount', 'description', 'transaction_date', 'category', 'payment_method']);
         $transaction->update($request->validated());
-        $this->syncFeeBalance($transaction);
+        $this->syncFeeBalance($before, $transaction->fresh());
 
         AuditLog::create([
             'user_id' => $request->user()->id,
@@ -105,7 +106,7 @@ class TransactionController extends Controller
             'record_type' => Transaction::class,
             'record_id' => $transaction->id,
             'description' => 'Updated transaction '.$transaction->receipt_number.'.',
-            'changes' => ['before' => $before, 'after' => $transaction->only(['type', 'amount', 'description', 'transaction_date', 'category', 'payment_method'])],
+            'changes' => ['before' => $beforeAttributes, 'after' => $transaction->only(['type', 'amount', 'description', 'transaction_date', 'category', 'payment_method'])],
             'ip_address' => $request->ip(),
         ]);
 
@@ -118,7 +119,9 @@ class TransactionController extends Controller
         abort_unless($transaction->status === 'active', 422, 'Transaksi ini sudah dibatalkan.');
 
         $reason = request()->input('reversal_reason', 'Manual reversal');
+        $before = $transaction->replicate();
         $transaction->update(['status' => 'reversed', 'reversed_by' => auth()->id(), 'reversed_at' => now(), 'reversal_reason' => $reason]);
+        $this->syncFeeBalance($before, $transaction->fresh());
 
         AuditLog::create([
             'user_id' => auth()->id(),
@@ -145,10 +148,34 @@ class TransactionController extends Controller
         return $receipt;
     }
 
-    private function syncFeeBalance(Transaction $transaction): void
+    private function syncFeeBalance(?Transaction $before, Transaction $after): void
     {
-        if ($transaction->type === 'income' && $transaction->user_id && str_contains(strtolower($transaction->category), 'yuran')) {
-            $transaction->user()->update(['fee_balance' => max(0, (float) $transaction->user->fee_balance - (float) $transaction->amount)]);
+        $beforeReduction = $this->feeReduction($before);
+        $afterReduction = $this->feeReduction($after);
+
+        if ($beforeReduction > 0 && $before?->user_id) {
+            User::whereKey($before->user_id)->increment('fee_balance', $beforeReduction);
         }
+
+        if ($afterReduction > 0 && $after->user_id) {
+            $user = User::find($after->user_id);
+            if ($user) {
+                $user->fee_balance = max(0, (float) $user->fee_balance - $afterReduction);
+                $user->save();
+            }
+        }
+    }
+
+    private function feeReduction(?Transaction $transaction): float
+    {
+        if (! $transaction
+            || $transaction->status !== 'active'
+            || $transaction->type !== 'income'
+            || ! $transaction->user_id
+            || ! str_contains(strtolower((string) $transaction->category), 'yuran')) {
+            return 0;
+        }
+
+        return (float) $transaction->amount;
     }
 }

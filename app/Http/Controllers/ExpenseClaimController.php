@@ -51,7 +51,7 @@ class ExpenseClaimController extends Controller
         $claim = ExpenseClaim::create([
             ...collect($data)->except('receipt')->all(),
             'user_id' => $request->user()->id,
-            'receipt_path' => $request->file('receipt')->store('expense-claims', 'public'),
+            'receipt_path' => $request->file('receipt')->store('expense-claims', 'private'),
             'status' => 'pending',
         ]);
 
@@ -74,7 +74,7 @@ class ExpenseClaimController extends Controller
 
         $oldReceiptPath = $claim->receipt_path;
         $newReceiptPath = $request->hasFile('receipt')
-            ? $request->file('receipt')->store('expense-claims', 'public')
+            ? $request->file('receipt')->store('expense-claims', 'private')
             : $oldReceiptPath;
 
         $claim->update([
@@ -83,7 +83,7 @@ class ExpenseClaimController extends Controller
         ]);
 
         if ($newReceiptPath !== $oldReceiptPath) {
-            Storage::disk('public')->delete($oldReceiptPath);
+            Storage::disk('private')->delete($oldReceiptPath);
         }
 
         $this->auditClaimAction($claim, 'updated', 'Updated pending expense claim.', $request);
@@ -95,7 +95,7 @@ class ExpenseClaimController extends Controller
     {
         $this->authorizeOwnerAction($claim, 'pending');
 
-        Storage::disk('public')->delete($claim->receipt_path);
+        Storage::disk('private')->delete($claim->receipt_path);
         $this->auditClaimAction($claim, 'cancelled', 'Cancelled pending expense claim.', $request);
         $claim->delete();
 
@@ -114,7 +114,7 @@ class ExpenseClaimController extends Controller
         $this->authorizeOwnerAction($claim, 'rejected');
         $data = $this->validateClaim($request, true);
         $oldReceiptPath = $claim->receipt_path;
-        $newReceiptPath = $request->file('receipt')->store('expense-claims', 'public');
+        $newReceiptPath = $request->file('receipt')->store('expense-claims', 'private');
 
         $claim->update([
             ...collect($data)->except('receipt')->all(),
@@ -129,7 +129,7 @@ class ExpenseClaimController extends Controller
             'reviewed_at' => null,
         ]);
 
-        Storage::disk('public')->delete($oldReceiptPath);
+        Storage::disk('private')->delete($oldReceiptPath);
         $this->auditClaimAction($claim, 'resubmitted', 'Resubmitted rejected expense claim for review.', $request);
 
         return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan berjaya dihantar semula untuk semakan.');
@@ -218,9 +218,9 @@ class ExpenseClaimController extends Controller
     public function receipt(ExpenseClaim $claim)
     {
         $this->authorizeClaimAccess($claim);
-        abort_unless(Storage::disk('public')->exists($claim->receipt_path), 404);
+        abort_unless(Storage::disk('private')->exists($claim->receipt_path), 404);
 
-        return Storage::disk('public')->response($claim->receipt_path);
+        return Storage::disk('private')->response($claim->receipt_path);
     }
 
     private function authorizeClaimAccess(ExpenseClaim $claim): void
@@ -241,7 +241,7 @@ class ExpenseClaimController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'category' => ['required', 'string', 'max:120'],
-            'claim_date' => ['required', 'date'],
+            'claim_date' => ['required', 'date', 'before_or_equal:today'],
             'receipt' => [$receiptRequired ? 'required' : 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
         ], [
             'title.required' => 'Sila isi tajuk tuntutan.',
@@ -249,6 +249,7 @@ class ExpenseClaimController extends Controller
             'amount.min' => 'Jumlah tuntutan mesti sekurang-kurangnya RM 0.01.',
             'category.required' => 'Sila isi kategori tuntutan.',
             'claim_date.required' => 'Sila pilih tarikh tuntutan.',
+            'claim_date.before_or_equal' => 'Tarikh tuntutan tidak boleh melebihi hari ini.',
             'receipt.required' => 'Sila upload resit tuntutan.',
             'receipt.mimes' => 'Resit tuntutan mesti dalam format JPG, PNG atau PDF.',
             'receipt.max' => 'Resit tuntutan tidak boleh melebihi 4MB.',

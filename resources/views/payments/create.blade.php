@@ -26,7 +26,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="payment_date">Tarikh Bayaran</label>
-                            <input class="form-control @error('payment_date') is-invalid @enderror" id="payment_date" type="date" name="payment_date" value="{{ old('payment_date', now()->toDateString()) }}" required>
+                            <input class="form-control @error('payment_date') is-invalid @enderror" id="payment_date" type="date" name="payment_date" value="{{ old('payment_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required>
                             @include('partials.errors', ['name' => 'payment_date'])
                         </div>
                         <div class="col-12">

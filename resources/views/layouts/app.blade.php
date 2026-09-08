@@ -175,7 +175,7 @@
                         <button class="profile-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="profile-avatar">
                                 @if(auth()->user()->profile_photo_path)
-                                    <img src="{{ Storage::url(auth()->user()->profile_photo_path) }}" alt="Gambar profil {{ auth()->user()->name }}">
+                                    <img src="{{ Storage::disk('public')->url(auth()->user()->profile_photo_path) }}" alt="Gambar profil {{ auth()->user()->name }}">
                                 @else
                                     {{ $userInitials ?: 'PS' }}
                                 @endif

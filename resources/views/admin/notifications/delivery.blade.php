@@ -24,8 +24,8 @@
                     <td data-label="Tarikh">{{ $delivery->sent_at?->format('d/m/Y H:i') ?? $delivery->created_at->format('d/m/Y H:i') }}</td>
                     <td data-label="Error">
                         <span class="small text-danger">{{ $delivery->error ?: '-' }}</span>
-                        @if($delivery->status === 'failed' && $delivery->notification)
-                            <form method="post" action="{{ route('admin.notifications.retry', $delivery->notification) }}" class="mt-2">
+                        @if($delivery->status === 'failed')
+                            <form method="post" action="{{ $delivery->notification ? route('admin.notifications.retry', $delivery->notification) : route('admin.email-deliveries.retry', $delivery) }}" class="mt-2">
                                 @csrf
                                 <button class="btn btn-sm btn-outline-danger" type="submit">Cuba Semula</button>
                             </form>

@@ -6,6 +6,10 @@
     <p>Lengkapkan maklumat ini jika anda berminat menjadi ahli kelab staf. Permohonan akan disemak oleh pentadbir.</p>
 </div>
 
+@if(session('status'))
+    <div class="alert alert-info" role="alert">{{ session('status') }}</div>
+@endif
+
 @if($user->membership_review_notes)
     <div class="alert alert-danger" role="alert">
         <strong>Permohonan sebelum ini ditolak.</strong>

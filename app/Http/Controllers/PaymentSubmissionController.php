@@ -60,7 +60,7 @@ class PaymentSubmissionController extends Controller
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['required', 'string', 'max:120'],
-            'payment_date' => ['required', 'date'],
+            'payment_date' => ['required', 'date', 'before_or_equal:today'],
             'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
@@ -68,12 +68,13 @@ class PaymentSubmissionController extends Controller
             'amount.min' => 'Jumlah bayaran mesti sekurang-kurangnya RM 0.01.',
             'payment_method.required' => 'Sila pilih kaedah bayaran.',
             'payment_date.required' => 'Sila pilih tarikh bayaran.',
+            'payment_date.before_or_equal' => 'Tarikh bayaran tidak boleh melebihi hari ini.',
             'proof.required' => 'Sila upload fail bukti bayaran.',
             'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
 
-        $path = $request->file('proof')->store('payment-proofs', 'public');
+        $path = $request->file('proof')->store('payment-proofs', 'private');
 
         $payment = PaymentSubmission::create([
             'user_id' => $request->user()->id,
@@ -117,7 +118,7 @@ class PaymentSubmissionController extends Controller
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['required', 'string', 'max:120'],
-            'payment_date' => ['required', 'date'],
+            'payment_date' => ['required', 'date', 'before_or_equal:today'],
             'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
@@ -125,13 +126,14 @@ class PaymentSubmissionController extends Controller
             'amount.min' => 'Jumlah bayaran mesti sekurang-kurangnya RM 0.01.',
             'payment_method.required' => 'Sila pilih kaedah bayaran.',
             'payment_date.required' => 'Sila pilih tarikh bayaran.',
+            'payment_date.before_or_equal' => 'Tarikh bayaran tidak boleh melebihi hari ini.',
             'proof.required' => 'Sila upload fail bukti bayaran baharu.',
             'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
 
         $oldProofPath = $payment->proof_path;
-        $newProofPath = $request->file('proof')->store('payment-proofs', 'public');
+        $newProofPath = $request->file('proof')->store('payment-proofs', 'private');
 
         $payment->update([
             ...collect($data)->except('proof')->all(),
@@ -144,7 +146,7 @@ class PaymentSubmissionController extends Controller
             'allocated_amount' => 0,
         ]);
 
-        Storage::disk('public')->delete($oldProofPath);
+        Storage::disk('private')->delete($oldProofPath);
 
         $this->auditPaymentAction($payment, 'resubmitted', 'Resubmitted rejected payment proof for review.', $request);
 
@@ -269,9 +271,9 @@ class PaymentSubmissionController extends Controller
     {
         $this->authorizePaymentAccess($payment);
 
-        abort_unless(Storage::disk('public')->exists($payment->proof_path), 404);
+        abort_unless(Storage::disk('private')->exists($payment->proof_path), 404);
 
-        return Storage::disk('public')->response($payment->proof_path);
+        return Storage::disk('private')->response($payment->proof_path);
     }
 
     private function authorizePaymentAccess(PaymentSubmission $payment): void

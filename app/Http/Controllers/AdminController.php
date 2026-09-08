@@ -49,7 +49,8 @@ class AdminController extends Controller
             'outstandingFees' => User::where('membership_status', 'active')->sum('fee_balance'),
             'upcomingActivities' => Activity::where('status', 'approved')->where('date_time', '>=', now())->orderBy('date_time')->limit(4)->get(),
             'recentAuditLogs' => AuditLog::with('user')->latest()->limit(6)->get(),
-            'netBalance' => Transaction::where('type', 'income')->sum('amount') - Transaction::where('type', 'expense')->sum('amount'),
+            'netBalance' => Transaction::where('status', 'active')->where('type', 'income')->sum('amount')
+                - Transaction::where('status', 'active')->where('type', 'expense')->sum('amount'),
             'queuedJobs' => DB::table('jobs')->count(),
             'failedJobs' => DB::table('failed_jobs')->count(),
         ]);

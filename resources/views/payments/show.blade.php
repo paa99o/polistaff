@@ -42,7 +42,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label" for="resubmit-date">Tarikh</label>
-                                <input class="form-control" id="resubmit-date" type="date" name="payment_date" value="{{ old('payment_date', $payment->payment_date?->format('Y-m-d')) }}" required>
+                                <input class="form-control" id="resubmit-date" type="date" name="payment_date" value="{{ old('payment_date', $payment->payment_date?->format('Y-m-d')) }}" max="{{ now()->toDateString() }}" required>
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="resubmit-proof">Bukti Baharu</label>
