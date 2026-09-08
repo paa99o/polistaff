@@ -39,5 +39,5 @@
         </table>
     </div>
 </div>
-<div class="mt-3">{{ $notifications->links() }}</div>
+<div class="mt-3">{{ $deliveries->links() }}</div>
 @endsection
