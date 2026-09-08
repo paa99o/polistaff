@@ -85,6 +85,22 @@ class NotificationController extends Controller
     {
         $record = $delivery->record;
 
+        // Deliveries created before record tracking was added can still be retried
+        // by resolving the latest matching finance record for the recipient.
+        if (! $record && $delivery->mailable === PaymentApprovedMail::class) {
+            $record = PaymentSubmission::where('user_id', $delivery->user_id)
+                ->where('status', 'approved')
+                ->latest('id')
+                ->first();
+        }
+
+        if (! $record && $delivery->mailable === PaymentRejectedMail::class) {
+            $record = PaymentSubmission::where('user_id', $delivery->user_id)
+                ->where('status', 'rejected')
+                ->latest('id')
+                ->first();
+        }
+
         return match ($delivery->mailable) {
             PaymentApprovedMail::class => $record instanceof PaymentSubmission ? new PaymentApprovedMail($record->load('transaction')) : null,
             PaymentRejectedMail::class => $record instanceof PaymentSubmission ? new PaymentRejectedMail($record) : null,
