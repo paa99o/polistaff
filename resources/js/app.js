@@ -11,6 +11,24 @@ const updateThemeControls = (preference) => {
     });
 };
 
+const applyAccessibilityPreferences = () => {
+    const textSize = document.querySelector('input[name="text_size_preference"]:checked')?.value;
+    const reduceMotionInput = document.querySelector('input[type="checkbox"][name="reduce_motion"]');
+
+    if (textSize) {
+        root.dataset.textSize = textSize;
+    }
+
+    if (reduceMotionInput) {
+        root.dataset.reduceMotion = reduceMotionInput.checked ? 'true' : 'false';
+
+        if (reduceMotionInput.checked) {
+            document.documentElement.classList.remove('motion-ready');
+            revealItems.forEach((item) => item.classList.add('is-visible'));
+        }
+    }
+};
+
 const applyThemePreference = (preference) => {
     root.dataset.themePreference = preference;
     root.dataset.theme = preference;
@@ -89,6 +107,16 @@ document.querySelectorAll('input[name="theme_preference"]').forEach((input) => {
         }
     });
 });
+
+document.querySelectorAll('input[name="text_size_preference"]').forEach((input) => {
+    input.addEventListener('change', applyAccessibilityPreferences);
+});
+
+document.querySelectorAll('input[name="reduce_motion"]').forEach((input) => {
+    input.addEventListener('change', applyAccessibilityPreferences);
+});
+
+applyAccessibilityPreferences();
 
 document.addEventListener('submit', (event) => {
     const form = event.target.closest('form[data-confirm]');

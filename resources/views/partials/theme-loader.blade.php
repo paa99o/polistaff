@@ -1,17 +1,19 @@
 <script>
     (() => {
         const root = document.documentElement;
-        const authenticated = root.dataset.authenticated === 'true';
         let preference = root.dataset.themePreference || 'light';
 
         try {
-            if (authenticated) {
-                localStorage.setItem('polistaff-theme-preference', preference);
-            } else {
-                preference = localStorage.getItem('polistaff-theme-preference') || 'light';
-                preference = ['light', 'dark'].includes(preference) ? preference : 'light';
-                root.dataset.themePreference = preference;
+            // Keep the visual theme stable while moving between public/authenticated
+            // pages. The server preference remains the fallback for a new browser.
+            const storedPreference = localStorage.getItem('polistaff-theme-preference');
+
+            if (['light', 'dark'].includes(storedPreference)) {
+                preference = storedPreference;
             }
+
+            localStorage.setItem('polistaff-theme-preference', preference);
+            root.dataset.themePreference = preference;
         } catch (error) {
             // Browser privacy settings may disable local storage.
         }
