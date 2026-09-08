@@ -7,6 +7,7 @@
         'treasurer_verified' => 'Disahkan bendahari',
         'approved' => 'Diluluskan',
         'rejected' => 'Ditolak',
+        'cancelled' => 'Dibatalkan',
     ];
 @endphp
 

@@ -124,6 +124,9 @@
                                 <a class="mega-menu-link {{ request()->routeIs('admin.feedback.*') ? 'active' : '' }}" href="{{ route('admin.feedback.index') }}">
                                     <i class="bi bi-inbox" aria-hidden="true"></i><span>Senarai Maklum Balas</span>
                                 </a>
+                                <a class="mega-menu-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.delivery') }}">
+                                    <i class="bi bi-envelope-check" aria-hidden="true"></i><span>Status Email</span>
+                                </a>
                                 <a class="mega-menu-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.edit') }}">
                                     <i class="bi bi-gear" aria-hidden="true"></i><span>Tetapan Sistem</span>
                                 </a>

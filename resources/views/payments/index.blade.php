@@ -2,8 +2,8 @@
 
 @section('content')
 @php
-    $statusLabels = ['pending' => 'Menunggu', 'approved' => 'Diluluskan', 'rejected' => 'Ditolak'];
-    $statusClasses = ['pending' => 'warning', 'approved' => 'success', 'rejected' => 'danger'];
+    $statusLabels = ['pending' => 'Menunggu', 'approved' => 'Diluluskan', 'rejected' => 'Ditolak', 'cancelled' => 'Dibatalkan'];
+    $statusClasses = ['pending' => 'warning', 'approved' => 'success', 'rejected' => 'danger', 'cancelled' => 'secondary'];
 @endphp
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">

@@ -437,6 +437,7 @@ class PoliBestFeatureTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $member->id,
             'membership_status' => 'inactive',
+            'membership_review_notes' => 'Maklumat permohonan tidak lengkap.',
         ]);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $member->id,
@@ -449,6 +450,34 @@ class PoliBestFeatureTest extends TestCase
         ]);
 
         Mail::assertQueued(MembershipRejectedMail::class, fn (MembershipRejectedMail $mail) => $mail->hasTo('newmember@example.test'));
+    }
+
+    public function test_rejected_member_can_view_reason_and_resubmit_application(): void
+    {
+        $user = User::factory()->create([
+            'membership_status' => 'inactive',
+            'membership_review_notes' => 'Sila kemas kini alamat semasa.',
+        ]);
+
+        $this->actingAs($user)->get(route('membership.apply'))
+            ->assertOk()
+            ->assertSee('Sila kemas kini alamat semasa.')
+            ->assertSee('Hantar Semula Permohonan');
+
+        $this->actingAs($user)->post(route('membership.store'), [
+            'name' => $user->name,
+            'ic_number' => '900101111111',
+            'department' => 'JTMK',
+            'phone' => '0111111111',
+            'address' => 'Alamat baharu pemohon',
+        ])->assertRedirect('/dashboard');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'membership_status' => 'pending',
+            'membership_review_notes' => null,
+            'address' => 'Alamat baharu pemohon',
+        ]);
     }
 
     public function test_reject_membership_requires_reason(): void
@@ -908,6 +937,56 @@ class PoliBestFeatureTest extends TestCase
         ]);
     }
 
+    public function test_member_can_resubmit_rejected_payment_proof(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create(['fee_balance' => 20]);
+        $oldProof = UploadedFile::fake()->create('old-proof.pdf', 120, 'application/pdf');
+        $oldPath = $oldProof->store('payment-proofs', 'public');
+        $payment = PaymentSubmission::create([
+            'user_id' => $user->id,
+            'amount' => 20,
+            'payment_method' => 'Online Transfer',
+            'payment_date' => now()->toDateString(),
+            'proof_path' => $oldPath,
+            'status' => 'rejected',
+            'review_notes' => 'Bukti tidak jelas.',
+        ]);
+
+        $this->actingAs($user)->post(route('payments.resubmit', $payment), [
+            'amount' => 20,
+            'payment_method' => 'DuitNow',
+            'payment_date' => now()->toDateString(),
+            'proof' => UploadedFile::fake()->create('new-proof.pdf', 120, 'application/pdf'),
+            'notes' => 'Bukti baharu.',
+        ])->assertRedirect(route('payments.show', $payment));
+
+        $payment = $payment->fresh();
+        $this->assertSame('pending', $payment->status);
+        $this->assertNull($payment->review_notes);
+        $this->assertNotSame($oldPath, $payment->proof_path);
+        Storage::disk('public')->assertMissing($oldPath);
+        Storage::disk('public')->assertExists($payment->proof_path);
+    }
+
+    public function test_member_can_cancel_pending_payment_without_deleting_history(): void
+    {
+        $user = User::factory()->create();
+        $payment = PaymentSubmission::create([
+            'user_id' => $user->id,
+            'amount' => 20,
+            'payment_method' => 'Online Transfer',
+            'payment_date' => now()->toDateString(),
+            'proof_path' => 'payment-proofs/pending.jpg',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user)->delete(route('payments.cancel', $payment))
+            ->assertRedirect('/payments');
+
+        $this->assertDatabaseHas('payment_submissions', ['id' => $payment->id, 'status' => 'cancelled']);
+    }
+
     public function test_staff_can_create_polimart_listing(): void
     {
         Storage::fake('public');
@@ -1084,6 +1163,100 @@ class PoliBestFeatureTest extends TestCase
             'claim_date' => 'Sila pilih tarikh tuntutan.',
             'receipt' => 'Sila upload resit tuntutan.',
         ]);
+    }
+
+    public function test_member_can_edit_pending_claim_and_replace_receipt(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'public');
+        $claim = ExpenseClaim::create([
+            'user_id' => $user->id,
+            'title' => 'Tuntutan lama',
+            'description' => 'Catatan lama',
+            'amount' => 20,
+            'category' => 'Makanan',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => $oldPath,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user)->put(route('claims.update', $claim), [
+            'title' => 'Tuntutan dikemas kini',
+            'description' => 'Catatan baharu',
+            'amount' => 25,
+            'category' => 'Pengangkutan',
+            'claim_date' => now()->toDateString(),
+            'receipt' => UploadedFile::fake()->create('new-receipt.pdf', 120, 'application/pdf'),
+        ])->assertRedirect(route('claims.show', $claim));
+
+        $claim = $claim->fresh();
+        $this->assertSame('Tuntutan dikemas kini', $claim->title);
+        $this->assertNotSame($oldPath, $claim->receipt_path);
+        Storage::disk('public')->assertMissing($oldPath);
+        Storage::disk('public')->assertExists($claim->receipt_path);
+    }
+
+    public function test_rejected_claim_can_be_resubmitted_with_new_receipt(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'public');
+        $claim = ExpenseClaim::create([
+            'user_id' => $user->id,
+            'title' => 'Tuntutan ditolak',
+            'amount' => 20,
+            'category' => 'Makanan',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => $oldPath,
+            'status' => 'rejected',
+            'review_notes' => 'Resit tidak jelas.',
+        ]);
+
+        $this->actingAs($user)->post(route('claims.resubmit', $claim), [
+            'title' => 'Tuntutan ditolak',
+            'description' => 'Resit baharu',
+            'amount' => 20,
+            'category' => 'Makanan',
+            'claim_date' => now()->toDateString(),
+            'receipt' => UploadedFile::fake()->create('new-receipt.pdf', 120, 'application/pdf'),
+        ])->assertRedirect(route('claims.show', $claim));
+
+        $claim = $claim->fresh();
+        $this->assertSame('pending', $claim->status);
+        $this->assertNull($claim->review_notes);
+        Storage::disk('public')->assertMissing($oldPath);
+        Storage::disk('public')->assertExists($claim->receipt_path);
+    }
+
+    public function test_member_can_delete_pending_claim_but_not_approved_claim(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $claim = ExpenseClaim::create([
+            'user_id' => $user->id,
+            'title' => 'Tuntutan pending',
+            'amount' => 20,
+            'category' => 'Makanan',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/pending.pdf',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user)->delete(route('claims.destroy', $claim))->assertRedirect('/claims');
+        $this->assertDatabaseMissing('expense_claims', ['id' => $claim->id]);
+
+        $approved = ExpenseClaim::create([
+            'user_id' => $user->id,
+            'title' => 'Tuntutan approved',
+            'amount' => 20,
+            'category' => 'Makanan',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/approved.pdf',
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($user)->delete(route('claims.destroy', $approved))->assertStatus(422);
     }
 
     public function test_reject_payment_requires_specific_reason_message(): void

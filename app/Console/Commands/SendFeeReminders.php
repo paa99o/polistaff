@@ -6,6 +6,7 @@ use App\Mail\FeeReminderMail;
 use App\Models\PortalNotification;
 use App\Models\User;
 use App\Services\EmailAuditService;
+use App\Services\EmailDeliveryService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -15,11 +16,11 @@ class SendFeeReminders extends Command
 
     protected $description = 'Create in-app reminders for members with outstanding fees.';
 
-    public function handle(EmailAuditService $emailAuditService): int
+    public function handle(EmailAuditService $emailAuditService, EmailDeliveryService $emailDeliveryService): int
     {
         $sent = 0;
 
-        User::where('fee_balance', '>', 0)->where('membership_status', 'active')->each(function (User $user) use ($emailAuditService, &$sent): void {
+        User::where('fee_balance', '>', 0)->where('membership_status', 'active')->each(function (User $user) use ($emailAuditService, $emailDeliveryService, &$sent): void {
             PortalNotification::firstOrCreate([
                 'user_id' => $user->id,
                 'title' => 'Peringatan tunggakan yuran',
@@ -30,7 +31,7 @@ class SendFeeReminders extends Command
             ]);
 
             if ($user->email && $user->wantsEmail('fee_reminders')) {
-                Mail::to($user->email)->send(new FeeReminderMail($user));
+                $emailDeliveryService->send($user, 'fee reminder', new FeeReminderMail($user), $user);
                 $emailAuditService->sent($user, 'fee reminder', $user);
                 $sent++;
             }

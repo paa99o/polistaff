@@ -9,10 +9,12 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use App\Mail\Concerns\TracksEmailDelivery;
 
 class ActivityCancelledMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+    use TracksEmailDelivery;
 
     public int $tries = 3;
 

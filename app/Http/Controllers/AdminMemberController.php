@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\PortalNotification;
 use App\Models\User;
 use App\Services\EmailAuditService;
+use App\Services\EmailDeliveryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -15,7 +16,7 @@ use Illuminate\View\View;
 
 class AdminMemberController extends Controller
 {
-    public function __construct(private EmailAuditService $emailAuditService) {}
+    public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
     public function pending(): View
     {
@@ -26,7 +27,11 @@ class AdminMemberController extends Controller
     {
         abort_unless($user->membership_status === 'pending', 422, 'Permohonan ini sudah disemak.');
 
-        $user->update(['membership_status' => 'active', 'joined_date' => now()->toDateString()]);
+        $user->update([
+            'membership_status' => 'active',
+            'membership_review_notes' => null,
+            'joined_date' => now()->toDateString(),
+        ]);
 
         PortalNotification::create([
             'user_id' => $user->id,
@@ -37,7 +42,7 @@ class AdminMemberController extends Controller
         ]);
 
         if ($user->email) {
-            Mail::to($user->email)->send(new MembershipApprovedMail($user));
+            $this->emailDeliveryService->send($user, 'membership approved', new MembershipApprovedMail($user), $user);
             $this->emailAuditService->sent($user, 'membership approved', $user);
         }
 
@@ -65,7 +70,10 @@ class AdminMemberController extends Controller
             'reason.required' => 'Sila isi sebab permohonan ditolak.',
         ]);
 
-        $user->update(['membership_status' => 'inactive']);
+        $user->update([
+            'membership_status' => 'inactive',
+            'membership_review_notes' => $data['reason'],
+        ]);
 
         PortalNotification::create([
             'user_id' => $user->id,
@@ -76,7 +84,7 @@ class AdminMemberController extends Controller
         ]);
 
         if ($user->email) {
-            Mail::to($user->email)->send(new MembershipRejectedMail($user, $data['reason']));
+            $this->emailDeliveryService->send($user, 'membership rejected', new MembershipRejectedMail($user, $data['reason']), $user);
             $this->emailAuditService->sent($user, 'membership rejected', $user);
         }
 

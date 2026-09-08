@@ -11,6 +11,7 @@ use App\Models\PortalNotification;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
 use App\Services\EmailAuditService;
+use App\Services\EmailDeliveryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ use Illuminate\View\View;
 
 class PaymentSubmissionController extends Controller
 {
-    public function __construct(private EmailAuditService $emailAuditService) {}
+    public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
     public function index(Request $request): View
     {
@@ -108,6 +109,59 @@ class PaymentSubmissionController extends Controller
         ]);
     }
 
+    public function resubmit(Request $request, PaymentSubmission $payment): RedirectResponse
+    {
+        abort_unless($payment->user_id === $request->user()->id, 403);
+        abort_unless($payment->status === 'rejected', 422, 'Hanya bayaran yang ditolak boleh dihantar semula.');
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'payment_method' => ['required', 'string', 'max:120'],
+            'payment_date' => ['required', 'date'],
+            'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'amount.required' => 'Sila isi jumlah bayaran.',
+            'amount.min' => 'Jumlah bayaran mesti sekurang-kurangnya RM 0.01.',
+            'payment_method.required' => 'Sila pilih kaedah bayaran.',
+            'payment_date.required' => 'Sila pilih tarikh bayaran.',
+            'proof.required' => 'Sila upload fail bukti bayaran baharu.',
+            'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
+            'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
+        ]);
+
+        $oldProofPath = $payment->proof_path;
+        $newProofPath = $request->file('proof')->store('payment-proofs', 'public');
+
+        $payment->update([
+            ...collect($data)->except('proof')->all(),
+            'proof_path' => $newProofPath,
+            'status' => 'pending',
+            'reviewed_by' => null,
+            'review_notes' => null,
+            'reviewed_at' => null,
+            'transaction_id' => null,
+            'allocated_amount' => 0,
+        ]);
+
+        Storage::disk('public')->delete($oldProofPath);
+
+        $this->auditPaymentAction($payment, 'resubmitted', 'Resubmitted rejected payment proof for review.', $request);
+
+        return redirect()->route('payments.show', $payment)->with('status', 'Bukti bayaran baharu berjaya dihantar dan menunggu semakan.');
+    }
+
+    public function cancel(Request $request, PaymentSubmission $payment): RedirectResponse
+    {
+        abort_unless($payment->user_id === $request->user()->id, 403);
+        abort_unless($payment->status === 'pending', 422, 'Hanya bayaran yang masih menunggu semakan boleh dibatalkan.');
+
+        $payment->update(['status' => 'cancelled']);
+        $this->auditPaymentAction($payment, 'cancelled', 'Cancelled pending payment proof.', $request);
+
+        return redirect()->route('payments.index')->with('status', 'Penghantaran bukti bayaran telah dibatalkan.');
+    }
+
     public function approve(Request $request, PaymentSubmission $payment): RedirectResponse
     {
         Gate::authorize('manage-finances');
@@ -153,7 +207,7 @@ class PaymentSubmissionController extends Controller
         $payment->loadMissing('user', 'transaction');
 
         if ($payment->user->email && $payment->user->wantsEmail('finance')) {
-            Mail::to($payment->user->email)->send(new PaymentApprovedMail($payment));
+            $this->emailDeliveryService->send($payment->user, 'payment approved', new PaymentApprovedMail($payment), $payment);
             $this->emailAuditService->sent($payment->user, 'payment approved', $payment);
         }
 
@@ -193,7 +247,7 @@ class PaymentSubmissionController extends Controller
         $payment->loadMissing('user');
 
         if ($payment->user->email && $payment->user->wantsEmail('finance')) {
-            Mail::to($payment->user->email)->send(new PaymentRejectedMail($payment));
+            $this->emailDeliveryService->send($payment->user, 'payment rejected', new PaymentRejectedMail($payment), $payment);
             $this->emailAuditService->sent($payment->user, 'payment rejected', $payment);
         }
 
@@ -277,5 +331,19 @@ class PaymentSubmissionController extends Controller
             ->where('record_id', $payment->id)
             ->oldest()
             ->get();
+    }
+
+    private function auditPaymentAction(PaymentSubmission $payment, string $action, string $description, Request $request): void
+    {
+        \App\Models\AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action' => $action,
+            'module' => 'Payment Proof',
+            'record_type' => PaymentSubmission::class,
+            'record_id' => $payment->id,
+            'description' => $description,
+            'changes' => ['status' => $payment->status],
+            'ip_address' => $request->ip(),
+        ]);
     }
 }

@@ -2,9 +2,17 @@
 
 @section('content')
 <div class="page-intro">
-    <h1>Permohonan ahli kelab staf</h1>
+    <h1>{{ $user->membership_review_notes ? 'Hantar Semula Permohonan' : 'Permohonan ahli kelab staf' }}</h1>
     <p>Lengkapkan maklumat ini jika anda berminat menjadi ahli kelab staf. Permohonan akan disemak oleh pentadbir.</p>
 </div>
+
+@if($user->membership_review_notes)
+    <div class="alert alert-danger" role="alert">
+        <strong>Permohonan sebelum ini ditolak.</strong>
+        <div class="mt-1">Sebab: {{ $user->membership_review_notes }}</div>
+        <div class="small mt-2">Kemaskini maklumat yang diperlukan dan hantar semula permohonan anda.</div>
+    </div>
+@endif
 
 <div class="row g-4">
     <div class="col-lg-8">
@@ -42,7 +50,7 @@
 
                     <button class="btn btn-primary mt-4" type="submit">
                         <i class="bi bi-send" aria-hidden="true"></i>
-                        Hantar Permohonan
+                        {{ $user->membership_review_notes ? 'Hantar Semula Permohonan' : 'Hantar Permohonan' }}
                     </button>
                 </form>
             </div>

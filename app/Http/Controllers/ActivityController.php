@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\PortalNotification;
 use App\Models\User;
 use App\Services\EmailAuditService;
+use App\Services\EmailDeliveryService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ use Illuminate\View\View;
 
 class ActivityController extends Controller
 {
-    public function __construct(private EmailAuditService $emailAuditService) {}
+    public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
     public function index(Request $request): View
     {
@@ -136,7 +137,7 @@ class ActivityController extends Controller
                 PortalNotification::create(['user_id' => $registration->user_id, 'title' => 'Aktiviti dibatalkan', 'message' => 'Aktiviti '.$activity->title.' telah dibatalkan.', 'type' => 'warning', 'link' => route('activities.show', $activity)]);
 
                 if ($registration->user?->email && $registration->user->wantsEmail('activities')) {
-                    Mail::to($registration->user->email)->send(new ActivityCancelledMail($activity));
+                    $this->emailDeliveryService->send($registration->user, 'activity cancelled', new ActivityCancelledMail($activity), $activity);
                     $this->emailAuditService->sent($registration->user, 'activity cancelled', $activity);
                 }
             }
@@ -165,7 +166,7 @@ class ActivityController extends Controller
                 PortalNotification::create(['user_id' => $user->id, 'title' => 'Aktiviti diluluskan', 'message' => 'Aktiviti '.$activity->title.' kini dibuka untuk pendaftaran.', 'type' => 'info', 'link' => route('activities.show', $activity)]);
 
                 if ($user->email && $user->wantsEmail('activities')) {
-                    Mail::to($user->email)->send(new ActivityApprovedMail($activity));
+                    $this->emailDeliveryService->send($user, 'activity approved', new ActivityApprovedMail($activity), $activity);
                     $this->emailAuditService->sent($user, 'activity approved', $activity);
                 }
             }

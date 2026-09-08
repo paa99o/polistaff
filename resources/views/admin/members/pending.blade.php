@@ -14,6 +14,7 @@
                     <th>Nama</th>
                     <th>Emel</th>
                     <th>Jabatan</th>
+                    <th>Maklumat</th>
                     <th>Tindakan</th>
                 </tr>
             </thead>
@@ -23,6 +24,11 @@
                         <td data-label="Nama">{{ $member->name }}</td>
                         <td data-label="Emel">{{ $member->email }}</td>
                         <td data-label="Jabatan">{{ $member->department }}</td>
+                        <td data-label="Maklumat">
+                            <div class="small">IC: {{ $member->ic_number ?: '-' }}</div>
+                            <div class="small">Telefon: {{ $member->phone ?: '-' }}</div>
+                            <div class="small text-truncate" style="max-width: 220px" title="{{ $member->address }}">Alamat: {{ $member->address ?: '-' }}</div>
+                        </td>
                         <td data-label="Tindakan">
                             <div class="d-flex flex-column gap-2">
                                 <form method="post" action="{{ route('admin.members.approve', $member) }}" data-confirm="Luluskan permohonan {{ $member->name }}?">
@@ -42,7 +48,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="text-muted">Tiada ahli menunggu kelulusan.</td></tr>
+                    <tr><td colspan="5" class="text-muted">Tiada ahli menunggu kelulusan.</td></tr>
                 @endforelse
             </tbody>
         </table>

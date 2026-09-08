@@ -19,6 +19,18 @@
                     <dt class="col-sm-4">Resit</dt><dd class="col-sm-8"><a href="{{ route('claims.receipt', $claim) }}" target="_blank">Lihat Resit</a></dd>
                     <dt class="col-sm-4">Transaksi</dt><dd class="col-sm-8">@if($claim->transaction)<a href="{{ route('transactions.show', $claim->transaction) }}">{{ $claim->transaction->receipt_number }}</a>@else - @endif</dd>
                 </dl>
+                @if(auth()->id() === $claim->user_id && $claim->status === 'pending')
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a class="btn btn-outline-danger" href="{{ route('claims.edit', $claim) }}">Sunting Tuntutan</a>
+                        <form method="post" action="{{ route('claims.destroy', $claim) }}" data-confirm="Batalkan tuntutan ini? Rekod tuntutan akan dipadam.">
+                            @csrf
+                            @method('delete')
+                            <button class="btn btn-outline-secondary" type="submit">Padam Tuntutan</button>
+                        </form>
+                    </div>
+                @elseif(auth()->id() === $claim->user_id && $claim->status === 'rejected')
+                    <a class="btn btn-danger" href="{{ route('claims.resubmit.form', $claim) }}">Hantar Semula Tuntutan</a>
+                @endif
             </div>
         </div>
 

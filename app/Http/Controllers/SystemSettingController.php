@@ -9,6 +9,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\EmailAuditService;
 use App\Services\MonthlyFeeService;
+use App\Services\EmailDeliveryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -19,7 +20,7 @@ use Throwable;
 
 class SystemSettingController extends Controller
 {
-    public function __construct(private EmailAuditService $emailAuditService) {}
+    public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
     public function edit(): View
     {
@@ -154,7 +155,7 @@ class SystemSettingController extends Controller
 
                     if ($user->email && $user->wantsEmail('announcements')) {
                         try {
-                            Mail::to($user->email)->send(new PortalNotificationMail($notification));
+                            $this->emailDeliveryService->send($user, $emailEvent, new PortalNotificationMail($notification), $notification);
                             $this->emailAuditService->sent($user, $emailEvent, $notification);
                         } catch (Throwable $exception) {
                             Log::warning('Maintenance notification email failed.', [

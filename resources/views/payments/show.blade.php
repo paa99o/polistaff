@@ -24,6 +24,47 @@
                     <dt class="col-sm-4">Resit</dt><dd class="col-sm-8">@if($payment->transaction)<a href="{{ route('transactions.show', $payment->transaction) }}">{{ $payment->transaction->receipt_number }}</a>@else - @endif</dd>
                 </dl>
                 <a class="btn btn-outline-danger" target="_blank" href="{{ route('payments.proof', $payment) }}">Lihat Bukti Bayaran</a>
+
+                @if(auth()->id() === $payment->user_id && $payment->status === 'rejected')
+                    <hr>
+                    <h2 class="h5 soft-panel-title">Hantar Semula Bukti</h2>
+                    <p class="text-muted small">Betulkan maklumat atau muat naik bukti baharu berdasarkan catatan semakan.</p>
+                    <form method="post" action="{{ route('payments.resubmit', $payment) }}" enctype="multipart/form-data">
+                        @csrf
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label" for="resubmit-amount">Jumlah</label>
+                                <input class="form-control" id="resubmit-amount" type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount', $payment->amount) }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="resubmit-method">Kaedah</label>
+                                <input class="form-control" id="resubmit-method" name="payment_method" value="{{ old('payment_method', $payment->payment_method) }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="resubmit-date">Tarikh</label>
+                                <input class="form-control" id="resubmit-date" type="date" name="payment_date" value="{{ old('payment_date', $payment->payment_date?->format('Y-m-d')) }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="resubmit-proof">Bukti Baharu</label>
+                                <input class="form-control" id="resubmit-proof" type="file" name="proof" accept=".jpg,.jpeg,.png,.pdf" required>
+                                <div class="form-text">Format: JPG, PNG atau PDF. Maksimum 4MB.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="resubmit-notes">Catatan</label>
+                                <textarea class="form-control" id="resubmit-notes" name="notes" rows="3">{{ old('notes', $payment->notes) }}</textarea>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger mt-3" type="submit">Hantar Semula</button>
+                    </form>
+                @endif
+
+                @if(auth()->id() === $payment->user_id && $payment->status === 'pending')
+                    <form class="mt-3" method="post" action="{{ route('payments.cancel', $payment) }}" data-confirm="Batalkan penghantaran bukti bayaran ini?">
+                        @csrf
+                        @method('delete')
+                        <button class="btn btn-outline-secondary" type="submit">Batalkan Penghantaran</button>
+                    </form>
+                @endif
             </div>
         </div>
 

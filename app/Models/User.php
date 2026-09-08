@@ -37,6 +37,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'email_finance',
         'email_fee_reminders',
         'membership_status',
+        'membership_review_notes',
         'joined_date',
         'fee_balance',
     ];

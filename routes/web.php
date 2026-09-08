@@ -106,7 +106,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/reports/attendance.csv', [ReportController::class, 'attendanceCsv'])->middleware('role:treasurer,chairman,admin')->name('reports.attendance.csv');
     Route::get('/reports/activities/{activity}/attendance.csv', [ReportController::class, 'activityAttendanceCsv'])->middleware('role:treasurer,chairman,admin')->name('reports.activities.attendance.csv');
 
-    Route::resource('claims', ExpenseClaimController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('claims', ExpenseClaimController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+    Route::get('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmitForm'])->name('claims.resubmit.form');
+    Route::post('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmit'])->name('claims.resubmit');
     Route::get('/claims/{claim}/receipt', [ExpenseClaimController::class, 'receipt'])->name('claims.receipt');
     Route::patch('/claims/{claim}/verify', [ExpenseClaimController::class, 'verify'])->middleware('role:treasurer,admin')->name('claims.verify');
     Route::patch('/claims/{claim}/approve', [ExpenseClaimController::class, 'approve'])->middleware('role:chairman,admin')->name('claims.approve');
@@ -118,10 +120,14 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/payments', [PaymentSubmissionController::class, 'store'])->name('payments.store');
     Route::get('/payments/{payment}', [PaymentSubmissionController::class, 'show'])->name('payments.show');
     Route::get('/payments/{payment}/proof', [PaymentSubmissionController::class, 'proof'])->name('payments.proof');
+    Route::post('/payments/{payment}/resubmit', [PaymentSubmissionController::class, 'resubmit'])->name('payments.resubmit');
+    Route::delete('/payments/{payment}/cancel', [PaymentSubmissionController::class, 'cancel'])->name('payments.cancel');
     Route::patch('/payments/{payment}/approve', [PaymentSubmissionController::class, 'approve'])->middleware('role:treasurer,admin')->name('payments.approve');
     Route::patch('/payments/{payment}/reject', [PaymentSubmissionController::class, 'reject'])->middleware('role:treasurer,admin')->name('payments.reject');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/admin/notifications/delivery', [NotificationController::class, 'deliveryMonitor'])->middleware('role:admin')->name('admin.notifications.delivery');
+    Route::post('/admin/notifications/{notification}/retry', [NotificationController::class, 'retryEmail'])->middleware('role:admin')->name('admin.notifications.retry');
     Route::get('/notifications/create', [NotificationController::class, 'create'])->middleware('role:admin,chairman')->name('notifications.create');
     Route::post('/notifications', [NotificationController::class, 'store'])->middleware('role:admin,chairman')->name('notifications.store');
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');

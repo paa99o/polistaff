@@ -11,6 +11,7 @@ use App\Models\PortalNotification;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
 use App\Services\EmailAuditService;
+use App\Services\EmailDeliveryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -20,7 +21,7 @@ use Illuminate\View\View;
 
 class ExpenseClaimController extends Controller
 {
-    public function __construct(private EmailAuditService $emailAuditService) {}
+    public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
     public function index(Request $request): View
     {
@@ -40,28 +41,12 @@ class ExpenseClaimController extends Controller
 
     public function create(): View
     {
-        return view('claims.create');
+        return view('claims.create', ['claim' => null, 'resubmission' => false]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'category' => ['required', 'string', 'max:120'],
-            'claim_date' => ['required', 'date'],
-            'receipt' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
-        ], [
-            'title.required' => 'Sila isi tajuk tuntutan.',
-            'amount.required' => 'Sila isi jumlah tuntutan.',
-            'amount.min' => 'Jumlah tuntutan mesti sekurang-kurangnya RM 0.01.',
-            'category.required' => 'Sila isi kategori tuntutan.',
-            'claim_date.required' => 'Sila pilih tarikh tuntutan.',
-            'receipt.required' => 'Sila upload resit tuntutan.',
-            'receipt.mimes' => 'Resit tuntutan mesti dalam format JPG, PNG atau PDF.',
-            'receipt.max' => 'Resit tuntutan tidak boleh melebihi 4MB.',
-        ]);
+        $data = $this->validateClaim($request, true);
 
         $claim = ExpenseClaim::create([
             ...collect($data)->except('receipt')->all(),
@@ -73,6 +58,81 @@ class ExpenseClaimController extends Controller
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'submitted', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Submitted expense claim '.$claim->title.'.', 'changes' => $claim->only(['title', 'amount', 'category', 'status']), 'ip_address' => $request->ip()]);
 
         return redirect()->route('claims.index')->with('status', 'Tuntutan perbelanjaan dihantar untuk semakan.');
+    }
+
+    public function edit(ExpenseClaim $claim): View
+    {
+        $this->authorizeOwnerAction($claim, 'pending');
+
+        return view('claims.create', ['claim' => $claim, 'resubmission' => false]);
+    }
+
+    public function update(Request $request, ExpenseClaim $claim): RedirectResponse
+    {
+        $this->authorizeOwnerAction($claim, 'pending');
+        $data = $this->validateClaim($request, false);
+
+        $oldReceiptPath = $claim->receipt_path;
+        $newReceiptPath = $request->hasFile('receipt')
+            ? $request->file('receipt')->store('expense-claims', 'public')
+            : $oldReceiptPath;
+
+        $claim->update([
+            ...collect($data)->except('receipt')->all(),
+            'receipt_path' => $newReceiptPath,
+        ]);
+
+        if ($newReceiptPath !== $oldReceiptPath) {
+            Storage::disk('public')->delete($oldReceiptPath);
+        }
+
+        $this->auditClaimAction($claim, 'updated', 'Updated pending expense claim.', $request);
+
+        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan berjaya dikemas kini.');
+    }
+
+    public function destroy(Request $request, ExpenseClaim $claim): RedirectResponse
+    {
+        $this->authorizeOwnerAction($claim, 'pending');
+
+        Storage::disk('public')->delete($claim->receipt_path);
+        $this->auditClaimAction($claim, 'cancelled', 'Cancelled pending expense claim.', $request);
+        $claim->delete();
+
+        return redirect()->route('claims.index')->with('status', 'Tuntutan pending telah dibatalkan.');
+    }
+
+    public function resubmitForm(ExpenseClaim $claim): View
+    {
+        $this->authorizeOwnerAction($claim, 'rejected');
+
+        return view('claims.create', ['claim' => $claim, 'resubmission' => true]);
+    }
+
+    public function resubmit(Request $request, ExpenseClaim $claim): RedirectResponse
+    {
+        $this->authorizeOwnerAction($claim, 'rejected');
+        $data = $this->validateClaim($request, true);
+        $oldReceiptPath = $claim->receipt_path;
+        $newReceiptPath = $request->file('receipt')->store('expense-claims', 'public');
+
+        $claim->update([
+            ...collect($data)->except('receipt')->all(),
+            'receipt_path' => $newReceiptPath,
+            'status' => 'pending',
+            'reviewed_by' => null,
+            'treasurer_verified_by' => null,
+            'transaction_id' => null,
+            'treasurer_notes' => null,
+            'treasurer_verified_at' => null,
+            'review_notes' => null,
+            'reviewed_at' => null,
+        ]);
+
+        Storage::disk('public')->delete($oldReceiptPath);
+        $this->auditClaimAction($claim, 'resubmitted', 'Resubmitted rejected expense claim for review.', $request);
+
+        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan berjaya dihantar semula untuk semakan.');
     }
 
     public function show(ExpenseClaim $claim): View
@@ -99,7 +159,7 @@ class ExpenseClaimController extends Controller
         $claim->loadMissing('user');
 
         if ($claim->user->email && $claim->user->wantsEmail('finance')) {
-            Mail::to($claim->user->email)->send(new ExpenseClaimVerifiedMail($claim));
+            $this->emailDeliveryService->send($claim->user, 'expense claim verified', new ExpenseClaimVerifiedMail($claim), $claim);
             $this->emailAuditService->sent($claim->user, 'expense claim verified', $claim);
         }
 
@@ -123,7 +183,7 @@ class ExpenseClaimController extends Controller
         $claim->loadMissing('user', 'transaction');
 
         if ($claim->user->email && $claim->user->wantsEmail('finance')) {
-            Mail::to($claim->user->email)->send(new ExpenseClaimApprovedMail($claim));
+            $this->emailDeliveryService->send($claim->user, 'expense claim approved', new ExpenseClaimApprovedMail($claim), $claim);
             $this->emailAuditService->sent($claim->user, 'expense claim approved', $claim);
         }
 
@@ -146,7 +206,7 @@ class ExpenseClaimController extends Controller
         $claim->loadMissing('user');
 
         if ($claim->user->email && $claim->user->wantsEmail('finance')) {
-            Mail::to($claim->user->email)->send(new ExpenseClaimRejectedMail($claim));
+            $this->emailDeliveryService->send($claim->user, 'expense claim rejected', new ExpenseClaimRejectedMail($claim), $claim);
             $this->emailAuditService->sent($claim->user, 'expense claim rejected', $claim);
         }
 
@@ -166,6 +226,38 @@ class ExpenseClaimController extends Controller
     private function authorizeClaimAccess(ExpenseClaim $claim): void
     {
         abort_unless(auth()->user()->hasRole('treasurer', 'chairman', 'admin') || $claim->user_id === auth()->id(), 403);
+    }
+
+    private function authorizeOwnerAction(ExpenseClaim $claim, string $status): void
+    {
+        abort_unless($claim->user_id === auth()->id(), 403);
+        abort_unless($claim->status === $status, 422, 'Tindakan ini tidak tersedia untuk status tuntutan semasa.');
+    }
+
+    private function validateClaim(Request $request, bool $receiptRequired): array
+    {
+        return $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'category' => ['required', 'string', 'max:120'],
+            'claim_date' => ['required', 'date'],
+            'receipt' => [$receiptRequired ? 'required' : 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
+        ], [
+            'title.required' => 'Sila isi tajuk tuntutan.',
+            'amount.required' => 'Sila isi jumlah tuntutan.',
+            'amount.min' => 'Jumlah tuntutan mesti sekurang-kurangnya RM 0.01.',
+            'category.required' => 'Sila isi kategori tuntutan.',
+            'claim_date.required' => 'Sila pilih tarikh tuntutan.',
+            'receipt.required' => 'Sila upload resit tuntutan.',
+            'receipt.mimes' => 'Resit tuntutan mesti dalam format JPG, PNG atau PDF.',
+            'receipt.max' => 'Resit tuntutan tidak boleh melebihi 4MB.',
+        ]);
+    }
+
+    private function auditClaimAction(ExpenseClaim $claim, string $action, string $description, Request $request): void
+    {
+        AuditLog::create(['user_id' => $request->user()->id, 'action' => $action, 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => $description, 'changes' => ['status' => $claim->status], 'ip_address' => $request->ip()]);
     }
 
     private function availableBalance(): float
