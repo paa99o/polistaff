@@ -2,19 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ExpenseClaimApprovedMail;
+use App\Mail\ExpenseClaimRejectedMail;
+use App\Mail\ExpenseClaimVerifiedMail;
 use App\Models\AuditLog;
 use App\Models\ExpenseClaim;
 use App\Models\PortalNotification;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
+use App\Services\EmailAuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ExpenseClaimController extends Controller
 {
+    public function __construct(private EmailAuditService $emailAuditService) {}
+
     public function index(Request $request): View
     {
         $query = ExpenseClaim::with('user', 'reviewer', 'treasurerVerifier', 'transaction')->latest();
@@ -45,6 +52,15 @@ class ExpenseClaimController extends Controller
             'category' => ['required', 'string', 'max:120'],
             'claim_date' => ['required', 'date'],
             'receipt' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
+        ], [
+            'title.required' => 'Sila isi tajuk tuntutan.',
+            'amount.required' => 'Sila isi jumlah tuntutan.',
+            'amount.min' => 'Jumlah tuntutan mesti sekurang-kurangnya RM 0.01.',
+            'category.required' => 'Sila isi kategori tuntutan.',
+            'claim_date.required' => 'Sila pilih tarikh tuntutan.',
+            'receipt.required' => 'Sila upload resit tuntutan.',
+            'receipt.mimes' => 'Resit tuntutan mesti dalam format JPG, PNG atau PDF.',
+            'receipt.max' => 'Resit tuntutan tidak boleh melebihi 4MB.',
         ]);
 
         $claim = ExpenseClaim::create([
@@ -63,20 +79,33 @@ class ExpenseClaimController extends Controller
     {
         $this->authorizeClaimAccess($claim);
 
-        return view('claims.show', ['claim' => $claim->load('user', 'reviewer', 'treasurerVerifier', 'transaction'), 'availableBalance' => $this->availableBalance()]);
+        return view('claims.show', [
+            'claim' => $claim->load('user', 'reviewer', 'treasurerVerifier', 'transaction'),
+            'availableBalance' => $this->availableBalance(),
+            'timelineLogs' => $this->timelineLogs($claim),
+        ]);
     }
 
     public function verify(Request $request, ExpenseClaim $claim): RedirectResponse
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
         abort_unless($claim->status === 'pending', 422);
 
-        $data = $request->validate(['treasurer_notes' => ['nullable', 'string', 'max:1000']]);
+        $data = $request->validate(['treasurer_notes' => ['nullable', 'string', 'max:1000']], [
+            'treasurer_notes.max' => 'Catatan bendahari tidak boleh melebihi 1000 aksara.',
+        ]);
         $claim->update(['status' => 'treasurer_verified', 'treasurer_verified_by' => $request->user()->id, 'treasurer_notes' => $data['treasurer_notes'] ?? null, 'treasurer_verified_at' => now()]);
         PortalNotification::create(['user_id' => $claim->user_id, 'title' => 'Tuntutan disahkan bendahari', 'message' => 'Tuntutan '.$claim->title.' telah disahkan dan menunggu kelulusan pengerusi.', 'type' => 'info', 'link' => route('claims.show', $claim)]);
+        $claim->loadMissing('user');
+
+        if ($claim->user->email && $claim->user->wantsEmail('finance')) {
+            Mail::to($claim->user->email)->send(new ExpenseClaimVerifiedMail($claim));
+            $this->emailAuditService->sent($claim->user, 'expense claim verified', $claim);
+        }
+
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'verified', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Treasurer verified expense claim '.$claim->title.'.', 'changes' => ['status' => 'treasurer_verified'], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan disahkan dan dihantar untuk kelulusan pengerusi.');
+        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan disahkan dan dihantar untuk kelulusan pengerusi. Emel diproses mengikut tetapan ahli.');
     }
 
     public function approve(Request $request, ExpenseClaim $claim): RedirectResponse
@@ -85,14 +114,22 @@ class ExpenseClaimController extends Controller
         abort_unless($claim->status === 'treasurer_verified', 422, 'Tuntutan perlu disahkan bendahari dahulu.');
         abort_if($this->availableBalance() < (float) $claim->amount, 422, 'Baki kelab tidak mencukupi untuk meluluskan tuntutan ini.');
 
-        $data = $request->validate(['review_notes' => ['nullable', 'string', 'max:1000']]);
+        $data = $request->validate(['review_notes' => ['nullable', 'string', 'max:1000']], [
+            'review_notes.max' => 'Catatan kelulusan tidak boleh melebihi 1000 aksara.',
+        ]);
         $transaction = Transaction::create(['user_id' => $claim->user_id, 'type' => 'expense', 'amount' => $claim->amount, 'description' => 'Approved expense claim: '.$claim->title, 'receipt_number' => $this->receiptNumber(), 'transaction_date' => $claim->claim_date, 'category' => $claim->category, 'payment_method' => 'Claim', 'status' => 'active']);
         $claim->update(['status' => 'approved', 'reviewed_by' => $request->user()->id, 'transaction_id' => $transaction->id, 'review_notes' => $data['review_notes'] ?? null, 'reviewed_at' => now()]);
         PortalNotification::create(['user_id' => $claim->user_id, 'title' => 'Tuntutan diluluskan', 'message' => 'Tuntutan '.$claim->title.' telah diluluskan.', 'type' => 'success', 'link' => route('claims.show', $claim)]);
+        $claim->loadMissing('user', 'transaction');
+
+        if ($claim->user->email && $claim->user->wantsEmail('finance')) {
+            Mail::to($claim->user->email)->send(new ExpenseClaimApprovedMail($claim));
+            $this->emailAuditService->sent($claim->user, 'expense claim approved', $claim);
+        }
 
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'approved', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Approved expense claim and generated expense '.$transaction->receipt_number.'.', 'changes' => ['status' => 'approved', 'transaction_id' => $transaction->id], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan diluluskan dan transaksi perbelanjaan dijana.');
+        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan diluluskan dan transaksi perbelanjaan dijana. Emel diproses mengikut tetapan ahli.');
     }
 
     public function reject(Request $request, ExpenseClaim $claim): RedirectResponse
@@ -100,12 +137,22 @@ class ExpenseClaimController extends Controller
         Gate::authorize('approve-expenses');
         abort_unless(in_array($claim->status, ['pending', 'treasurer_verified'], true), 422);
 
-        $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']]);
+        $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']], [
+            'review_notes.required' => 'Sila isi sebab tuntutan ditolak.',
+            'review_notes.max' => 'Sebab ditolak tidak boleh melebihi 1000 aksara.',
+        ]);
         $claim->update(['status' => 'rejected', 'reviewed_by' => $request->user()->id, 'review_notes' => $data['review_notes'], 'reviewed_at' => now()]);
         PortalNotification::create(['user_id' => $claim->user_id, 'title' => 'Tuntutan ditolak', 'message' => 'Tuntutan '.$claim->title.' ditolak: '.$data['review_notes'], 'type' => 'warning', 'link' => route('claims.show', $claim)]);
+        $claim->loadMissing('user');
+
+        if ($claim->user->email && $claim->user->wantsEmail('finance')) {
+            Mail::to($claim->user->email)->send(new ExpenseClaimRejectedMail($claim));
+            $this->emailAuditService->sent($claim->user, 'expense claim rejected', $claim);
+        }
+
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'rejected', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Rejected expense claim '.$claim->title.'.', 'changes' => ['status' => 'rejected', 'reason' => $data['review_notes']], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan ditolak.');
+        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan ditolak. Emel diproses mengikut tetapan ahli.');
     }
 
     public function receipt(ExpenseClaim $claim)
@@ -139,5 +186,18 @@ class ExpenseClaimController extends Controller
         } while (Transaction::where('receipt_number', $receipt)->exists());
 
         return $receipt;
+    }
+
+    private function timelineLogs(ExpenseClaim $claim)
+    {
+        if (! auth()->user()->hasRole('treasurer', 'chairman', 'admin')) {
+            return collect();
+        }
+
+        return AuditLog::with('user')
+            ->where('record_type', ExpenseClaim::class)
+            ->where('record_id', $claim->id)
+            ->oldest()
+            ->get();
     }
 }

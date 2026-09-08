@@ -14,7 +14,9 @@ class ProfileRequest extends FormRequest
             'ic_number' => ['required', 'string', 'max:30', Rule::unique('users', 'ic_number')->ignore($this->user())],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user())],
             'department' => ['required', 'string', 'max:120'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30'],
+            'address' => ['required', 'string', 'max:1000'],
+            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ];
     }
 }

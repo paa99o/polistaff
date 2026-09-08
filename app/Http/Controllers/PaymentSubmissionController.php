@@ -2,21 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PaymentApprovedMail;
+use App\Mail\PaymentRejectedMail;
 use App\Models\AuditLog;
 use App\Models\MemberFeeBill;
 use App\Models\PaymentSubmission;
 use App\Models\PortalNotification;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
+use App\Services\EmailAuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class PaymentSubmissionController extends Controller
 {
+    public function __construct(private EmailAuditService $emailAuditService) {}
+
     public function index(Request $request): View
     {
         $query = PaymentSubmission::with('user', 'reviewer', 'transaction')->latest();
@@ -56,6 +62,14 @@ class PaymentSubmissionController extends Controller
             'payment_date' => ['required', 'date'],
             'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'amount.required' => 'Sila isi jumlah bayaran.',
+            'amount.min' => 'Jumlah bayaran mesti sekurang-kurangnya RM 0.01.',
+            'payment_method.required' => 'Sila pilih kaedah bayaran.',
+            'payment_date.required' => 'Sila pilih tarikh bayaran.',
+            'proof.required' => 'Sila upload fail bukti bayaran.',
+            'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
+            'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
 
         $path = $request->file('proof')->store('payment-proofs', 'public');
@@ -88,15 +102,20 @@ class PaymentSubmissionController extends Controller
     {
         $this->authorizePaymentAccess($payment);
 
-        return view('payments.show', ['payment' => $payment->load('user', 'reviewer', 'transaction')]);
+        return view('payments.show', [
+            'payment' => $payment->load('user', 'reviewer', 'transaction'),
+            'timelineLogs' => $this->timelineLogs($payment),
+        ]);
     }
 
     public function approve(Request $request, PaymentSubmission $payment): RedirectResponse
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
         abort_unless($payment->status === 'pending', 422, 'Bayaran ini sudah disemak.');
 
-        $data = $request->validate(['review_notes' => ['nullable', 'string', 'max:1000']]);
+        $data = $request->validate(['review_notes' => ['nullable', 'string', 'max:1000']], [
+            'review_notes.max' => 'Catatan semakan tidak boleh melebihi 1000 aksara.',
+        ]);
 
         [$transaction, $allocated] = DB::transaction(function () use ($payment, $request, $data): array {
             $transaction = Transaction::create([
@@ -131,6 +150,13 @@ class PaymentSubmissionController extends Controller
 
         PortalNotification::create(['user_id' => $payment->user_id, 'title' => 'Bayaran diluluskan', 'message' => 'Bayaran RM '.number_format((float) $payment->amount, 2).' telah diluluskan.', 'type' => 'success', 'link' => route('payments.show', $payment)]);
 
+        $payment->loadMissing('user', 'transaction');
+
+        if ($payment->user->email && $payment->user->wantsEmail('finance')) {
+            Mail::to($payment->user->email)->send(new PaymentApprovedMail($payment));
+            $this->emailAuditService->sent($payment->user, 'payment approved', $payment);
+        }
+
         AuditLog::create([
             'user_id' => $request->user()->id,
             'action' => 'approved',
@@ -142,15 +168,18 @@ class PaymentSubmissionController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return redirect()->route('payments.show', $payment)->with('status', 'Bayaran diluluskan dan resit transaksi dijana.');
+        return redirect()->route('payments.show', $payment)->with('status', 'Bayaran diluluskan dan resit transaksi dijana. Emel diproses mengikut tetapan ahli.');
     }
 
     public function reject(Request $request, PaymentSubmission $payment): RedirectResponse
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
         abort_unless($payment->status === 'pending', 422, 'Bayaran ini sudah disemak.');
 
-        $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']]);
+        $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']], [
+            'review_notes.required' => 'Sila isi sebab bayaran ditolak.',
+            'review_notes.max' => 'Sebab ditolak tidak boleh melebihi 1000 aksara.',
+        ]);
 
         $payment->update([
             'status' => 'rejected',
@@ -160,6 +189,13 @@ class PaymentSubmissionController extends Controller
         ]);
 
         PortalNotification::create(['user_id' => $payment->user_id, 'title' => 'Bayaran ditolak', 'message' => 'Bayaran RM '.number_format((float) $payment->amount, 2).' ditolak: '.$data['review_notes'], 'type' => 'warning', 'link' => route('payments.show', $payment)]);
+
+        $payment->loadMissing('user');
+
+        if ($payment->user->email && $payment->user->wantsEmail('finance')) {
+            Mail::to($payment->user->email)->send(new PaymentRejectedMail($payment));
+            $this->emailAuditService->sent($payment->user, 'payment rejected', $payment);
+        }
 
         AuditLog::create([
             'user_id' => $request->user()->id,
@@ -172,7 +208,7 @@ class PaymentSubmissionController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return redirect()->route('payments.show', $payment)->with('status', 'Bayaran ditolak dengan catatan semakan.');
+        return redirect()->route('payments.show', $payment)->with('status', 'Bayaran ditolak dengan catatan semakan. Emel diproses mengikut tetapan ahli.');
     }
 
     public function proof(PaymentSubmission $payment)
@@ -228,5 +264,18 @@ class PaymentSubmissionController extends Controller
             });
 
         return $allocated;
+    }
+
+    private function timelineLogs(PaymentSubmission $payment)
+    {
+        if (! auth()->user()->hasRole('treasurer', 'chairman', 'admin')) {
+            return collect();
+        }
+
+        return AuditLog::with('user')
+            ->where('record_type', PaymentSubmission::class)
+            ->where('record_id', $payment->id)
+            ->oldest()
+            ->get();
     }
 }

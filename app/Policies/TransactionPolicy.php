@@ -9,7 +9,7 @@ class TransactionPolicy
 {
     public function manage(User $user): bool
     {
-        return $user->hasRole('treasurer', 'chairman', 'admin');
+        return $user->hasRole('treasurer', 'admin');
     }
 
     public function reverse(User $user, Transaction $transaction): bool

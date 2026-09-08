@@ -1,5 +1,9 @@
 <!doctype html>
-<html lang="ms">
+<html lang="ms"
+    data-theme-preference="{{ auth()->check() ? auth()->user()->theme_preference : 'light' }}"
+    data-authenticated="{{ auth()->check() ? 'true' : 'false' }}"
+    data-text-size="{{ auth()->check() ? auth()->user()->text_size_preference : 'normal' }}"
+    @if(auth()->check() && auth()->user()->reduce_motion) data-reduce-motion="true" @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +12,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <meta name="theme-color" content="#1557D8">
+    @include('partials.theme-loader')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -52,24 +57,34 @@
                         </div>
                     </div>
 
-                    <div class="mega-nav-item {{ request()->routeIs('payments.*') || request()->routeIs('claims.*') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('payments.*') || request()->routeIs('claims.*') || request()->routeIs('transactions.*') || request()->routeIs('reports.financial') || request()->routeIs('finance.fees.*') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Kewangan</button>
-                        <div class="mega-menu">
+                        <div class="mega-menu mega-menu-wide">
                             <a class="mega-menu-link {{ request()->routeIs('payments.*') ? 'active' : '' }}" href="{{ route('payments.index') }}">
                                 <i class="bi bi-wallet2" aria-hidden="true"></i><span>Bayaran Yuran</span>
                             </a>
                             <a class="mega-menu-link {{ request()->routeIs('claims.*') ? 'active' : '' }}" href="{{ route('claims.index') }}">
                                 <i class="bi bi-receipt" aria-hidden="true"></i><span>Tuntutan</span>
                             </a>
+                            @if(auth()->user()->hasRole('treasurer','chairman','admin'))
+                                <a class="mega-menu-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}" href="{{ route('transactions.index') }}">
+                                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i><span>Transaksi</span>
+                                </a>
+                                <a class="mega-menu-link {{ request()->routeIs('reports.financial') ? 'active' : '' }}" href="{{ route('reports.financial') }}">
+                                    <i class="bi bi-graph-up-arrow" aria-hidden="true"></i><span>Laporan Kewangan</span>
+                                </a>
+                            @endif
+                            @if(auth()->user()->hasRole('admin', 'chairman', 'treasurer'))
+                                <a class="mega-menu-link {{ request()->routeIs('finance.fees.*') ? 'active' : '' }}" href="{{ route('finance.fees.index') }}">
+                                    <i class="bi bi-calendar2-check" aria-hidden="true"></i><span>Pengurusan Yuran</span>
+                                </a>
+                            @endif
                         </div>
                     </div>
 
-                    <div class="mega-nav-item {{ request()->routeIs('dashboard') || request()->routeIs('profile.*') || request()->routeIs('notifications.*') || request()->routeIs('documents.*') || request()->routeIs('polimart.*') || request()->routeIs('feedback.*') || request()->routeIs('transactions.*') || request()->routeIs('reports.*') || request()->routeIs('attendance.index') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('documents.*') || request()->routeIs('feedback.*') || request()->routeIs('reports.overview') || request()->routeIs('attendance.index') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Pengurusan</button>
                         <div class="mega-menu mega-menu-wide">
-                            <a class="mega-menu-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                                <i class="bi bi-grid" aria-hidden="true"></i><span>Dashboard</span>
-                            </a>
                             <a class="mega-menu-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.show') }}">
                                 <i class="bi bi-person" aria-hidden="true"></i><span>Profil Saya</span>
                             </a>
@@ -79,18 +94,12 @@
                             <a class="mega-menu-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}">
                                 <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span>Dokumen</span>
                             </a>
-                            <a class="mega-menu-link {{ request()->routeIs('polimart.*') ? 'active' : '' }}" href="{{ route('polimart.index') }}">
-                                <i class="bi bi-shop" aria-hidden="true"></i><span>PoliMart</span>
-                            </a>
                             <a class="mega-menu-link {{ request()->routeIs('feedback.*') ? 'active' : '' }}" href="{{ route('feedback.create') }}">
                                 <i class="bi bi-chat-left-text" aria-hidden="true"></i><span>Maklum Balas</span>
                             </a>
                             @if(auth()->user()->hasRole('treasurer','chairman','admin'))
-                                <a class="mega-menu-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}" href="{{ route('transactions.index') }}">
-                                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i><span>Transaksi</span>
-                                </a>
-                                <a class="mega-menu-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.financial') }}">
-                                    <i class="bi bi-bar-chart" aria-hidden="true"></i><span>Laporan</span>
+                                <a class="mega-menu-link {{ request()->routeIs('reports.overview') ? 'active' : '' }}" href="{{ route('reports.overview') }}">
+                                    <i class="bi bi-bar-chart" aria-hidden="true"></i><span>Laporan Ringkasan</span>
                                 </a>
                                 <a class="mega-menu-link {{ request()->routeIs('attendance.index') ? 'active' : '' }}" href="{{ route('attendance.index') }}">
                                     <i class="bi bi-clipboard-data" aria-hidden="true"></i><span>Laporan Kehadiran</span>
@@ -116,7 +125,7 @@
                                     <i class="bi bi-inbox" aria-hidden="true"></i><span>Senarai Maklum Balas</span>
                                 </a>
                                 <a class="mega-menu-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.edit') }}">
-                                    <i class="bi bi-gear" aria-hidden="true"></i><span>Tetapan</span>
+                                    <i class="bi bi-gear" aria-hidden="true"></i><span>Tetapan Sistem</span>
                                 </a>
                             </div>
                         </div>
@@ -161,14 +170,20 @@
 
                     <div class="dropdown">
                         <button class="profile-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="profile-avatar">{{ $userInitials ?: 'PS' }}</span>
+                            <span class="profile-avatar">
+                                @if(auth()->user()->profile_photo_path)
+                                    <img src="{{ Storage::url(auth()->user()->profile_photo_path) }}" alt="Gambar profil {{ auth()->user()->name }}">
+                                @else
+                                    {{ $userInitials ?: 'PS' }}
+                                @endif
+                            </span>
                             <span class="profile-label">{{ auth()->user()->name }}</span>
                             <i class="bi bi-chevron-down small" aria-hidden="true"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a></li>
                             <li><a class="dropdown-item" href="{{ route('profile.show') }}">Profil Saya</a></li>
-                            <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Kemaskini Profil</a></li>
+                            <li><a class="dropdown-item" href="{{ route('preferences.edit') }}"><i class="bi bi-gear me-2" aria-hidden="true"></i>Tetapan Saya</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{{ route('logout') }}">
@@ -183,12 +198,12 @@
 
             <main class="content-wrap">
                 @if(session('status'))
-                    <div class="alert alert-success" role="status">
+                    <div class="alert alert-success auto-dismiss-alert" role="status">
                         <i class="bi bi-check-circle me-2" aria-hidden="true"></i>{{ session('status') }}
                     </div>
                 @endif
                 @if($errors->any())
-                    <div class="alert alert-danger" role="alert">
+                    <div class="alert alert-danger auto-dismiss-alert" role="alert">
                         <i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i><strong>Sila semak input anda.</strong>
                     </div>
                 @endif
@@ -198,9 +213,12 @@
     </div>
 @else
     <main class="auth-shell">
+        <div class="auth-theme-switcher no-print">
+            @include('partials.theme-switcher')
+        </div>
         <div class="container">
-            @if(session('status'))<div class="alert alert-success">{{ session('status') }}</div>@endif
-            @if($errors->any())<div class="alert alert-danger"><strong>Sila semak input anda.</strong></div>@endif
+            @if(session('status'))<div class="alert alert-success auto-dismiss-alert">{{ session('status') }}</div>@endif
+            @if($errors->any())<div class="alert alert-danger auto-dismiss-alert"><strong>Sila semak input anda.</strong></div>@endif
             @yield('content')
         </div>
     </main>
@@ -211,6 +229,13 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js').catch(() => {});
     }
+
+    document.querySelectorAll('.auto-dismiss-alert').forEach((alert) => {
+        window.setTimeout(() => {
+            alert.classList.add('is-dismissing');
+            window.setTimeout(() => alert.remove(), 650);
+        }, 3000);
+    });
 </script>
 @stack('scripts')
 </body>

@@ -1,7 +1,34 @@
+const root = document.documentElement;
 const appShell = document.querySelector('.app-shell');
+const reduceMotion = root.dataset.reduceMotion === 'true';
 const hasSeenAuthenticatedMotion = sessionStorage.getItem('polistaff-auth-motion-seen') === 'true';
 
-if (!appShell || !hasSeenAuthenticatedMotion) {
+const updateThemeControls = (preference) => {
+    document.querySelectorAll('[data-theme-option]').forEach((button) => {
+        const active = button.dataset.themeOption === preference;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+};
+
+const applyThemePreference = (preference) => {
+    root.dataset.themePreference = preference;
+    root.dataset.theme = preference;
+    root.dataset.bsTheme = preference;
+
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    themeColor?.setAttribute('content', preference === 'dark' ? '#18263d' : '#eee5d8');
+
+    try {
+        localStorage.setItem('polistaff-theme-preference', preference);
+    } catch (error) {
+        // Browser privacy settings may disable local storage.
+    }
+
+    updateThemeControls(preference);
+};
+
+if (!reduceMotion && (!appShell || !hasSeenAuthenticatedMotion)) {
     document.documentElement.classList.add('motion-ready');
 }
 
@@ -23,7 +50,7 @@ revealItems.forEach((item, index) => {
     item.style.setProperty('--reveal-delay', `${Math.min(index % 4, 3) * 60}ms`);
 });
 
-if (appShell && hasSeenAuthenticatedMotion) {
+if (reduceMotion || (appShell && hasSeenAuthenticatedMotion)) {
     revealItems.forEach((item) => item.classList.add('is-visible'));
 } else if ('IntersectionObserver' in window) {
     const revealObserver = new IntersectionObserver((entries, observer) => {
@@ -48,3 +75,27 @@ if (appShell && hasSeenAuthenticatedMotion) {
 if (appShell) {
     sessionStorage.setItem('polistaff-auth-motion-seen', 'true');
 }
+
+updateThemeControls(root.dataset.themePreference || 'light');
+
+document.querySelectorAll('[data-theme-option]').forEach((button) => {
+    button.addEventListener('click', () => applyThemePreference(button.dataset.themeOption));
+});
+
+document.querySelectorAll('input[name="theme_preference"]').forEach((input) => {
+    input.addEventListener('change', () => {
+        if (input.checked) {
+            applyThemePreference(input.value);
+        }
+    });
+});
+
+document.addEventListener('submit', (event) => {
+    const form = event.target.closest('form[data-confirm]');
+
+    if (!form || window.confirm(form.dataset.confirm || 'Teruskan tindakan ini?')) {
+        return;
+    }
+
+    event.preventDefault();
+});

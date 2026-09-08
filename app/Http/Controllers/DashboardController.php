@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Feedback;
+use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
 use App\Models\PortalNotification;
 use App\Models\Transaction;
@@ -26,6 +27,8 @@ class DashboardController extends Controller
             'pendingMembers' => User::where('membership_status', 'pending')->count(),
             'activeMembers' => User::where('membership_status', 'active')->count(),
             'pendingPayments' => PaymentSubmission::where('status', 'pending')->count(),
+            'pendingClaims' => ExpenseClaim::whereIn('status', ['pending', 'treasurer_verified'])->count(),
+            'pendingActivities' => Activity::where('status', 'pending_approval')->count(),
             'approvedPayments' => PaymentSubmission::where('status', 'approved')->count(),
             'totalActivities' => Activity::count(),
             'approvedActivities' => Activity::where('status', 'approved')->count(),
@@ -42,6 +45,8 @@ class DashboardController extends Controller
 
                 return ['label' => $month->format('M'), 'income' => $income, 'expenses' => $expenses];
             }),
+            'missingProfileFields' => $user->missingProfileFields(),
+            'registeredActivities' => $user->activityRegistrations()->where('status', 'registered')->with('activity')->get()->pluck('activity')->filter(fn ($activity) => $activity && $activity->date_time?->greaterThanOrEqualTo(now()->startOfDay()))->sortBy('date_time')->take(5)->values(),
         ]);
     }
 }

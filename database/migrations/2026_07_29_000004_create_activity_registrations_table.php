@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('activity_id')->constrained()->cascadeOnDelete();
-            $table->enum('status', ['registered', 'cancelled'])->default('registered');
+            $table->enum('status', ['registered', 'waitlisted', 'cancelled'])->default('registered');
             $table->dateTime('registered_at');
             $table->timestamps();
             $table->unique(['user_id', 'activity_id']);

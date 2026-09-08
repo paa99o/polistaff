@@ -10,6 +10,8 @@
         "dompdf/dompdf": "*",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
+        "maennchen/zipstream-php": "^3.2",
+        "nelexa/zip": "^4.0",
         "simplesoftwareio/simple-qrcode": "*"
     },
     "require-dev": {

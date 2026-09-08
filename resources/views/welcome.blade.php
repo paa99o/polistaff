@@ -1,5 +1,9 @@
 <!doctype html>
-<html lang="ms">
+<html lang="ms"
+    data-theme-preference="{{ auth()->check() ? auth()->user()->theme_preference : 'light' }}"
+    data-authenticated="{{ auth()->check() ? 'true' : 'false' }}"
+    data-text-size="{{ auth()->check() ? auth()->user()->text_size_preference : 'normal' }}"
+    @if(auth()->check() && auth()->user()->reduce_motion) data-reduce-motion="true" @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +11,7 @@
     <title>POLISTAFF · Portal Pengurusan Kelab Staf</title>
     <link rel="icon" href="/favicon.ico" sizes="any">
     <meta name="theme-color" content="#1557D8">
+    @include('partials.theme-loader')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -22,6 +27,7 @@
                     <span class="brand-description text-muted">Portal Pengurusan Kelab Staf</span>
                 </span>
             </a>
+            @include('partials.theme-switcher')
         </div>
     </header>
 

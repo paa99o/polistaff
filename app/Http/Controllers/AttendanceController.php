@@ -71,4 +71,45 @@ class AttendanceController extends Controller
 
         return redirect()->route('activities.show', $activity)->with('status', 'Kehadiran berjaya direkodkan.');
     }
+
+    public function storeForRegistration(Request $request, Activity $activity, ActivityRegistration $registration): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('admin', 'chairman', 'treasurer'), 403);
+        abort_unless((int) $registration->activity_id === (int) $activity->id, 404);
+
+        if ($activity->status !== 'approved') {
+            return back()->withErrors(['attendance' => 'Kehadiran hanya boleh direkodkan untuk aktiviti yang telah diluluskan.']);
+        }
+
+        if ($registration->status !== 'registered') {
+            return back()->withErrors(['attendance' => 'Hanya peserta yang berdaftar boleh ditanda hadir.']);
+        }
+
+        $attendance = Attendance::firstOrCreate([
+            'user_id' => $registration->user_id,
+            'activity_id' => $activity->id,
+        ], [
+            'scanned_at' => now(),
+            'qr_code_token' => $activity->qr_code_token,
+        ]);
+
+        if ($attendance->wasRecentlyCreated) {
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'created',
+                'module' => 'Manual Attendance',
+                'record_type' => Attendance::class,
+                'record_id' => $attendance->id,
+                'description' => 'Attendance manually recorded for '.$registration->user->name.' in '.$activity->title.'.',
+                'changes' => [
+                    'activity' => $activity->title,
+                    'member' => $registration->user->name,
+                    'scanned_at' => $attendance->scanned_at,
+                ],
+                'ip_address' => $request->ip(),
+            ]);
+        }
+
+        return back()->with('status', $attendance->wasRecentlyCreated ? 'Kehadiran peserta berjaya direkodkan.' : 'Peserta ini sudah ditanda hadir.');
+    }
 }

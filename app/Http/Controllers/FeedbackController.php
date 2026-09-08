@@ -27,7 +27,7 @@ class FeedbackController extends Controller
 
     public function create(): View
     {
-        return view('feedback.create', ['activities' => Activity::orderByDesc('date_time')->get()]);
+        return view('feedback.create', ['activities' => Activity::where('status', 'approved')->orderByDesc('date_time')->get()]);
     }
 
     public function store(FeedbackRequest $request): RedirectResponse

@@ -22,4 +22,31 @@ class ActivityRequest extends FormRequest
             'evidence_photo' => ['nullable', 'image', 'max:4096'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'registration_closes_at.after_or_equal' => 'Registration Closes mesti sama atau selepas Registration Opens.',
+            'attendance_closes_at.after_or_equal' => 'Attendance Closes mesti sama atau selepas Attendance Opens.',
+            'evidence_photo.image' => 'Foto bukti aktiviti mesti dalam format gambar.',
+            'evidence_photo.max' => 'Foto bukti aktiviti tidak boleh melebihi 4MB.',
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'title' => 'tajuk',
+            'description' => 'penerangan',
+            'date_time' => 'tarikh dan masa',
+            'location' => 'lokasi',
+            'max_participants' => 'maksimum peserta',
+            'registration_opens_at' => 'registration opens',
+            'registration_closes_at' => 'registration closes',
+            'attendance_opens_at' => 'attendance opens',
+            'attendance_closes_at' => 'attendance closes',
+            'status' => 'status',
+            'evidence_photo' => 'foto bukti aktiviti',
+        ];
+    }
 }

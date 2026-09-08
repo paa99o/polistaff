@@ -30,6 +30,7 @@ class AuthServiceProvider extends ServiceProvider
         Gate::policy(PortalNotification::class, PortalNotificationPolicy::class);
 
         Gate::define('view-financial-reports', fn (User $user) => $user->hasRole('treasurer', 'chairman', 'admin'));
+        Gate::define('manage-finances', fn (User $user) => $user->hasRole('treasurer', 'admin'));
         Gate::define('manage-activities', fn (User $user) => $user->hasRole('admin'));
         Gate::define('approve-expenses', fn (User $user) => $user->hasRole('chairman', 'admin'));
         Gate::define('manage-members', fn (User $user) => $user->hasRole('admin'));

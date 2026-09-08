@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\AuditLog;
+use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -26,6 +29,8 @@ class AdminController extends Controller
             })
             ->when($request->filled('role'), fn ($query) => $query->where('role', $request->role))
             ->when($request->filled('status'), fn ($query) => $query->where('membership_status', $request->status))
+            ->when($request->input('profile') === 'complete', fn ($query) => $query->profileComplete())
+            ->when($request->input('profile') === 'incomplete', fn ($query) => $query->profileIncomplete())
             ->orderBy('name')
             ->paginate(12)
             ->withQueryString();
@@ -38,9 +43,38 @@ class AdminController extends Controller
             'totalActivities' => Activity::count(),
             'totalAttendances' => Attendance::count(),
             'pendingPayments' => PaymentSubmission::where('status', 'pending')->count(),
+            'pendingClaims' => ExpenseClaim::whereIn('status', ['pending', 'treasurer_verified'])->count(),
+            'pendingActivities' => Activity::where('status', 'pending_approval')->count(),
+            'incompleteProfiles' => User::profileIncomplete()->count(),
+            'outstandingFees' => User::where('membership_status', 'active')->sum('fee_balance'),
+            'upcomingActivities' => Activity::where('status', 'approved')->where('date_time', '>=', now())->orderBy('date_time')->limit(4)->get(),
             'recentAuditLogs' => AuditLog::with('user')->latest()->limit(6)->get(),
             'netBalance' => Transaction::where('type', 'income')->sum('amount') - Transaction::where('type', 'expense')->sum('amount'),
+            'queuedJobs' => DB::table('jobs')->count(),
+            'failedJobs' => DB::table('failed_jobs')->count(),
         ]);
+    }
+
+    public function retryFailedJobs(Request $request): RedirectResponse
+    {
+        $failedJobs = DB::table('failed_jobs')->count();
+
+        if ($failedJobs > 0) {
+            Artisan::call('queue:retry', ['id' => ['all']]);
+        }
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'retried',
+            'module' => 'Email Queue',
+            'description' => 'Retried failed queued jobs.',
+            'changes' => ['failed_jobs' => $failedJobs],
+            'ip_address' => $request->ip(),
+        ]);
+
+        return back()->with('status', $failedJobs > 0
+            ? $failedJobs.' job gagal dimasukkan semula ke dalam queue.'
+            : 'Tiada job gagal untuk dicuba semula.');
     }
 
     public function audit(Request $request): View
@@ -63,6 +97,12 @@ class AdminController extends Controller
             'membership_status' => ['required', 'in:pending,active,inactive'],
             'fee_balance' => ['required', 'numeric', 'min:0'],
         ]);
+
+        abort_if(
+            $request->user()->is($user) && ($data['role'] !== 'admin' || $data['membership_status'] !== 'active'),
+            422,
+            'Anda tidak boleh membuang akses admin atau menyahaktifkan akaun sendiri.'
+        );
 
         $data['joined_date'] = $data['membership_status'] === 'active' && ! $user->joined_date
             ? now()->toDateString()

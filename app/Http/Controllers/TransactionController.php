@@ -35,14 +35,14 @@ class TransactionController extends Controller
 
     public function create(): View
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
 
         return view('transactions.create', ['users' => User::where('membership_status', 'active')->orderBy('name')->get()]);
     }
 
     public function store(TransactionRequest $request): RedirectResponse
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
 
         $transaction = Transaction::create([...$request->validated(), 'receipt_number' => $this->receiptNumber(), 'status' => 'active']);
         $this->syncFeeBalance($transaction);
@@ -72,7 +72,7 @@ class TransactionController extends Controller
     {
         Gate::authorize('view-financial-reports');
 
-        $pdf = new Dompdf();
+        $pdf = new Dompdf;
         $pdf->loadHtml(view('transactions.receipt_pdf', compact('transaction'))->render());
         $pdf->setPaper('A4');
         $pdf->render();
@@ -85,14 +85,14 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction): View
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
 
         return view('transactions.edit', ['transaction' => $transaction, 'users' => User::orderBy('name')->get()]);
     }
 
     public function update(TransactionRequest $request, Transaction $transaction): RedirectResponse
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
 
         $before = $transaction->only(['type', 'amount', 'description', 'transaction_date', 'category', 'payment_method']);
         $transaction->update($request->validated());
@@ -114,7 +114,7 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction): RedirectResponse
     {
-        Gate::authorize('view-financial-reports');
+        Gate::authorize('manage-finances');
         abort_unless($transaction->status === 'active', 422, 'Transaksi ini sudah dibatalkan.');
 
         $reason = request()->input('reversal_reason', 'Manual reversal');

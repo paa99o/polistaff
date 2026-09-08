@@ -60,6 +60,7 @@
                                 <input class="form-check-input" type="checkbox" name="remember" value="1">
                                 <span class="form-check-label small">Ingat saya</span>
                             </label>
+                            <a class="small fw-semibold" href="{{ route('password.request') }}">Lupa kata laluan?</a>
                         </div>
 
                         <button class="btn btn-primary w-100" type="submit">

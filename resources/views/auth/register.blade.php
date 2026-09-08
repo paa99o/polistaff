@@ -33,7 +33,7 @@
                     <h1>Daftar akaun</h1>
                     <p>Lengkapkan maklumat asas untuk mula menggunakan portal.</p>
 
-                    <form method="post" action="{{ route('register') }}">
+                    <form method="post" action="{{ route('register') }}" enctype="multipart/form-data">
                         @csrf
                         <div class="row g-4">
                             <div class="col-md-6">
@@ -48,10 +48,14 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="phone">Nombor telefon</label>
-                                <input class="form-control" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel" required>
+                                <input class="form-control" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel">
                                 @include('partials.errors', ['name' => 'phone'])
                             </div>
-                            <div class="col-md-6"></div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="profile_photo">Gambar profil</label>
+                                <input class="form-control" id="profile_photo" type="file" name="profile_photo" accept="image/png,image/jpeg">
+                                @include('partials.errors', ['name' => 'profile_photo'])
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="register-password">Kata laluan</label>
                                 <input class="form-control" id="register-password" type="password" name="password" autocomplete="new-password" required>

@@ -14,6 +14,6 @@ class PaymentSubmissionPolicy
 
     public function review(User $user, PaymentSubmission $payment): bool
     {
-        return $user->hasRole('treasurer', 'chairman', 'admin') && $payment->status === 'pending';
+        return $user->hasRole('treasurer', 'admin') && $payment->status === 'pending';
     }
 }

@@ -6,9 +6,11 @@
     $role = $user->role;
     $firstName = str($user->name)->before(' ');
     $latestPayment = $latestPayments->first();
-    $pendingActionCount = match ($role) {
-        'admin' => $pendingMembers + $pendingPayments,
-        'treasurer' => $pendingPayments,
+    $profileIncomplete = count($missingProfileFields) > 0;
+    $pendingActionCount = ($profileIncomplete ? 1 : 0) + match ($role) {
+        'admin' => $pendingMembers + $pendingPayments + $pendingActivities + $pendingClaims,
+        'treasurer' => $pendingPayments + $pendingClaims,
+        'chairman' => $pendingActivities + $pendingClaims,
         'member' => ($user->fee_balance > 0 ? 1 : 0),
         default => 0,
     };
@@ -34,8 +36,8 @@
         ],
         default => [
             ['icon' => 'bi-calendar3', 'label' => 'Aktiviti Akan Datang', 'value' => $upcomingActivities->count(), 'meta' => 'Dalam jadual kelab', 'route' => route('activities.index'), 'link' => 'Lihat semua'],
-            ['icon' => 'bi-person-check', 'label' => 'Status Keahlian', 'value' => ucfirst($user->membership_status), 'meta' => 'Status akaun semasa', 'route' => route('profile.show'), 'link' => 'Lihat profil'],
-            ['icon' => 'bi-wallet2', 'label' => 'Status Bayaran', 'value' => $latestPayment ? ucfirst($latestPayment->status) : 'Belum dihantar', 'meta' => 'Bayaran yuran terkini', 'route' => route('payments.index'), 'link' => 'Lihat bayaran'],
+            ['icon' => 'bi-person-check', 'label' => 'Status Keahlian', 'value' => \App\Support\PolistaffLabels::status($user->membership_status), 'meta' => 'Status akaun semasa', 'route' => route('profile.show'), 'link' => 'Lihat profil'],
+            ['icon' => 'bi-wallet2', 'label' => 'Status Bayaran', 'value' => $latestPayment ? \App\Support\PolistaffLabels::status($latestPayment->status) : 'Belum dihantar', 'meta' => 'Bayaran yuran terkini', 'route' => route('payments.index'), 'link' => 'Lihat bayaran'],
             ['icon' => 'bi-bell', 'label' => 'Notifikasi', 'value' => $notifications->count(), 'meta' => 'Makluman terkini', 'route' => route('notifications.index'), 'link' => 'Lihat notifikasi'],
         ],
     };
@@ -82,20 +84,6 @@
     </div>
 </section>
 
-<section aria-label="PoliMart" class="dashboard-polimart mb-5">
-    <article class="dashboard-polimart-card">
-        <div>
-            <span class="stat-icon"><i class="bi bi-shop" aria-hidden="true"></i></span>
-            <p class="dashboard-polimart-kicker">Marketplace staf</p>
-            <h2>POLIMART</h2>
-            <p>Jual makanan, servis, produk kecil atau barangan pre-loved kepada komuniti POLISTAFF.</p>
-        </div>
-        <a class="btn btn-light" href="{{ route('polimart.index') }}">
-            Masuk PoliMart <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
-        </a>
-    </article>
-</section>
-
 <section aria-label="Maklumat dashboard" class="dashboard-details">
     <div class="row g-4">
         <div class="col-xl-5">
@@ -106,6 +94,17 @@
                         @if($pendingActionCount > 0)<span class="badge"><i class="bi bi-info-circle" aria-hidden="true"></i>{{ $pendingActionCount }}</span>@endif
                     </h2>
 
+                    @if($profileIncomplete)
+                        <div class="action-item">
+                            <span class="action-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
+                            <div>
+                                <div class="list-item-title">Profil belum lengkap</div>
+                                <div class="list-item-meta">Lengkapkan: {{ implode(', ', $missingProfileFields) }}.</div>
+                            </div>
+                            <a class="btn btn-primary align-self-center" href="{{ route('profile.edit') }}">Lengkapkan</a>
+                        </div>
+                    @endif
+
                     @if($role === 'member' && $user->fee_balance > 0)
                         <div class="action-item">
                             <span class="action-icon"><i class="bi bi-wallet2" aria-hidden="true"></i></span>
@@ -115,7 +114,9 @@
                             </div>
                             <a class="btn btn-primary align-self-center" href="{{ route('payments.create') }}">Bayar Yuran</a>
                         </div>
-                    @elseif($role === 'treasurer' && $pendingPayments > 0)
+                    @endif
+
+                    @if($role === 'treasurer' && $pendingPayments > 0)
                         <div class="action-item">
                             <span class="action-icon"><i class="bi bi-receipt" aria-hidden="true"></i></span>
                             <div>
@@ -124,7 +125,31 @@
                             </div>
                             <a class="btn btn-primary align-self-center" href="{{ route('payments.index') }}">Semak Bayaran</a>
                         </div>
-                    @elseif($role === 'admin' && $pendingMembers > 0)
+                    @endif
+
+                    @if(in_array($role, ['chairman', 'admin'], true) && $pendingActivities > 0)
+                        <div class="action-item">
+                            <span class="action-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
+                            <div>
+                                <div class="list-item-title">{{ $pendingActivities }} aktiviti menunggu kelulusan</div>
+                                <div class="list-item-meta">Semak tarikh, lokasi dan maklumat aktiviti sebelum diterbitkan.</div>
+                            </div>
+                            <a class="btn btn-primary align-self-center" href="{{ route('activities.index') }}">Semak Aktiviti</a>
+                        </div>
+                    @endif
+
+                    @if(in_array($role, ['chairman', 'admin'], true) && $pendingClaims > 0)
+                        <div class="action-item">
+                            <span class="action-icon"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></span>
+                            <div>
+                                <div class="list-item-title">{{ $pendingClaims }} tuntutan menunggu tindakan</div>
+                                <div class="list-item-meta">Semak tuntutan yang telah disahkan atau menunggu kelulusan.</div>
+                            </div>
+                            <a class="btn btn-primary align-self-center" href="{{ route('claims.index') }}">Semak Tuntutan</a>
+                        </div>
+                    @endif
+
+                    @if($role === 'admin' && $pendingMembers > 0)
                         <div class="action-item">
                             <span class="action-icon"><i class="bi bi-person-check" aria-hidden="true"></i></span>
                             <div>
@@ -133,7 +158,9 @@
                             </div>
                             <a class="btn btn-primary align-self-center" href="{{ route('admin.members.pending') }}">Semak Ahli</a>
                         </div>
-                    @else
+                    @endif
+
+                    @if($role !== 'member' && ! $profileIncomplete && $pendingActionCount === 0)
                         <div class="dashboard-empty-state">
                             <span class="stat-icon"><i class="bi bi-check2" aria-hidden="true"></i></span>
                             <h3 class="h6">Tiada tindakan tertunda</h3>
@@ -162,7 +189,8 @@
                         <span>Aktiviti Akan Datang</span>
                         <a class="panel-link" href="{{ route('activities.index') }}">Lihat semua</a>
                     </h2>
-                    @forelse($upcomingActivities as $activity)
+                    @php($activitiesToShow = $role === 'member' && $registeredActivities->isNotEmpty() ? $registeredActivities : $upcomingActivities)
+                    @forelse($activitiesToShow as $activity)
                         <div class="list-item">
                             <span class="stat-icon date-tile">
                                 <span class="text-center">
@@ -195,7 +223,7 @@
                     @if($latestPayment)
                         <div class="stat-label">Bayaran Terkini</div>
                         <div class="stat-value mt-1">RM {{ number_format((float) $latestPayment->amount, 2) }}</div>
-                        <span class="badge mt-3"><i class="bi bi-info-circle" aria-hidden="true"></i>{{ ucfirst($latestPayment->status) }}</span>
+                        <span class="badge mt-3"><i class="bi bi-info-circle" aria-hidden="true"></i>{{ \App\Support\PolistaffLabels::status($latestPayment->status) }}</span>
                         <div class="stat-meta mt-3">{{ $latestPayment->payment_date->format('d/m/Y') }} &middot; {{ $latestPayment->payment_method }}</div>
                     @else
                         <p class="text-muted">Belum ada bayaran dihantar.</p>
