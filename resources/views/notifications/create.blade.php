@@ -22,7 +22,7 @@
                     <input class="form-control @error('type') is-invalid @enderror" id="type" name="type" value="{{ old('type', 'info') }}" required>
                     @include('partials.errors', ['name' => 'type'])
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4" id="department-filter">
                     <label class="form-label" for="department">Department</label>
                     <select class="form-select @error('department') is-invalid @enderror" id="department" name="department">
                         <option value="">Pilih department</option>
@@ -32,7 +32,7 @@
                     </select>
                     @include('partials.errors', ['name' => 'department'])
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4" id="role-filter">
                     <label class="form-label" for="role">Role</label>
                     <select class="form-select @error('role') is-invalid @enderror" id="role" name="role">
                         <option value="">Pilih role</option>
@@ -42,12 +42,13 @@
                     </select>
                     @include('partials.errors', ['name' => 'role'])
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4" id="user-filter">
                     <label class="form-label" for="user_id">Ahli</label>
+                    <input class="form-control mb-2" id="user-search" type="search" placeholder="Cari nama atau emel ahli" autocomplete="off">
                     <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
                         <option value="">Pilih ahli</option>
                         @foreach($users as $user)
-                            <option value="{{ $user->id }}" @selected((string) old('user_id') === (string) $user->id)>{{ $user->name }} - {{ $user->email }}</option>
+                            <option value="{{ $user->id }}" data-department="{{ $user->department }}" data-role="{{ $user->role }}" @selected((string) old('user_id') === (string) $user->id)>{{ $user->name }} - {{ $user->email }}</option>
                         @endforeach
                     </select>
                     @include('partials.errors', ['name' => 'user_id'])
@@ -73,3 +74,69 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (() => {
+        const target = document.getElementById('target');
+        const department = document.getElementById('department');
+        const role = document.getElementById('role');
+        const user = document.getElementById('user_id');
+        const userSearch = document.getElementById('user-search');
+        const groups = {
+            department: document.getElementById('department-filter'),
+            role: document.getElementById('role-filter'),
+            individual: document.getElementById('user-filter'),
+        };
+
+        const updateUserOptions = () => {
+            const query = userSearch.value.trim().toLowerCase();
+            [...user.options].forEach((option, index) => {
+                if (index === 0) return;
+
+                const matchesDepartment = !department.value || option.dataset.department === department.value;
+                const matchesRole = !role.value || option.dataset.role === role.value;
+                const matchesSearch = !query || option.text.toLowerCase().includes(query);
+                option.hidden = !(matchesDepartment && matchesRole && matchesSearch);
+
+                if (option.selected && option.hidden) {
+                    user.value = '';
+                }
+            });
+        };
+
+        const updateTargetFields = () => {
+            const selectedTarget = target.value;
+            const visibleFields = {
+                department: selectedTarget === 'department' || selectedTarget === 'individual',
+                role: selectedTarget === 'role' || selectedTarget === 'individual',
+                individual: selectedTarget === 'individual',
+            };
+
+            Object.entries(groups).forEach(([field, group]) => {
+                group.hidden = !visibleFields[field];
+            });
+
+            department.disabled = !visibleFields.department;
+            role.disabled = !visibleFields.role;
+            user.disabled = !visibleFields.individual;
+            userSearch.disabled = !visibleFields.individual;
+
+            if (!visibleFields.department) department.value = '';
+            if (!visibleFields.role) role.value = '';
+            if (!visibleFields.individual) {
+                user.value = '';
+                userSearch.value = '';
+            }
+
+            updateUserOptions();
+        };
+
+        target.addEventListener('change', updateTargetFields);
+        department.addEventListener('change', updateUserOptions);
+        role.addEventListener('change', updateUserOptions);
+        userSearch.addEventListener('input', updateUserOptions);
+        updateTargetFields();
+    })();
+</script>
+@endpush
