@@ -19,6 +19,13 @@
     --color-surface: #fbfdfd;
     --color-border: rgba(46, 74, 88, .14);
     --color-muted: rgba(48, 67, 78, .66);
+    --site-background:
+        radial-gradient(circle at 8% 4%, rgba(255, 126, 76, .18), transparent 28%),
+        radial-gradient(circle at 92% 8%, rgba(255, 190, 92, .16), transparent 26%),
+        linear-gradient(135deg, #fff8f1 0%, #f1f6f8 52%, #f8eeeb 100%);
+    --site-texture:
+        repeating-linear-gradient(0deg, rgba(183, 91, 65, .025) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(90deg, rgba(183, 91, 65, .02) 0 1px, transparent 1px 8px);
     --blue-texture:
         repeating-linear-gradient(0deg, rgba(78, 120, 148, .022) 0 1px, transparent 1px 5px),
         repeating-linear-gradient(90deg, rgba(78, 120, 148, .018) 0 1px, transparent 1px 7px);
@@ -40,7 +47,7 @@ html {
 }
 
 body {
-    background: var(--color-background);
+    background: var(--site-background), var(--site-texture);
     color: var(--color-text);
     font-family: var(--font-body);
     font-size: 16px;
@@ -71,7 +78,7 @@ a:hover { color: var(--color-primary); opacity: .8; }
 
 .app-shell {
     background-color: var(--color-background);
-    background-image: var(--blue-texture);
+    background-image: var(--site-background), var(--site-texture);
     min-height: 100vh;
 }
 
@@ -2236,7 +2243,7 @@ a:hover { color: var(--color-primary); opacity: .8; }
 .auth-shell {
     align-items: center;
     background-color: var(--color-background);
-    background-image: var(--blue-texture);
+    background-image: var(--site-background), var(--site-texture);
     display: flex;
     min-height: 100vh;
     padding: 48px 24px;
@@ -2344,7 +2351,7 @@ a:hover { color: var(--color-primary); opacity: .8; }
 
 .public-shell {
     background-color: var(--color-background);
-    background-image: var(--blue-texture);
+    background-image: var(--site-background), var(--site-texture);
     color: var(--color-text);
     min-height: 100vh;
 }
@@ -2441,6 +2448,15 @@ a:hover { color: var(--color-primary); opacity: .8; }
 
 .brand-hero-title span:last-child {
     color: var(--color-red);
+}
+
+/* Dashboard brand mark: keep the POLISTAFF wordmark vivid in both themes. */
+.dashboard-brand-title span:first-child {
+    color: #ff7417;
+}
+
+.dashboard-brand-title span:last-child {
+    color: #f02d24;
 }
 
 .public-lead {
@@ -2983,7 +2999,7 @@ a:hover { color: var(--color-primary); opacity: .8; }
     align-items: center;
     background:
         linear-gradient(135deg, rgba(255,255,255,.12), transparent 42%),
-        #c81e1e;
+        linear-gradient(125deg, #a91420 0%, #e52a25 58%, #f17836 100%);
     border: 1px solid rgba(255,255,255,.24);
     color: var(--color-surface);
     display: flex;
@@ -2995,12 +3011,12 @@ a:hover { color: var(--color-primary); opacity: .8; }
 
 .dashboard-polimart-card .stat-icon {
     background: rgba(255,255,255,.16);
-    color: var(--color-surface);
+    color: #ffffff;
     margin-bottom: 18px;
 }
 
 .dashboard-polimart-card h2 {
-    color: var(--color-surface);
+    color: #ffffff;
     font-size: clamp(32px, 6vw, 72px);
     line-height: .9;
     margin: 0 0 14px;
@@ -3154,7 +3170,7 @@ a:hover { color: var(--color-primary); opacity: .8; }
 }
 
 .polimart-title {
-    color: var(--color-surface);
+    color: #ffffff;
     display: flex;
     flex-wrap: wrap;
     font-size: clamp(56px, 9vw, 112px);
@@ -3183,9 +3199,12 @@ a:hover { color: var(--color-primary); opacity: .8; }
 .polimart-stripe span:nth-child(3) { background: #172033; }
 
 .polimart-market {
-    display: grid;
-    gap: 28px;
-    grid-template-columns: minmax(250px, 290px) 1fr;
+    display: block;
+    margin-top: 32px;
+}
+
+.polimart-products {
+    margin-left: 318px;
 }
 
 .polimart-sell-panel,
@@ -3247,6 +3266,17 @@ a:hover { color: var(--color-primary); opacity: .8; }
     gap: 10px;
     margin-bottom: 24px;
     padding: 12px;
+}
+
+.polimart-page .btn-danger {
+    color: #ffffff;
+}
+
+.polimart-section-heading .badge {
+    background: #fff4e8;
+    border: 1px solid rgba(200, 30, 30, .16);
+    color: #7b3f16;
+    white-space: nowrap;
 }
 
 .polimart-search-field {
@@ -3833,6 +3863,7 @@ a:hover { color: var(--color-primary); opacity: .8; }
     .polimart-top-layout .polimart-hero { grid-column: 1; grid-row: 1; }
     .polimart-top-layout .polimart-start-card { grid-column: 1; grid-row: 2; }
     .polimart-market { margin-top: 24px; }
+    .polimart-products { margin-left: 0; }
 
     .polimart-detail {
         grid-template-columns: 1fr;
@@ -3953,6 +3984,13 @@ html[data-theme="dark"] {
     --color-on-blue: #ffffff;
     --color-primary: #8fb5ff;
     --color-orange-soft: #3b3025;
+    --site-background:
+        radial-gradient(circle at 8% 4%, rgba(239, 68, 68, .22), transparent 30%),
+        radial-gradient(circle at 92% 8%, rgba(249, 115, 22, .18), transparent 28%),
+        linear-gradient(135deg, #101a2b 0%, #18263d 52%, #241d2d 100%);
+    --site-texture:
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .018) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .014) 0 1px, transparent 1px 8px);
     --blue-texture:
         repeating-linear-gradient(0deg, rgba(255, 255, 255, .018) 0 1px, transparent 1px 5px),
         repeating-linear-gradient(90deg, rgba(0, 0, 0, .05) 0 1px, transparent 1px 7px);
@@ -3963,6 +4001,12 @@ html[data-theme="dark"] .polimart-page {
     --polimart-background: #141d2b;
     --polimart-border: rgba(222, 231, 245, .14);
     color: var(--color-text);
+}
+
+html[data-theme="dark"] .polimart-section-heading .badge {
+    background: #3b3025;
+    border-color: #765d32;
+    color: #ffe5a8;
 }
 
 html[data-theme="dark"] .app-shell:has(.polimart-page) {
