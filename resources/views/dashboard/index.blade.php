@@ -60,6 +60,25 @@
     </div>
 </section>
 
+<section class="dashboard-polimart mb-5" aria-label="PoliMart">
+    <article class="card dashboard-polimart-card">
+        <div class="dashboard-polimart-copy">
+            <span class="stat-icon" aria-hidden="true"><i class="bi bi-bag-heart"></i></span>
+            <p class="dashboard-polimart-kicker">PoliMart</p>
+            <h2>Beli. Jual. Cari.</h2>
+            <p>Barang menarik, semuanya di sini.</p>
+        </div>
+        <div class="dashboard-polimart-actions">
+            <a class="btn btn-light" href="{{ route('polimart.index') }}">
+                <i class="bi bi-shop me-2" aria-hidden="true"></i>Lihat PoliMart
+            </a>
+            <a class="btn btn-outline-light" href="{{ route('polimart.create') }}">
+                <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Jual Barang
+            </a>
+        </div>
+    </article>
+</section>
+
 <section aria-label="Ringkasan utama" class="dashboard-summary mb-5">
     <div class="row g-4">
         @foreach($summaryCards as $summary)

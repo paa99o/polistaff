@@ -18,6 +18,8 @@ use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PaymentSubmissionController;
 use App\Http\Controllers\PolimartController;
+use App\Http\Controllers\PolimartChatController;
+use App\Http\Controllers\PolimartReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SystemSettingController;
@@ -62,7 +64,20 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/documents/{document}', [MemberDocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/polimart', [PolimartController::class, 'index'])->name('polimart.index');
     Route::get('/polimart/create', [PolimartController::class, 'create'])->name('polimart.create');
+    Route::get('/polimart/favorites', [PolimartController::class, 'favorites'])->name('polimart.favorites');
+    Route::get('/polimart/chat', [PolimartChatController::class, 'index'])->name('polimart.chat.index');
+    Route::post('/polimart/{polimartItem}/chat', [PolimartChatController::class, 'start'])->name('polimart.chat.start');
+    Route::get('/polimart/chat/{conversation}', [PolimartChatController::class, 'show'])->name('polimart.chat.show');
+    Route::post('/polimart/chat/{conversation}/messages', [PolimartChatController::class, 'send'])->name('polimart.chat.send');
     Route::post('/polimart', [PolimartController::class, 'store'])->name('polimart.store');
+    Route::get('/polimart/seller/{user}', [PolimartController::class, 'seller'])->name('polimart.seller');
+    Route::post('/polimart/{polimartItem}/report', [PolimartReportController::class, 'store'])->name('polimart.report');
+    Route::post('/polimart/{polimartItem}/favorite', [PolimartController::class, 'toggleFavorite'])->name('polimart.favorite');
+    Route::post('/polimart/{polimartItem}/review', [PolimartController::class, 'review'])->name('polimart.review');
+    Route::get('/polimart/{polimartItem}', [PolimartController::class, 'show'])->name('polimart.show');
+    Route::get('/polimart/{polimartItem}/edit', [PolimartController::class, 'edit'])->name('polimart.edit');
+    Route::put('/polimart/{polimartItem}', [PolimartController::class, 'update'])->name('polimart.update');
+    Route::patch('/polimart/{polimartItem}/status', [PolimartController::class, 'updateStatus'])->name('polimart.status');
     Route::delete('/polimart/{polimartItem}', [PolimartController::class, 'destroy'])->name('polimart.destroy');
 
     Route::get('/admin/members/pending', [AdminMemberController::class, 'pending'])->middleware('role:admin')->name('admin.members.pending');
@@ -71,6 +86,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/admin', [AdminController::class, 'index'])->middleware('role:admin')->name('admin.index');
     Route::post('/admin/queue/retry-failed', [AdminController::class, 'retryFailedJobs'])->middleware('role:admin')->name('admin.queue.retry-failed');
     Route::get('/admin/audit', [AdminController::class, 'audit'])->middleware('role:admin')->name('admin.audit');
+    Route::get('/admin/polimart/reports', [PolimartReportController::class, 'index'])->middleware('role:admin')->name('admin.polimart.reports');
+    Route::patch('/admin/polimart/reports/{polimartReport}', [PolimartReportController::class, 'update'])->middleware('role:admin')->name('admin.polimart.reports.update');
     Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->middleware('role:admin')->name('admin.users.update');
     Route::get('/admin/settings', [SystemSettingController::class, 'edit'])->middleware('role:admin')->name('settings.edit');
     Route::put('/admin/settings', [SystemSettingController::class, 'update'])->middleware('role:admin')->name('settings.update');

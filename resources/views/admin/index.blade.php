@@ -130,6 +130,13 @@
                                 <small>Sasarkan semua ahli aktif, jabatan, peranan atau individu.</small>
                             </span>
                         </a>
+                        <a class="admin-action-card" href="{{ route('admin.polimart.reports') }}">
+                            <span class="admin-action-icon"><i class="bi bi-flag" aria-hidden="true"></i></span>
+                            <span>
+                                <strong>{{ $pendingPolimartReports }} report PoliMart menunggu semakan</strong>
+                                <small>Semak listing yang dilaporkan oleh komuniti staf.</small>
+                            </span>
+                        </a>
                     </div>
 
                     <div class="admin-quick-actions no-print">

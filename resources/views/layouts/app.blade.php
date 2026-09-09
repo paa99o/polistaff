@@ -31,6 +31,12 @@
             ->latest()
             ->limit(5)
             ->get();
+        $unreadChatCount = \App\Models\PolimartMessage::whereNull('read_at')
+            ->where('sender_id', '!=', auth()->id())
+            ->whereHas('conversation', fn ($query) => $query
+                ->where('buyer_id', auth()->id())
+                ->orWhere('seller_id', auth()->id()))
+            ->count();
     @endphp
 
     <div class="app-shell">
@@ -82,6 +88,12 @@
                         </div>
                     </div>
 
+                    <div class="mega-nav-item {{ request()->routeIs('polimart.*') ? 'active' : '' }}">
+                        <a class="mega-nav-title" href="{{ route('polimart.index') }}">
+                            <i class="bi bi-bag-heart me-2" aria-hidden="true"></i><span>PoliMart</span>
+                        </a>
+                    </div>
+
                     <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('documents.*') || request()->routeIs('feedback.*') || request()->routeIs('reports.overview') || request()->routeIs('attendance.index') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Pengurusan</button>
                         <div class="mega-menu mega-menu-wide">
@@ -124,6 +136,9 @@
                                 <a class="mega-menu-link {{ request()->routeIs('admin.feedback.*') ? 'active' : '' }}" href="{{ route('admin.feedback.index') }}">
                                     <i class="bi bi-inbox" aria-hidden="true"></i><span>Senarai Maklum Balas</span>
                                 </a>
+                                <a class="mega-menu-link {{ request()->routeIs('admin.polimart.*') ? 'active' : '' }}" href="{{ route('admin.polimart.reports') }}">
+                                    <i class="bi bi-flag" aria-hidden="true"></i><span>Report PoliMart</span>
+                                </a>
                                 <a class="mega-menu-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.delivery') }}">
                                     <i class="bi bi-envelope-check" aria-hidden="true"></i><span>Status Email</span>
                                 </a>
@@ -150,6 +165,13 @@
                             <i class="bi bi-hourglass-split fs-5" aria-hidden="true"></i>
                         </a>
                     @endif
+
+                    <a class="icon-button" href="{{ route('polimart.chat.index') }}" aria-label="Chat PoliMart" title="Chat PoliMart">
+                        <i class="bi bi-chat-dots fs-5" aria-hidden="true"></i>
+                        @if($unreadChatCount > 0)
+                            <span class="notification-count">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
+                        @endif
+                    </a>
 
                     <div class="dropdown">
                         <button class="icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifikasi">

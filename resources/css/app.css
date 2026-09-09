@@ -2969,6 +2969,23 @@ a:hover { color: var(--color-primary); opacity: .8; }
     max-width: 640px;
 }
 
+.dashboard-polimart-copy {
+    min-width: 0;
+}
+
+.dashboard-polimart-actions {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.dashboard-polimart-actions .btn {
+    white-space: nowrap;
+}
+
 .dashboard-polimart-kicker {
     font-family: var(--font-primary);
     font-size: 12px;
@@ -2976,6 +2993,24 @@ a:hover { color: var(--color-primary); opacity: .8; }
     letter-spacing: .12em;
     margin-bottom: 8px !important;
     text-transform: uppercase;
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-polimart-card {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 24px;
+        padding: 24px;
+    }
+
+    .dashboard-polimart-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .dashboard-polimart-actions .btn {
+        flex: 1 1 180px;
+    }
 }
 
 .polimart-page {
@@ -3093,6 +3128,41 @@ a:hover { color: var(--color-primary); opacity: .8; }
     min-width: 0;
 }
 
+.polimart-filter {
+    align-items: center;
+    background: var(--color-surface);
+    border: 1px solid rgba(23, 32, 51, .14);
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding: 12px;
+}
+
+.polimart-search-field {
+    align-items: center;
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 180px;
+}
+
+.polimart-search-field i {
+    color: var(--color-muted);
+    margin: 0 10px;
+}
+
+.polimart-search-field input {
+    background: transparent;
+    border: 0;
+    color: var(--color-text);
+    min-width: 0;
+    outline: 0;
+    width: 100%;
+}
+
+.polimart-filter select {
+    max-width: 190px;
+}
+
 .polimart-sell-panel {
     align-self: start;
     padding: 24px;
@@ -3103,6 +3173,119 @@ a:hover { color: var(--color-primary); opacity: .8; }
     max-width: 860px;
     width: 100%;
 }
+
+.polimart-seller-notice {
+    align-items: flex-start;
+    background: #fff8e6;
+    border: 1px solid #f1d58a;
+    color: #6f5200;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 12px 14px;
+}
+
+.polimart-seller-notice i {
+    flex: 0 0 auto;
+    margin-top: 2px;
+}
+
+.polimart-seller-notice p {
+    font-size: 13px;
+    margin: 0;
+}
+
+.admin-report-tabs {
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    gap: 22px;
+    padding: 18px 20px 0;
+}
+
+.admin-report-tabs a {
+    border-bottom: 3px solid transparent;
+    color: var(--color-muted);
+    padding: 0 0 12px;
+    text-decoration: none;
+}
+
+.admin-report-tabs a.active,
+.admin-report-tabs a:hover {
+    border-bottom-color: #c81e1e;
+    color: #c81e1e;
+}
+
+.polimart-chat-heading,
+.polimart-chat-shell,
+.polimart-chat-list {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 920px;
+}
+
+.polimart-chat-heading {
+    align-items: end;
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.polimart-chat-heading h1,
+.polimart-chat-header h1 {
+    color: var(--color-surface);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+}
+
+.polimart-chat-heading p,
+.polimart-chat-header p {
+    color: rgba(255,255,255,.78);
+    margin: 0;
+}
+
+.polimart-chat-list,
+.polimart-chat-shell {
+    background: var(--color-surface);
+    border: 1px solid rgba(23, 32, 51, .14);
+}
+
+.polimart-chat-list-item {
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    display: flex;
+    gap: 14px;
+    padding: 16px 20px;
+    text-decoration: none;
+}
+
+.polimart-chat-list-item:last-child { border-bottom: 0; }
+.polimart-chat-list-item:hover { background: rgba(200, 30, 30, .06); }
+.polimart-chat-list-copy { display: grid; flex: 1; gap: 4px; }
+.polimart-chat-list-copy small { color: var(--color-muted); }
+.polimart-chat-list-copy span { color: var(--color-muted); font-size: 13px; }
+.polimart-chat-time { color: var(--color-muted); flex: 0 0 auto; font-size: 12px; }
+
+.polimart-chat-header {
+    align-items: center;
+    background: #c81e1e;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    padding: 24px;
+}
+
+.polimart-chat-header .btn { flex: 0 0 auto; }
+.polimart-messages { display: grid; gap: 12px; min-height: 320px; padding: 24px; }
+.polimart-message { display: grid; gap: 4px; justify-self: start; max-width: min(80%, 560px); }
+.polimart-message span { background: #f1f3f6; border-radius: 14px 14px 14px 4px; padding: 11px 14px; white-space: pre-line; }
+.polimart-message small { color: var(--color-muted); font-size: 11px; }
+.polimart-message.is-mine { justify-self: end; text-align: right; }
+.polimart-message.is-mine span { background: #c81e1e; color: #fff; border-radius: 14px 14px 4px 14px; }
+.polimart-chat-empty { align-self: center; color: var(--color-muted); margin: auto; max-width: 420px; text-align: center; }
+.polimart-message-form { border-top: 1px solid var(--color-border); display: flex; gap: 12px; padding: 16px; }
+.polimart-message-form textarea { border: 1px solid var(--color-border); flex: 1; min-width: 0; padding: 10px 12px; resize: vertical; }
 
 .polimart-form-shell {
     padding-top: 48px;
@@ -3154,6 +3337,18 @@ a:hover { color: var(--color-primary); opacity: .8; }
     width: 100%;
 }
 
+.polimart-item-media {
+    display: block;
+}
+
+.polimart-item-media img {
+    transition: transform var(--motion-quick);
+}
+
+.polimart-item-media:hover img {
+    transform: scale(1.03);
+}
+
 .polimart-item-placeholder {
     align-items: center;
     color: #c81e1e;
@@ -3185,6 +3380,11 @@ a:hover { color: var(--color-primary); opacity: .8; }
     text-transform: uppercase;
 }
 
+.polimart-item h3 a {
+    color: inherit;
+    text-decoration: none;
+}
+
 .polimart-price {
     color: #c81e1e;
     white-space: nowrap;
@@ -3212,6 +3412,21 @@ a:hover { color: var(--color-primary); opacity: .8; }
     gap: 8px;
 }
 
+.polimart-seller a,
+.polimart-seller-link {
+    align-items: center;
+    color: var(--color-text);
+    display: flex;
+    font-size: 13px;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.polimart-seller a:hover,
+.polimart-seller-link:hover {
+    color: #c81e1e;
+}
+
 .polimart-empty {
     align-items: center;
     display: flex;
@@ -3234,6 +3449,268 @@ a:hover { color: var(--color-primary); opacity: .8; }
     margin: 0;
 }
 
+.polimart-detail {
+    background: var(--color-surface);
+    border: 1px solid rgba(23, 32, 51, .14);
+    display: grid;
+    gap: 32px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+    margin: 0 auto;
+    max-width: 1120px;
+    padding: 24px;
+}
+
+.polimart-detail-shell {
+    margin: 0 auto;
+    max-width: 1280px;
+}
+
+.polimart-detail-back {
+    color: rgba(255,255,255,.9);
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    text-decoration: none;
+}
+
+.polimart-detail-back:hover { color: #ffb020; }
+
+.polimart-detail-gallery {
+    align-items: center;
+    background: #202020;
+    border: 1px solid rgba(255,255,255,.28);
+    display: flex;
+    justify-content: center;
+    min-height: clamp(280px, 48vw, 590px);
+    overflow: hidden;
+    position: relative;
+}
+
+.polimart-detail-gallery img {
+    height: 100%;
+    max-height: 590px;
+    object-fit: contain;
+    width: 100%;
+}
+
+.polimart-detail-placeholder {
+    align-items: center;
+    color: rgba(255,255,255,.72);
+    display: flex;
+    flex-direction: column;
+    font-size: 64px;
+    gap: 12px;
+    justify-content: center;
+}
+
+.polimart-detail-placeholder span { font-size: 14px; }
+
+.polimart-detail-layout {
+    display: grid;
+    gap: 36px;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    padding-top: 28px;
+}
+
+.polimart-detail-main { min-width: 0; }
+
+.polimart-detail-heading {
+    align-items: end;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+.polimart-detail-heading h1 {
+    color: var(--color-surface);
+    font-size: clamp(28px, 4vw, 52px);
+    line-height: 1.05;
+    margin: 4px 0 0;
+    text-transform: uppercase;
+}
+
+.polimart-detail-price {
+    color: var(--color-surface);
+    font-size: clamp(24px, 3vw, 38px);
+    white-space: nowrap;
+}
+
+.polimart-detail-actions {
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,.28);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 20px 0 24px;
+}
+
+.polimart-detail-actions form { margin: 0; }
+
+.polimart-detail-section {
+    border-bottom: 1px solid rgba(255,255,255,.28);
+    padding: 28px 0;
+}
+
+.polimart-detail-section h2 {
+    color: var(--color-surface);
+    font-size: 24px;
+    margin: 0 0 18px;
+}
+
+.polimart-detail-facts {
+    display: grid;
+    gap: 18px 24px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+}
+
+.polimart-detail-facts dt { color: rgba(255,255,255,.68); font-size: 13px; margin-bottom: 5px; }
+.polimart-detail-facts dd { color: var(--color-surface); margin: 0; }
+.polimart-detail-facts a { color: #ffb020; }
+
+.polimart-detail-sidebar { align-self: start; position: sticky; top: 96px; }
+
+.polimart-seller-card,
+.polimart-detail-sidebar .polimart-owner-actions,
+.polimart-detail-sidebar .polimart-report-box {
+    background: var(--color-surface);
+    border: 1px solid rgba(23, 32, 51, .14);
+    color: var(--color-text);
+    padding: 22px;
+}
+
+.polimart-seller-card { display: grid; gap: 12px; }
+.polimart-seller-avatar { align-items: center; background: #596bc5; border-radius: 50%; color: #fff; display: flex; font-size: 22px; height: 52px; justify-content: center; width: 52px; }
+.polimart-seller-name { color: var(--color-text); font-size: 20px; font-weight: 700; text-decoration: none; }
+.polimart-seller-name:hover { color: #c81e1e; }
+.polimart-seller-card p { color: var(--color-muted); font-size: 13px; margin: 0; }
+.polimart-detail-sidebar .polimart-owner-actions { display: grid; gap: 12px; margin-top: 16px; }
+.polimart-detail-sidebar .polimart-report-box { margin-top: 16px; }
+
+.polimart-detail-main .polimart-review-box,
+.polimart-detail-main .polimart-reviews { border-top: 0; }
+
+.polimart-detail-media img,
+.polimart-detail-media .polimart-item-placeholder {
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    width: 100%;
+}
+
+.polimart-detail-body {
+    padding: 16px 8px 16px 0;
+}
+
+.polimart-detail-body h1 {
+    font-size: clamp(28px, 4vw, 46px);
+    margin: 0 0 10px;
+    text-transform: uppercase;
+}
+
+.polimart-status {
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    margin: 8px 0 18px;
+    padding: 6px 10px;
+    text-transform: uppercase;
+}
+
+.polimart-status-active { background: #e8f7ed; color: #20733c; }
+.polimart-status-reserved { background: #fff3d8; color: #8a5b00; }
+.polimart-status-sold { background: #eceef2; color: #596273; }
+
+.polimart-favorite-label {
+    color: #c81e1e;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
+.polimart-detail-description {
+    color: var(--color-muted);
+    line-height: 1.7;
+    white-space: pre-line;
+}
+
+.polimart-contact-card {
+    border-top: 1px solid var(--color-border);
+    display: grid;
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 20px;
+}
+
+.polimart-contact-card > span:not(.polimart-category) {
+    color: var(--color-muted);
+}
+
+.polimart-owner-actions {
+    border-top: 1px solid var(--color-border);
+    display: grid;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+}
+
+.polimart-owner-actions .form-select {
+    min-width: 150px;
+}
+
+.polimart-report-box,
+.polimart-review-box,
+.polimart-reviews {
+    border-top: 1px solid var(--color-border);
+    margin-top: 24px;
+    padding-top: 20px;
+}
+
+.polimart-report-box summary {
+    color: #c81e1e;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.polimart-review-box h2,
+.polimart-reviews h2 {
+    font-size: 18px;
+    margin-bottom: 14px;
+}
+
+.polimart-review {
+    border-bottom: 1px solid var(--color-border);
+    display: grid;
+    gap: 5px;
+    padding: 12px 0;
+}
+
+.polimart-review:last-child { border-bottom: 0; }
+.polimart-stars { color: #d88a00; letter-spacing: .08em; }
+.polimart-review p { color: var(--color-muted); margin: 0; }
+
+.polimart-seller-hero {
+    align-items: center;
+    background: var(--color-surface);
+    border: 1px solid rgba(23, 32, 51, .14);
+    display: flex;
+    gap: 18px;
+    margin: 0 auto;
+    max-width: 1120px;
+    padding: 24px;
+}
+
+.polimart-seller-hero h1 {
+    margin: 4px 0;
+    text-transform: uppercase;
+}
+
+.polimart-seller-hero p {
+    color: var(--color-muted);
+    margin: 0;
+}
+
 @media (max-width: 991.98px) {
     .polimart-market {
         grid-template-columns: 1fr;
@@ -3242,6 +3719,17 @@ a:hover { color: var(--color-primary); opacity: .8; }
     .polimart-start-card {
         position: static;
     }
+
+    .polimart-detail {
+        grid-template-columns: 1fr;
+    }
+
+    .polimart-detail-body {
+        padding: 0;
+    }
+
+    .polimart-detail-layout { grid-template-columns: 1fr; }
+    .polimart-detail-sidebar { position: static; }
 }
 
 @media (max-width: 767.98px) {
@@ -3276,9 +3764,63 @@ a:hover { color: var(--color-primary); opacity: .8; }
         font-size: 16px;
     }
 
+    .polimart-filter {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .polimart-search-field {
+        flex-basis: 100%;
+        min-height: 38px;
+    }
+
+    .polimart-filter select,
+    .polimart-filter .btn {
+        flex: 1 1 140px;
+        max-width: none;
+    }
+
+    .polimart-chat-heading,
+    .polimart-chat-header,
+    .polimart-message-form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .polimart-chat-header .btn { width: 100%; }
+    .polimart-message { max-width: 90%; }
+
+    .polimart-detail-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+    .polimart-detail-price { font-size: 30px; }
+    .polimart-detail-facts { grid-template-columns: 1fr; }
+    .polimart-detail-actions .btn { flex: 1 1 150px; }
+
     .polimart-grid {
         grid-template-columns: 1fr;
     }
+}
+
+@media (max-width: 575.98px) {
+    .polimart-detail-shell { width: 100%; }
+    .polimart-detail-gallery { min-height: 220px; }
+    .polimart-detail-heading h1 { font-size: 30px; overflow-wrap: anywhere; }
+    .polimart-detail-actions { align-items: stretch; }
+    .polimart-detail-actions form { flex: 1 1 100%; }
+    .polimart-detail-actions form .btn { width: 100%; }
+    .polimart-detail-actions .polimart-status { align-self: flex-start; }
+    .polimart-detail-section { padding: 22px 0; }
+    .polimart-detail-section h2 { font-size: 20px; }
+    .polimart-detail-sidebar .polimart-owner-actions,
+    .polimart-detail-sidebar .polimart-report-box,
+    .polimart-seller-card { padding: 18px; }
+    .polimart-message-form { padding: 12px; }
+    .polimart-message-form .btn { width: 100%; }
+    .polimart-chat-list-item { padding: 14px; }
+    .polimart-chat-list-copy { min-width: 0; }
+    .polimart-chat-list-copy strong,
+    .polimart-chat-list-copy small,
+    .polimart-chat-list-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .polimart-sell-panel { padding: 18px; }
 }
 
 /* Personal account preferences */

@@ -9,6 +9,10 @@
 
         <div class="polimart-sell-panel polimart-sell-panel-wide">
             <h1>Jual Produk</h1>
+            <div class="polimart-seller-notice" role="note">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <p>Listing akan terus dipaparkan selepas diterbitkan. Pastikan maklumat tepat dan patuhi peraturan PoliMart. Admin boleh menyembunyikan atau memadam listing yang dilaporkan.</p>
+            </div>
             <form method="post" action="{{ route('polimart.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="row g-3">
@@ -25,8 +29,8 @@
                         <input class="form-control" type="number" step="0.01" min="0" name="price" value="{{ old('price') }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Contact Seller</label>
-                        <input class="form-control" name="contact" value="{{ old('contact', auth()->user()->phone) }}" placeholder="No. telefon / WhatsApp" required>
+                        <label class="form-label">Nombor untuk urusan selepas chat</label>
+                        <input class="form-control" name="contact" value="{{ old('contact', auth()->user()->phone) }}" placeholder="Nombor telefon / WhatsApp" required>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Gambar Produk</label>
@@ -38,7 +42,7 @@
                         <textarea class="form-control" name="description" rows="4" placeholder="Detail produk, pickup point, stok atau nota lain">{{ old('description') }}</textarea>
                     </div>
                 </div>
-                <button class="btn btn-danger mt-3">Post Produk</button>
+                <button class="btn btn-danger mt-3">Terbitkan Listing</button>
             </form>
         </div>
     </section>

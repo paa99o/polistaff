@@ -20,6 +20,9 @@ use App\Models\ExpenseClaim;
 use App\Models\MemberDocument;
 use App\Models\PaymentSubmission;
 use App\Models\PolimartItem;
+use App\Models\PolimartConversation;
+use App\Models\PolimartReport;
+use App\Models\PolimartReview;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
 use App\Models\User;
@@ -1193,6 +1196,111 @@ class PoliBestFeatureTest extends TestCase
         $this->assertNotNull($item);
         $this->assertSame($user->id, $item->user_id);
         Storage::disk('public')->assertExists($item->image_path);
+    }
+
+    public function test_staff_can_search_polimart_by_name_and_category(): void
+    {
+        $user = User::factory()->create();
+        PolimartItem::create(['user_id' => $user->id, 'name' => 'Brownies Coklat', 'category' => 'Makanan', 'price' => 18, 'contact' => '0123456789', 'status' => 'active']);
+        PolimartItem::create(['user_id' => $user->id, 'name' => 'Lampu Meja', 'category' => 'Elektronik', 'price' => 30, 'contact' => '0123456789', 'status' => 'active']);
+
+        $this->actingAs($user)->get(route('polimart.index', ['q' => 'Brownies', 'category' => 'Makanan']))
+            ->assertOk()
+            ->assertSee('Brownies Coklat')
+            ->assertDontSee('Lampu Meja');
+    }
+
+    public function test_staff_can_favorite_and_report_an_active_listing(): void
+    {
+        $seller = User::factory()->create();
+        $buyer = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Kek', 'category' => 'Makanan', 'price' => 20, 'contact' => '0123456789', 'status' => 'active']);
+
+        $this->actingAs($buyer)->post(route('polimart.favorite', $item))->assertRedirect();
+        $this->assertDatabaseHas('polimart_favorites', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id]);
+
+        $this->actingAs($buyer)->post(route('polimart.report', $item), ['reason' => 'misleading', 'details' => 'Maklumat harga tidak jelas.'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_reports', ['reporter_id' => $buyer->id, 'polimart_item_id' => $item->id, 'status' => 'pending']);
+
+        $this->actingAs($buyer)->from(route('polimart.show', $item))->post(route('polimart.report', $item), ['reason' => 'other'])->assertRedirect(route('polimart.show', $item));
+        $this->assertDatabaseCount('polimart_reports', 1);
+    }
+
+    public function test_staff_can_view_saved_polimart_favorites(): void
+    {
+        $seller = User::factory()->create();
+        $buyer = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Baju Pre-loved', 'category' => 'Pakaian', 'price' => 15, 'contact' => '0123456789', 'status' => 'active']);
+
+        $this->actingAs($buyer)->post(route('polimart.favorite', $item));
+        $this->actingAs($buyer)->get(route('polimart.favorites'))->assertOk()->assertSee('Baju Pre-loved');
+    }
+
+    public function test_buyer_and_seller_can_chat_about_a_listing(): void
+    {
+        $seller = User::factory()->create();
+        $buyer = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Kasut', 'category' => 'Pre-loved', 'price' => 25, 'contact' => '0123456789', 'status' => 'active']);
+
+        $this->actingAs($buyer)->post(route('polimart.chat.start', $item))->assertRedirect();
+        $conversation = PolimartConversation::firstOrFail();
+
+        $this->actingAs($buyer)->post(route('polimart.chat.send', $conversation), ['body' => 'Masih ada lagi?'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_messages', ['polimart_conversation_id' => $conversation->id, 'sender_id' => $buyer->id, 'body' => 'Masih ada lagi?']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $seller->id, 'type' => 'polimart_chat', 'is_read' => false]);
+
+        $this->actingAs($seller)->get(route('polimart.chat.show', $conversation))->assertOk()->assertSee('Masih ada lagi?');
+        $this->actingAs($seller)->post(route('polimart.chat.send', $conversation), ['body' => 'Masih ada.'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_messages', ['polimart_conversation_id' => $conversation->id, 'sender_id' => $seller->id, 'body' => 'Masih ada.']);
+    }
+
+    public function test_unread_polimart_chat_count_is_shown_in_navigation(): void
+    {
+        $seller = User::factory()->create();
+        $buyer = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Beg', 'category' => 'Pakaian', 'price' => 20, 'contact' => '0123456789', 'status' => 'active']);
+        $conversation = PolimartConversation::create(['polimart_item_id' => $item->id, 'buyer_id' => $buyer->id, 'seller_id' => $seller->id, 'last_message_at' => now()]);
+        $conversation->messages()->create(['sender_id' => $buyer->id, 'body' => 'Masih ada?']);
+
+        $this->actingAs($seller)->get(route('dashboard'))->assertOk()->assertSee('aria-label="Chat PoliMart"', false)->assertSee('>1</span>', false);
+    }
+
+    public function test_admin_can_hide_a_reported_polimart_listing(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $seller = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Listing Reported', 'category' => 'Lain-lain', 'price' => 10, 'contact' => '0123456789', 'status' => 'active']);
+        $report = PolimartReport::create(['polimart_item_id' => $item->id, 'reporter_id' => $admin->id, 'reason' => 'other']);
+
+        $this->actingAs($admin)->patch(route('admin.polimart.reports.update', $report), ['status' => 'hidden'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_reports', ['id' => $report->id, 'status' => 'hidden', 'reviewed_by' => $admin->id]);
+        $this->assertDatabaseHas('polimart_items', ['id' => $item->id, 'status' => 'hidden']);
+    }
+
+    public function test_admin_can_remove_listing_while_preserving_report_history(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $seller = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Listing Scam', 'category' => 'Lain-lain', 'price' => 10, 'contact' => '0123456789', 'status' => 'active']);
+        $report = PolimartReport::create(['polimart_item_id' => $item->id, 'reporter_id' => $admin->id, 'reason' => 'scam']);
+
+        $this->actingAs($admin)->patch(route('admin.polimart.reports.update', $report), ['status' => 'removed'])->assertRedirect();
+        $this->assertDatabaseMissing('polimart_items', ['id' => $item->id]);
+        $this->assertDatabaseHas('polimart_reports', ['id' => $report->id, 'status' => 'removed', 'polimart_item_id' => null]);
+    }
+
+    public function test_buyer_can_review_a_sold_polimart_listing(): void
+    {
+        $seller = User::factory()->create();
+        $buyer = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'contact' => '0123456789', 'status' => 'sold']);
+
+        $this->actingAs($buyer)->get(route('polimart.show', $item))
+            ->assertOk()
+            ->assertSee('Review barang');
+        $this->actingAs($buyer)->post(route('polimart.review', $item), ['rating' => 5, 'comment' => 'Urusan mudah.'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_reviews', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id, 'rating' => 5]);
+        $this->assertInstanceOf(PolimartReview::class, $item->reviews()->first());
     }
 
     public function test_treasurer_can_approve_payment_and_generate_transaction(): void

@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
+use App\Models\PolimartReport;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -53,6 +54,7 @@ class AdminController extends Controller
                 - Transaction::where('status', 'active')->where('type', 'expense')->sum('amount'),
             'queuedJobs' => DB::table('jobs')->count(),
             'failedJobs' => DB::table('failed_jobs')->count(),
+            'pendingPolimartReports' => PolimartReport::where('status', 'pending')->count(),
         ]);
     }
 

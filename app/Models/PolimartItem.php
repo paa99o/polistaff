@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PolimartItem extends Model
 {
@@ -29,5 +30,15 @@ class PolimartItem extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(PolimartReview::class);
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(PolimartFavorite::class);
     }
 }
