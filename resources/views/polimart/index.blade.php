@@ -2,22 +2,12 @@
 
 @section('content')
 <div class="polimart-page">
-    <section class="polimart-hero">
-        <div>
-            <div class="auth-stripe polimart-stripe mb-3" aria-hidden="true"><span></span><span></span><span></span></div>
-            <p class="polimart-kicker">Pasar komuniti staf</p>
-            <h1 class="polimart-title" aria-label="POLIMART">
-                <span>POLI</span><span>MART</span>
-            </h1>
-            <p>Ruang khas untuk staf menjual produk, makanan, servis kecil atau barangan pre-loved kepada komuniti POLISTAFF.</p>
-        </div>
-    </section>
-
-    <section class="polimart-market">
+    <section class="polimart-top-layout">
         <aside class="polimart-start-card">
             <span class="stat-icon"><i class="bi bi-bag-plus" aria-hidden="true"></i></span>
-            <h2>Nak jual sesuatu?</h2>
-            <p>Kongsi produk atau servis anda dengan komuniti staf POLISTAFF.</p>
+            <p class="polimart-start-kicker">POLIMART</p>
+            <h2>Beli. Jual. Cari.</h2>
+            <p>Barang menarik, semuanya di sini.</p>
             <a class="btn btn-danger w-100" href="{{ route('polimart.create') }}">Mula Jual</a>
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.index', ['mine' => 1]) }}">
                 <i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Listing Saya
@@ -30,6 +20,19 @@
             </a>
         </aside>
 
+        <section class="polimart-hero">
+            <div>
+                <div class="auth-stripe polimart-stripe mb-3" aria-hidden="true"><span></span><span></span><span></span></div>
+                <p class="polimart-kicker">Pasar komuniti staf</p>
+                <h1 class="polimart-title" aria-label="POLIMART">
+                    <span>POLI</span><span>MART</span>
+                </h1>
+                <p>Ruang khas untuk staf menjual produk, makanan, servis kecil atau barangan pre-loved kepada komuniti POLISTAFF.</p>
+            </div>
+        </section>
+    </section>
+
+    <section class="polimart-market">
         <div class="polimart-products">
             <form class="polimart-filter" method="get" action="{{ route('polimart.index') }}">
                 <div class="polimart-search-field">
