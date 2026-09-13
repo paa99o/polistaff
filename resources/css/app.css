@@ -273,8 +273,10 @@ a:hover { color: var(--color-primary); opacity: .8; }
 
 .mega-nav-item:hover .mega-nav-title,
 .mega-nav-item:focus-within .mega-nav-title,
-.mega-nav-item.active .mega-nav-title {
-    color: var(--color-primary);
+.mega-nav-item.active .mega-nav-title,
+.mega-nav-title:hover,
+.mega-nav-title:focus-visible {
+    color: var(--color-primary) !important;
 }
 
 .mega-nav-title::after {
