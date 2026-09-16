@@ -12,6 +12,7 @@ use App\Models\SystemSetting;
 use App\Models\Transaction;
 use App\Services\EmailAuditService;
 use App\Services\EmailDeliveryService;
+use App\Services\MonthlyFeeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,9 +40,10 @@ class PaymentSubmissionController extends Controller
         return view('payments.index', ['payments' => $query->paginate(15)->withQueryString()]);
     }
 
-    public function statement(Request $request): View
+    public function statement(Request $request, MonthlyFeeService $monthlyFeeService): View
     {
         $user = $request->user();
+        $monthlyFeeService->ensureThrough($user);
 
         return view('payments.statement', [
             'bills' => MemberFeeBill::where('user_id', $user->id)->latest('billing_month')->paginate(18),
@@ -50,13 +52,34 @@ class PaymentSubmissionController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request, MonthlyFeeService $monthlyFeeService): View
     {
-        return view('payments.create');
+        $monthlyFeeService->ensureThrough($request->user());
+        $bills = MemberFeeBill::where('user_id', $request->user()->id)
+            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
+            ->orderBy('billing_month')
+            ->get();
+        $pendingAmount = PaymentSubmission::where('user_id', $request->user()->id)
+            ->where('status', 'pending')
+            ->sum('amount');
+
+        return view('payments.create', [
+            'bills' => $bills,
+            'outstanding' => max(0, (float) $bills->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount()) - (float) $pendingAmount),
+            'pendingAmount' => (float) $pendingAmount,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        app(MonthlyFeeService::class)->ensureThrough($request->user());
+        $outstanding = (float) MemberFeeBill::where('user_id', $request->user()->id)
+            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
+            ->get()->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount());
+        $pendingAmount = (float) PaymentSubmission::where('user_id', $request->user()->id)
+            ->where('status', 'pending')->sum('amount');
+        $available = max(0, $outstanding - $pendingAmount);
+
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['required', 'string', 'max:120'],
@@ -73,6 +96,12 @@ class PaymentSubmissionController extends Controller
             'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
+
+        if ((float) $data['amount'] > $available + 0.005) {
+            return back()->withInput()->withErrors([
+                'amount' => 'Jumlah bayaran tidak boleh melebihi tunggakan yang belum dihantar. Bayaran akan diperuntukkan bermula daripada bulan paling lama.',
+            ]);
+        }
 
         $path = $request->file('proof')->store('payment-proofs', 'private');
 
@@ -131,6 +160,15 @@ class PaymentSubmissionController extends Controller
             'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
+
+        $outstanding = (float) MemberFeeBill::where('user_id', $payment->user_id)
+            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
+            ->get()->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount());
+        $pendingAmount = (float) PaymentSubmission::where('user_id', $payment->user_id)
+            ->where('status', 'pending')->where('id', '!=', $payment->id)->sum('amount');
+        if ((float) $data['amount'] > max(0, $outstanding - $pendingAmount) + 0.005) {
+            return back()->withInput()->withErrors(['amount' => 'Jumlah bayaran melebihi tunggakan yang tersedia. Bayaran akan mengikut bulan paling lama dahulu.']);
+        }
 
         $oldProofPath = $payment->proof_path;
         $newProofPath = $request->file('proof')->store('payment-proofs', 'private');
