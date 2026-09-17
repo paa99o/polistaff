@@ -237,10 +237,25 @@
         </div>
     </div>
 @else
-    <main class="auth-shell">
-        <div class="auth-theme-switcher no-print">
+    <header class="public-nav auth-public-nav">
+        <div class="public-container d-flex align-items-center justify-content-between w-100">
+            <a class="public-brand" href="{{ url('/') }}">
+                @include('partials.brand-mark')
+                <span>
+                    <span class="brand-name">POLISTAFF</span>
+                    <span class="brand-description">Portal Pengurusan Kelab Staf</span>
+                </span>
+            </a>
+            <nav class="public-links" aria-label="Navigasi utama">
+                <a href="{{ url('/') }}#tentang">Tentang POLISTAFF</a>
+                <a href="{{ url('/') }}#keupayaan">Keupayaan</a>
+                <a href="{{ url('/') }}#polimart">PoliMart</a>
+                <a class="public-nav-button" href="{{ url('/') }}">Halaman Utama</a>
+            </nav>
             @include('partials.theme-switcher')
         </div>
+    </header>
+    <main class="auth-shell">
         <div class="container">
             @if(session('status'))<div class="alert alert-success auto-dismiss-alert">{{ session('status') }}</div>@endif
             @if($errors->any())<div class="alert alert-danger auto-dismiss-alert"><strong>Sila semak input anda.</strong></div>@endif

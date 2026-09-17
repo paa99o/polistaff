@@ -27,6 +27,16 @@
                     <span class="brand-description text-muted">Portal Pengurusan Kelab Staf</span>
                 </span>
             </a>
+            <nav class="public-links" aria-label="Navigasi utama">
+                <a href="#tentang">Tentang POLISTAFF</a>
+                <a href="#keupayaan">Keupayaan</a>
+                <a href="#polimart">PoliMart</a>
+                @auth
+                    <a class="public-nav-button" href="{{ route('dashboard') }}">Dashboard</a>
+                @else
+                    <a class="public-nav-button" href="{{ route('login') }}">Log Masuk</a>
+                @endauth
+            </nav>
             @include('partials.theme-switcher')
         </div>
     </header>
@@ -64,13 +74,13 @@
             </aside>
         </section>
 
-        <section class="public-section">
+        <section id="tentang" class="public-section">
             <div class="public-container">
                 <div class="public-section-header">
                     <h2>Dibina untuk operasi sebenar.</h2>
                     <p>Setiap aliran kerja mengurangkan rekod manual, mempercepat kelulusan dan memastikan maklumat penting boleh dicapai oleh pihak yang betul.</p>
                 </div>
-                <div class="public-feature-grid">
+                <div id="keupayaan" class="public-feature-grid">
                     <article class="public-feature">
                         <i class="bi bi-calendar3" aria-hidden="true"></i>
                         <h3>Aktiviti & Kehadiran</h3>
@@ -86,6 +96,23 @@
                         <h3>Rekod Boleh Diaudit</h3>
                         <p>Jejaki perubahan penting dan sediakan laporan untuk pengurusan dengan yakin.</p>
                     </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="polimart" class="public-section public-market-section">
+            <div class="public-container public-market-layout">
+                <div>
+                    <p class="public-eyebrow">Ruang jual beli komuniti</p>
+                    <h2>PoliMart untuk warga Polistaff.</h2>
+                </div>
+                <div>
+                    <p>Temui barangan daripada ahli kelab, terbitkan tawaran sendiri dan urus perbualan jualan dalam satu ruang yang lebih teratur.</p>
+                    @auth
+                        <a class="btn btn-primary" href="{{ route('polimart.index') }}">Buka PoliMart <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
+                    @else
+                        <a class="btn btn-primary" href="{{ route('register') }}">Daftar untuk mula <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
+                    @endauth
                 </div>
             </div>
         </section>

@@ -4826,5 +4826,70 @@ html[data-theme="dark"] .maintenance-icon {
     .maintenance-action-row .btn { width: 100%; }
     .maintenance-brand { margin-bottom: 34px; }
     .error-brand { align-items: flex-start; gap: 16px; }
-    .error-status { flex: 0 0 auto; }
+.error-status { flex: 0 0 auto; }
+}
+
+/* Public navigation follows the same persistent, section-based rhythm as the
+   authenticated navigation. These rules reuse the existing Polistaff tokens. */
+.public-links {
+    align-items: center;
+    display: flex;
+    gap: 28px;
+    margin-left: auto;
+    margin-right: 28px;
+}
+
+.public-links a {
+    color: var(--color-text);
+    font-family: var(--font-primary);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.public-links a:hover { color: var(--color-orange); opacity: 1; }
+
+.public-links .public-nav-button {
+    background: var(--color-orange);
+    border-radius: var(--radius);
+    color: var(--color-surface);
+    padding: 11px 16px;
+}
+
+.public-links .public-nav-button:hover { color: var(--color-surface); }
+
+.auth-public-nav { position: sticky; }
+
+.public-market-section { background: var(--color-background); }
+
+.public-market-layout {
+    display: grid;
+    gap: 48px;
+    grid-template-columns: 5fr 7fr;
+}
+
+.public-market-layout h2 {
+    font-size: 40px;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.public-market-layout p:not(.public-eyebrow) {
+    color: var(--color-muted);
+    margin: 0 0 24px;
+    max-width: 680px;
+}
+
+@media (max-width: 900px) {
+    .public-links { gap: 14px; margin-right: 14px; }
+    .public-links a { font-size: 11px; }
+    .public-links a:not(.public-nav-button) { display: none; }
+}
+
+@media (max-width: 767.98px) {
+    .public-links { margin-left: auto; }
+    .public-market-layout { grid-template-columns: 1fr; }
+    .public-market-layout h2 { font-size: 32px; }
 }
