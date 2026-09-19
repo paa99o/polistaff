@@ -24,8 +24,8 @@
                 </a>
                 <nav class="public-links" aria-label="Navigasi awam">
                     <a class="{{ request()->routeIs('activities.*') ? 'public-nav-active' : '' }}" href="{{ route('activities.index') }}">Aktiviti</a>
-                    <a class="{{ request()->routeIs('polimart.*') ? 'public-nav-active' : '' }}" href="{{ route('polimart.index') }}">PoliMart</a>
-                    <a class="public-cart-link" href="{{ route('polimart.cart') }}"><i class="bi bi-bag me-1" aria-hidden="true"></i>Troli <span>{{ collect(session('polimart_cart', []))->sum() }}</span></a>
+                    <a class="{{ request()->routeIs('polimart.*') ? 'public-nav-active' : '' }}" href="{{ route('polimart.index') }}"><i class="bi bi-bag me-1" aria-hidden="true"></i>PoliMart</a>
+                    <a class="public-cart-link" href="{{ route('polimart.cart') }}"><i class="bi bi-cart3 me-1" aria-hidden="true"></i>Troli <span>{{ collect(session('polimart_cart', []))->sum() }}</span></a>
                     <a class="public-nav-button" href="{{ route('login') }}">Log Masuk</a>
                 </nav>
                 @include('partials.theme-switcher')

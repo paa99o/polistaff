@@ -29,7 +29,7 @@
             </a>
             <nav class="public-links" aria-label="Navigasi utama">
                 <a href="{{ route('activities.index') }}">Aktiviti</a>
-                <a href="{{ route('polimart.index') }}">PoliMart</a>
+                    <a href="{{ route('polimart.index') }}"><i class="bi bi-bag me-1" aria-hidden="true"></i>PoliMart</a>
                 @auth
                     <a class="public-nav-button" href="{{ route('dashboard') }}">Dashboard</a>
                 @else
