@@ -48,7 +48,7 @@
                 <h1 class="public-title brand-hero-title" aria-label="POLIBEST">
                     <span>POLI</span><span>BEST</span>
                 </h1>
-                <p class="public-lead">POLIBEST merupakan ruang kebersamaan warga Politeknik yang menyokong hubungan, aktiviti dan kesejahteraan komuniti staf.</p>
+                <p class="public-lead">POLIBEST merupakan kelab sukan, rekreasi dan kebajikan staf Politeknik Besut.</p>
                 <div class="d-flex flex-wrap gap-3">
                     @auth
                         <a class="btn btn-primary px-4" href="{{ route('dashboard') }}">Buka Dashboard <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
