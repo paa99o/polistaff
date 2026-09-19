@@ -21,7 +21,7 @@
                 </dl>
                 @if(auth()->id() === $claim->user_id && $claim->status === 'pending')
                     <div class="d-flex gap-2 flex-wrap">
-                        <a class="btn btn-outline-danger" href="{{ route('claims.edit', $claim) }}">Sunting Tuntutan</a>
+                        <a class="btn btn-outline-danger" href="{{ route('claims.edit', $claim) }}">Ubah Tuntutan</a>
                         <form method="post" action="{{ route('claims.destroy', $claim) }}" data-confirm="Batalkan tuntutan ini? Rekod tuntutan akan dipadam.">
                             @csrf
                             @method('delete')

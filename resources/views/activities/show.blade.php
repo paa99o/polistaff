@@ -28,7 +28,7 @@
                             </form>
                         @endif
                         @can('manage-activities')
-                            <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Sunting</a>
+                            <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                         @endcan
                     </div>
                 </div>

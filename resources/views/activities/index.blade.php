@@ -73,7 +73,7 @@
                             <div class="d-flex gap-2 flex-wrap">
                                 <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.show', $activity) }}">Lihat</a>
                                 @can('manage-activities')
-                                    <a class="btn btn-sm btn-danger" href="{{ route('activities.edit', $activity) }}">Sunting</a>
+                                    <a class="btn btn-sm btn-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                                 @endcan
                             </div>
                         </td>

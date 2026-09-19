@@ -2365,6 +2365,18 @@ a:hover { color: var(--color-primary); opacity: .8; }
     min-height: 100vh;
 }
 
+/* Public pages use the same POLIBEST navy, slate and gold palette as the header. */
+.public-shell {
+    --public-ink: #24333d;
+    --public-muted: #668094;
+    --public-accent: #c28a4a;
+    --public-border: rgba(46, 74, 88, .16);
+    --color-text: var(--public-ink);
+    --color-muted: var(--public-muted);
+    --color-orange: var(--public-accent);
+    --color-border: var(--public-border);
+}
+
 .public-container {
     margin: 0 auto;
     max-width: 1280px;
@@ -3993,9 +4005,10 @@ html[data-theme="dark"] {
     --color-auth-panel: #18263d;
     --color-footer: #101a2b;
     --color-text: #f5f7fb;
+    --color-ink: #f5f7fb;
     --color-surface: #202c3f;
     --color-border: rgba(222, 231, 245, .16);
-    --color-muted: rgba(226, 232, 240, .68);
+    --color-muted: rgba(226, 232, 240, .82);
     --color-secondary: #2b3a52;
     --color-on-blue: #ffffff;
     --color-primary: #8fb5ff;
@@ -4892,11 +4905,37 @@ html[data-theme="dark"] .maintenance-icon {
 @media (max-width: 900px) {
     .public-links { gap: 14px; margin-right: 14px; }
     .public-links a { font-size: 11px; }
-    .public-links a:not(.public-nav-button) { display: none; }
 }
 
 @media (max-width: 767.98px) {
-    .public-links { margin-left: auto; }
+    .public-nav {
+        height: auto;
+        padding: 12px 0;
+    }
+
+    .public-nav .public-container {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .public-brand {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .public-links {
+        flex: 1 0 100%;
+        gap: 10px 18px;
+        justify-content: center;
+        margin: 0;
+        order: 3;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+
+    .public-links::-webkit-scrollbar { display: none; }
+    .public-links a { display: inline-flex !important; font-size: 11px; }
     .public-market-layout { grid-template-columns: 1fr; }
     .public-market-layout h2 { font-size: 32px; }
 }
@@ -4979,7 +5018,7 @@ html[data-theme="dark"] .maintenance-icon {
     .public-detail-facts { flex-direction: column; gap: 16px; }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 575.98px) {
     .public-store-products { grid-template-columns: 1fr; }
 }
 
@@ -5082,4 +5121,108 @@ html[data-theme="dark"] .maintenance-icon {
     .site-footer-bottom { justify-content: center; text-align: center; }
     .site-footer-links { gap: 14px 22px; }
     .site-footer-bottom { flex-direction: column; gap: 6px; }
+}
+
+/* Ensure all public and shared text remains readable in dark mode. */
+html[data-theme="dark"] body,
+html[data-theme="dark"] .public-shell,
+html[data-theme="dark"] .app-shell {
+    color: var(--color-text);
+}
+
+html[data-theme="dark"] .public-shell {
+    --public-ink: #f5f7fb;
+    --public-muted: rgba(226, 232, 240, .82);
+    --public-accent: #ffd08a;
+    --public-border: rgba(222, 231, 245, .18);
+    --color-text: var(--public-ink);
+    --color-muted: var(--public-muted);
+    --color-orange: var(--public-accent);
+    --color-border: var(--public-border);
+}
+
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6,
+html[data-theme="dark"] strong,
+html[data-theme="dark"] label,
+html[data-theme="dark"] dt,
+html[data-theme="dark"] .public-brand,
+html[data-theme="dark"] .public-brand:hover,
+html[data-theme="dark"] .public-links a,
+html[data-theme="dark"] .public-product-body h3 a,
+html[data-theme="dark"] .public-detail-card,
+html[data-theme="dark"] .public-detail-card h2 {
+    color: var(--color-text);
+}
+
+html[data-theme="dark"] p,
+html[data-theme="dark"] li,
+html[data-theme="dark"] dd,
+html[data-theme="dark"] .text-muted,
+html[data-theme="dark"] .brand-description,
+html[data-theme="dark"] .public-listing-hero > p:last-child,
+html[data-theme="dark"] .public-activity-meta,
+html[data-theme="dark"] .public-activity-card p:not(.public-activity-meta),
+html[data-theme="dark"] .public-product-body > p,
+html[data-theme="dark"] .public-detail-meta,
+html[data-theme="dark"] .public-detail-card > p,
+html[data-theme="dark"] .public-detail-facts span,
+html[data-theme="dark"] .public-empty-state p,
+html[data-theme="dark"] .public-checkout-item span {
+    color: var(--color-muted) !important;
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .public-search-field input {
+    background-color: #26354b;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder,
+html[data-theme="dark"] .public-search-field input::placeholder {
+    color: rgba(226, 232, 240, .72);
+}
+
+html[data-theme="dark"] .public-nav {
+    background: #17243a;
+    border-bottom-color: rgba(222, 231, 245, .18);
+}
+
+html[data-theme="dark"] .public-nav-active,
+html[data-theme="dark"] .public-links a:hover {
+    color: #ffd08a !important;
+}
+
+html[data-theme="dark"] .site-footer,
+html[data-theme="dark"] .site-footer a,
+html[data-theme="dark"] .site-footer strong,
+html[data-theme="dark"] .site-footer p,
+html[data-theme="dark"] .site-footer-bottom,
+html[data-theme="dark"] .site-footer-social a {
+    color: #f5f7fb;
+}
+
+html[data-theme="dark"] .site-footer p,
+html[data-theme="dark"] .site-footer-bottom {
+    color: rgba(226, 232, 240, .82);
+}
+
+html[data-theme="dark"] .public-product-category,
+html[data-theme="dark"] .public-search-field i {
+    color: #c6d5ed;
+}
+
+html[data-theme="dark"] .btn-outline-primary {
+    border-color: #9dbcf5;
+    color: #dce8ff;
 }

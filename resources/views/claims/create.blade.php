@@ -5,7 +5,7 @@
     $isEditing = isset($claim) && $claim;
     $isResubmitting = $resubmission ?? false;
     $formAction = $isResubmitting ? route('claims.resubmit', $claim) : ($isEditing ? route('claims.update', $claim) : route('claims.store'));
-    $pageTitle = $isResubmitting ? 'Hantar Semula Tuntutan' : ($isEditing ? 'Sunting Tuntutan' : 'Tuntutan Baru');
+    $pageTitle = $isResubmitting ? 'Hantar Semula Tuntutan' : ($isEditing ? 'Ubah Tuntutan' : 'Tuntutan Baru');
 @endphp
 <div class="card">
     <div class="card-body">

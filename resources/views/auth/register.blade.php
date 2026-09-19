@@ -58,11 +58,13 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="register-password">Kata laluan</label>
-                                <input class="form-control" id="register-password" type="password" name="password" autocomplete="new-password" required>
+                                <input class="form-control" id="register-password" type="password" name="password" autocomplete="new-password" minlength="8" required>
+                                @include('partials.errors', ['name' => 'password'])
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="password_confirmation">Sahkan kata laluan</label>
-                                <input class="form-control" id="password_confirmation" type="password" name="password_confirmation" autocomplete="new-password" required>
+                                <input class="form-control" id="password_confirmation" type="password" name="password_confirmation" autocomplete="new-password" minlength="8" required>
+                                @include('partials.errors', ['name' => 'password_confirmation'])
                             </div>
                         </div>
 
