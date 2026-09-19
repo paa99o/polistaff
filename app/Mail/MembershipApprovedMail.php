@@ -25,7 +25,7 @@ class MembershipApprovedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Keahlian anda telah diluluskan',
+            subject: '[POLIBEST] Keahlian anda telah diluluskan',
         );
     }
 

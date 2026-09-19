@@ -9,14 +9,14 @@
                     <a class="d-inline-flex align-items-center gap-3 text-dark" href="{{ url('/') }}">
                         @include('partials.brand-mark')
                         <span>
-                            <span class="brand-name">POLISTAFF</span>
+                            <span class="brand-name">POLIBEST</span>
                             <span class="brand-description">Portal Pengurusan Kelab Staf</span>
                         </span>
                     </a>
                     <div class="auth-stripe mt-4" aria-hidden="true"><span></span><span></span><span></span></div>
 
                     <div class="mt-5 auth-brand-copy">
-                        <h2 class="mb-3">Urus kelab staf dengan lebih teratur.</h2>
+                        <h2 class="mb-3">Urus kelab staf POLIBEST dengan lebih teratur.</h2>
                         <p class="mb-0">Akses aktiviti, bayaran, tuntutan, kehadiran dan makluman melalui satu portal yang selamat.</p>
                     </div>
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\PortalNotificationMail;
+use App\Mail\FeeReminderMail;
 use App\Models\AuditLog;
 use App\Models\PortalNotification;
 use App\Models\SystemSetting;
@@ -49,11 +50,26 @@ class SystemSettingController extends Controller
 
     public function feeOperations(): View
     {
+        $activeMembers = User::query()
+            ->where('membership_status', 'active')
+            ->where('role', 'member')
+            ->withSum('feeBills as total_billed', 'amount')
+            ->withSum('feeBills as total_paid', 'paid_amount')
+            ->orderBy('name')
+            ->get();
+
+        $activeMembers->each(function (User $member): void {
+            $member->total_billed = (float) ($member->total_billed ?? 0);
+            $member->total_paid = (float) ($member->total_paid ?? 0);
+            $member->outstanding_total = (float) $member->fee_balance;
+        });
+
         return view('finance.fees', [
             'monthlyFee' => (float) SystemSetting::getValue('monthly_fee', '20'),
-            'activeMembers' => User::where('membership_status', 'active')->count(),
-            'outstandingMembers' => User::where('membership_status', 'active')->where('fee_balance', '>', 0)->count(),
-            'outstandingTotal' => (float) User::where('membership_status', 'active')->sum('fee_balance'),
+            'activeMembers' => $activeMembers,
+            'paidTotal' => (float) $activeMembers->sum('total_paid'),
+            'outstandingMembers' => $activeMembers->where('outstanding_total', '>', 0)->count(),
+            'outstandingTotal' => (float) $activeMembers->sum('outstanding_total'),
         ]);
     }
 
@@ -76,6 +92,41 @@ class SystemSettingController extends Controller
         return back()->with('status', trim(Artisan::output()) ?: 'Peringatan yuran dihantar.');
     }
 
+    public function sendFeeReminder(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($user->membership_status === 'active' && $user->role === 'member', 404);
+
+        if ((float) $user->fee_balance <= 0) {
+            return back()->with('status', 'Ahli ini tiada tunggakan yuran semasa.');
+        }
+
+        $notification = PortalNotification::create([
+            'user_id' => $user->id,
+            'title' => 'Peringatan tunggakan yuran',
+            'message' => 'Baki yuran anda ialah RM '.number_format((float) $user->fee_balance, 2).'.',
+            'type' => 'fee',
+            'link' => route('payments.create'),
+        ]);
+
+        if ($user->email && $user->wantsEmail('fee_reminders')) {
+            $this->emailDeliveryService->send($user, 'fee reminder', new FeeReminderMail($user), $notification);
+            $this->emailAuditService->sent($user, 'fee reminder', $user);
+        }
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'sent',
+            'module' => 'Fee Reminder',
+            'record_type' => User::class,
+            'record_id' => $user->id,
+            'description' => 'Sent fee reminder to '.$user->name.'.',
+            'changes' => ['fee_balance' => $user->fee_balance, 'email' => $user->email],
+            'ip_address' => $request->ip(),
+        ]);
+
+        return back()->with('status', 'Peringatan tunggakan telah dihantar kepada '.$user->name.'.');
+    }
+
     public function enableMaintenance(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -92,7 +143,7 @@ class SystemSettingController extends Controller
         SystemSetting::setValue('maintenance_enabled', '1');
 
         $notified = $this->notifyUsers(
-            'Penyelenggaraan sistem Polistaff',
+            'Penyelenggaraan sistem POLIBEST',
             $data['maintenance_message'],
             'warning',
             'maintenance enabled'
@@ -120,7 +171,7 @@ class SystemSettingController extends Controller
         SystemSetting::setValue('maintenance_estimated_end', '');
 
         $notified = $this->notifyUsers(
-            'Polistaff kembali beroperasi',
+            'POLIBEST kembali beroperasi',
             'Penyelenggaraan telah selesai dan sistem kini boleh digunakan seperti biasa.',
             'success',
             'maintenance completed'

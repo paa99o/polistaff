@@ -29,8 +29,13 @@
                         <input class="form-control" type="number" step="0.01" min="0" name="price" value="{{ old('price') }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Nombor untuk urusan selepas chat</label>
+                        <label class="form-label">Nombor telefon penjual</label>
                         <input class="form-control" name="contact" value="{{ old('contact', auth()->user()->phone) }}" placeholder="Nombor telefon / WhatsApp" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Stok</label>
+                        <input class="form-control" type="number" name="stock" value="{{ old('stock', 1) }}" min="0" max="999999" required>
+                        <div class="form-text">Produk akan ditanda habis stok apabila jumlah ini mencapai sifar.</div>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Gambar Produk</label>

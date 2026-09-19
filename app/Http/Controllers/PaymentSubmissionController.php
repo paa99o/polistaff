@@ -31,6 +31,8 @@ class PaymentSubmissionController extends Controller
 
         if (! $request->user()->hasRole('treasurer', 'chairman', 'admin')) {
             $query->where('user_id', $request->user()->id);
+        } elseif ($request->filled('user_id')) {
+            $query->where('user_id', $request->integer('user_id'));
         }
 
         $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))

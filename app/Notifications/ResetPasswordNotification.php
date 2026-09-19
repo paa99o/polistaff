@@ -15,9 +15,9 @@ class ResetPasswordNotification extends ResetPassword
         ]);
 
         return (new MailMessage)
-            ->subject('[POLISTAFF] Reset kata laluan')
+            ->subject('[POLIBEST] Reset kata laluan')
             ->greeting('Salam '.$notifiable->name.',')
-            ->line('Kami menerima permintaan untuk menetapkan semula kata laluan akaun POLISTAFF anda.')
+            ->line('Kami menerima permintaan untuk menetapkan semula kata laluan akaun POLIBEST anda.')
             ->action('Tetapkan Kata Laluan Baharu', $url)
             ->line('Pautan ini akan tamat tempoh dalam '.config('auth.passwords.users.expire').' minit.')
             ->line('Jika anda tidak membuat permintaan ini, abaikan emel ini. Kata laluan anda tidak akan berubah.');

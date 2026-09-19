@@ -11,7 +11,7 @@ class SystemBackupService
 {
     public const FORMAT_VERSION = 2;
 
-    public const APPLICATION = 'POLISTAFF';
+    public const APPLICATION = 'POLIBEST';
 
     public const DATABASE_PATH = 'database/polistaff.sql';
 
@@ -148,7 +148,7 @@ class SystemBackupService
         );
         $zip->addFile(
             fileName: 'README.txt',
-            data: "POLISTAFF SYSTEM BACKUP\n\nDatabase records are stored in database/polistaff.json and database/polistaff.sql.\nUploaded files are stored in uploads/.\nRun the matching application migrations before restoring data.\nThis archive does not contain .env or application credentials.\n",
+            data: "POLIBEST SYSTEM BACKUP\n\nDatabase records are stored in database/polistaff.json and database/polistaff.sql.\nUploaded files are stored in uploads/.\nRun the matching application migrations before restoring data.\nThis archive does not contain .env or application credentials.\n",
         );
 
         foreach ($manifest['files'] as $file) {
@@ -174,7 +174,7 @@ class SystemBackupService
 
     private function databaseSql(array $tables): string
     {
-        $sql = '-- POLISTAFF database backup generated at '.now()->toDateTimeString().PHP_EOL;
+        $sql = '-- POLIBEST database backup generated at '.now()->toDateTimeString().PHP_EOL;
         $sql .= '-- Apply the application migrations before importing this file.'.PHP_EOL.PHP_EOL;
         $sql .= 'BEGIN TRANSACTION;'.PHP_EOL.PHP_EOL;
 

@@ -25,7 +25,7 @@ class FeeReminderMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Peringatan yuran tertunggak',
+            subject: '[POLIBEST] Peringatan yuran tertunggak',
         );
     }
 

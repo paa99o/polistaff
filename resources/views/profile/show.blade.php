@@ -51,7 +51,7 @@
             <div class="member-card-brand">
                 <div class="member-card-logo">@include('partials.brand-mark')</div>
                 <div>
-                    <strong>POLISTAFF</strong>
+                    <strong>POLIBEST</strong>
                     <span>Kad Ahli Kelab Staf</span>
                 </div>
                 <span class="member-card-status">{{ $memberStatusLabel }}</span>
@@ -84,7 +84,7 @@
                 <div>
                     <p class="stat-label mb-1">Rekod penyertaan</p>
                     <h2 class="h4 mb-0">Activity Passport</h2>
-                    <p class="text-muted mb-0 mt-1">Kumpul pengalaman melalui kehadiran aktiviti Polistaff.</p>
+                    <p class="text-muted mb-0 mt-1">Kumpul pengalaman melalui kehadiran aktiviti POLIBEST.</p>
                 </div>
                 <span class="activity-passport-total"><strong>{{ $attendedCount }}</strong><span>aktiviti hadir</span></span>
             </div>

@@ -22,26 +22,83 @@
 @endunless
 
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-lg-3 col-md-6">
         <div class="card h-100"><div class="card-body">
             <span class="section-kicker">Kadar Semasa</span>
             <div class="display-6 fw-bold">RM {{ number_format($monthlyFee, 2) }}</div>
             <p class="text-muted mb-0">Yuran bagi setiap ahli aktif sebulan.</p>
         </div></div>
     </div>
-    <div class="col-md-4">
+    <div class="col-lg-3 col-md-6">
         <div class="card h-100"><div class="card-body">
             <span class="section-kicker">Ahli Aktif</span>
-            <div class="display-6 fw-bold">{{ $activeMembers }}</div>
+            <div class="display-6 fw-bold">{{ $activeMembers->count() }}</div>
             <p class="text-muted mb-0">Ahli yang akan menerima bil bulanan.</p>
         </div></div>
     </div>
-    <div class="col-md-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card h-100"><div class="card-body">
+            <span class="section-kicker">Jumlah Dibayar</span>
+            <div class="display-6 fw-bold">RM {{ number_format($paidTotal, 2) }}</div>
+            <p class="text-muted mb-0">Jumlah bayaran yang telah diperuntukkan.</p>
+        </div></div>
+    </div>
+    <div class="col-lg-3 col-md-6">
         <div class="card h-100"><div class="card-body">
             <span class="section-kicker">Jumlah Tunggakan</span>
             <div class="display-6 fw-bold">RM {{ number_format($outstandingTotal, 2) }}</div>
             <p class="text-muted mb-0">Daripada {{ $outstandingMembers }} ahli aktif.</p>
         </div></div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+                <span class="section-kicker">Pemantauan Ahli</span>
+                <h2 class="h4 soft-panel-title mb-1">Status Yuran Ahli Aktif</h2>
+                <p class="text-muted mb-0">Semak jumlah bil, bayaran yang telah diterima dan baki tunggakan setiap ahli.</p>
+            </div>
+            <span class="badge text-bg-light align-self-center">{{ $outstandingMembers }} ahli ada tunggakan</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table mobile-records align-middle mb-0">
+                <thead>
+                    <tr><th>Ahli</th><th>Jumlah Bil</th><th>Telah Dibayar</th><th>Tunggakan</th><th>Status</th><th>Tindakan</th></tr>
+                </thead>
+                <tbody>
+                @forelse($activeMembers as $member)
+                    <tr>
+                        <td data-label="Ahli"><strong>{{ $member->name }}</strong><div class="small text-muted">{{ $member->email }}</div></td>
+                        <td data-label="Jumlah Bil">RM {{ number_format($member->total_billed, 2) }}</td>
+                        <td data-label="Telah Dibayar">RM {{ number_format($member->total_paid, 2) }}</td>
+                        <td data-label="Tunggakan"><strong class="{{ $member->outstanding_total > 0 ? 'text-danger' : 'text-success' }}">RM {{ number_format($member->outstanding_total, 2) }}</strong></td>
+                        <td data-label="Status">
+                            @if($member->outstanding_total > 0)
+                                <span class="badge text-bg-warning">Tertunggak</span>
+                            @else
+                                <span class="badge text-bg-success">Selesai</span>
+                            @endif
+                        </td>
+                        <td data-label="Tindakan">
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn btn-sm btn-outline-danger" href="{{ route('payments.index', ['user_id' => $member->id]) }}">Lihat Bayaran</a>
+                                @if($canManageFees && $member->outstanding_total > 0)
+                                    <form method="post" action="{{ route('finance.fees.reminder', $member) }}" data-confirm="Hantar peringatan tunggakan kepada {{ $member->name }}?">
+                                        @csrf
+                                        <button class="btn btn-sm btn-danger" type="submit"><i class="bi bi-bell me-1" aria-hidden="true"></i>Ingatkan</button>
+                                    </form>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="text-muted">Tiada ahli aktif untuk dipaparkan.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 

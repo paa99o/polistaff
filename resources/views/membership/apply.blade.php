@@ -74,7 +74,7 @@
                     <dt class="col-5">No. akaun</dt>
                     <dd class="col-7">5621 0987 3344</dd>
                     <dt class="col-5">Nama akaun</dt>
-                    <dd class="col-7">Kelab Staf POLISTAFF</dd>
+                    <dd class="col-7">Kelab Staf POLIBEST</dd>
                 </dl>
             </div>
         </aside>

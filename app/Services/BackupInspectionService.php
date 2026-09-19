@@ -150,7 +150,7 @@ class BackupInspectionService
     private function validateManifest(ZipFile $zip, array $entries, array $manifest, array &$result): void
     {
         if (($manifest['application'] ?? null) !== SystemBackupService::APPLICATION) {
-            $result['errors'][] = 'Arkib ini bukan sandaran sistem POLISTAFF.';
+            $result['errors'][] = 'Arkib ini bukan sandaran sistem POLIBEST.';
         }
 
         if (($manifest['format_version'] ?? null) !== SystemBackupService::FORMAT_VERSION) {

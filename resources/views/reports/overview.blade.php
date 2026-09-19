@@ -7,7 +7,7 @@
 <section class="report-overview">
     <div class="report-toolbar no-print">
         <div>
-            <p class="stat-label mb-1">Polistaff Analytics</p>
+            <p class="stat-label mb-1">POLIBEST Analytics</p>
             <h1 class="mb-0">Laporan Ringkasan</h1>
         </div>
         <div class="report-actions">

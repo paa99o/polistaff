@@ -25,7 +25,7 @@ class ActivityApprovedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Aktiviti dibuka: '.$this->activity->title,
+            subject: '[POLIBEST] Aktiviti dibuka: '.$this->activity->title,
         );
     }
 

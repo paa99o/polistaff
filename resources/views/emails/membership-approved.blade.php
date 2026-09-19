@@ -6,13 +6,13 @@
 </head>
 <body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6; margin: 0; padding: 24px; background: #f9fafb;">
     <div style="max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
-        <p style="margin-top: 0; color: #6b7280;">Keahlian Polistaff</p>
+        <p style="margin-top: 0; color: #6b7280;">Keahlian POLIBEST</p>
 
         <h1 style="font-size: 22px; margin: 0 0 16px; color: #111827;">Keahlian Anda Telah Diluluskan</h1>
 
         <p>Salam {{ $user->name }},</p>
 
-        <p>Permohonan keahlian kelab staff anda telah diluluskan. Akaun anda kini aktif dan boleh menggunakan kemudahan ahli di Polistaff.</p>
+        <p>Permohonan keahlian kelab staff anda telah diluluskan. Akaun anda kini aktif dan boleh menggunakan kemudahan ahli di POLIBEST.</p>
 
         <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
@@ -38,7 +38,7 @@
         </p>
 
         <p style="font-size: 13px; color: #6b7280; margin-bottom: 0;">
-            Emel ini dihantar secara automatik apabila permohonan keahlian diluluskan di Polistaff.
+            Emel ini dihantar secara automatik apabila permohonan keahlian diluluskan di POLIBEST.
         </p>
     </div>
 </body>

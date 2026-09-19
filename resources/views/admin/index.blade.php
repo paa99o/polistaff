@@ -4,7 +4,7 @@
 <section class="admin-page">
     <div class="admin-hero">
         <div>
-            <p class="stat-label mb-1">Pentadbiran Polistaff</p>
+            <p class="stat-label mb-1">Pentadbiran POLIBEST</p>
             <h1>Sistem Pentadbiran</h1>
             <p>Pantau kerja tertunda, yuran, ahli dan aktiviti kelab staff.</p>
         </div>

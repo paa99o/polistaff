@@ -26,19 +26,13 @@
                 </div>
 
                 <div class="polimart-detail-actions">
-                    @if(in_array($item->status, ['active', 'reserved'], true) && $item->user_id !== auth()->id())
-                        <form method="post" action="{{ route('polimart.chat.start', $item) }}">
-                            @csrf
-                            <button class="btn btn-danger" type="submit"><i class="bi bi-chat-dots me-2" aria-hidden="true"></i>Chat Seller</button>
-                        </form>
-                    @endif
                     @if($item->status === 'active')
                         <form method="post" action="{{ route('polimart.favorite', $item) }}">
                             @csrf
                             <button class="btn {{ $isFavorited ? 'btn-danger' : 'btn-outline-danger' }}" type="submit"><i class="bi {{ $isFavorited ? 'bi-heart-fill' : 'bi-heart' }} me-2" aria-hidden="true"></i>{{ $isFavorited ? 'Disimpan' : 'Simpan' }}</button>
                         </form>
                     @endif
-                    <span class="polimart-status polimart-status-{{ $item->status }}">{{ ucfirst($item->status) }}</span>
+                    <span class="polimart-status polimart-status-{{ $item->status }}">{{ $item->stock > 0 ? $item->stock.' stok tinggal' : 'Habis stok' }}</span>
                 </div>
 
                 <section class="polimart-detail-section">
@@ -47,6 +41,7 @@
                         <div><dt>Kategori</dt><dd>{{ $item->category }}</dd></div>
                         <div><dt>Diterbitkan</dt><dd>{{ $item->created_at->diffForHumans() }}</dd></div>
                         <div><dt>Penjual</dt><dd><a href="{{ route('polimart.seller', $item->user) }}">{{ $item->user->name }}</a></dd></div>
+                        <div><dt>Stok</dt><dd>{{ $item->stock > 0 ? $item->stock.' unit' : 'Habis stok' }}</dd></div>
                         <div><dt>Status</dt><dd>{{ ucfirst($item->status) }}</dd></div>
                     </dl>
                 </section>
@@ -93,13 +88,7 @@
                         <span class="polimart-category">Penjual PoliMart</span>
                         <a class="polimart-seller-name" href="{{ route('polimart.seller', $item->user) }}">{{ $item->user->name }}</a>
                     </div>
-                    <p><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Urusan pembelian melalui chat PoliMart.</p>
-                    @if(in_array($item->status, ['active', 'reserved'], true) && $item->user_id !== auth()->id())
-                        <form method="post" action="{{ route('polimart.chat.start', $item) }}">
-                            @csrf
-                            <button class="btn btn-danger w-100" type="submit"><i class="bi bi-chat-dots me-2" aria-hidden="true"></i>Mulakan Chat</button>
-                        </form>
-                    @endif
+                    <p><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Pembelian diproses melalui troli dan checkout PoliMart.</p>
                 </div>
 
                 @if($item->user_id === auth()->id() || auth()->user()->hasRole('admin'))

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#eee5d8">
-    <title>Penyelenggaraan Sistem &middot; POLISTAFF</title>
+    <title>Penyelenggaraan Sistem &middot; POLIBEST</title>
     @include('partials.theme-loader')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -17,7 +17,7 @@
             <div class="maintenance-brand">
                 @include('partials.brand-mark')
                 <div>
-                    <strong>POLISTAFF</strong>
+                    <strong>POLIBEST</strong>
                     <span>Portal Pengurusan Kelab Staf</span>
                 </div>
             </div>

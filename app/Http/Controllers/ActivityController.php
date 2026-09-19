@@ -26,6 +26,7 @@ class ActivityController extends Controller
 
     public function index(Request $request): View
     {
+        $user = $request->user();
         $month = $request->input('month', now()->format('Y-m'));
         $calendarMonth = preg_match('/^\d{4}-\d{2}$/', $month)
             ? Carbon::createFromFormat('Y-m', $month)->startOfMonth()
@@ -34,7 +35,7 @@ class ActivityController extends Controller
         $calendarEnd = $calendarMonth->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $calendarActivities = Activity::query()
-            ->when(! $request->user()->hasRole('admin', 'chairman'), fn ($query) => $query->where('status', 'approved'))
+            ->when(! $user || ! $user->hasRole('admin', 'chairman'), fn ($query) => $query->where('status', 'approved'))
             ->whereBetween('date_time', [$calendarStart, $calendarEnd])
             ->orderBy('date_time')
             ->get()
@@ -54,12 +55,32 @@ class ActivityController extends Controller
         }
 
         $activities = Activity::query()
-            ->when(! $request->user()->hasRole('admin', 'chairman'), fn ($query) => $query->where('status', 'approved'))
+            ->when(! $user || ! $user->hasRole('admin', 'chairman'), fn ($query) => $query->where('status', 'approved'))
             ->when($request->filled('date'), fn ($query) => $query->whereDate('date_time', $request->date))
             ->orderBy('date_time')
             ->paginate(10);
 
         return view('activities.index', compact('activities', 'calendarMonth', 'calendarWeeks'));
+    }
+
+    public function publicIndex(Request $request): View
+    {
+        $view = $request->query('view') === 'past' ? 'past' : 'upcoming';
+        $activities = Activity::query()
+            ->where('status', 'approved')
+            ->when($view === 'past', fn ($query) => $query->where('date_time', '<', now())->latest('date_time'))
+            ->when($view === 'upcoming', fn ($query) => $query->where('date_time', '>=', now())->oldest('date_time'))
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('public.activities', compact('activities', 'view'));
+    }
+
+    public function publicShow(Activity $activity): View
+    {
+        abort_unless($activity->status === 'approved', 404);
+
+        return view('public.activity-show', compact('activity'));
     }
 
     public function create(): View
@@ -88,15 +109,15 @@ class ActivityController extends Controller
     public function show(Activity $activity): View
     {
         $user = auth()->user();
-        $canManageAttendance = $user->hasRole('admin', 'chairman', 'treasurer');
+        $canManageAttendance = $user?->hasRole('admin', 'chairman', 'treasurer') ?? false;
 
-        abort_unless($activity->status === 'approved' || $user->hasRole('admin', 'chairman'), 404);
+        abort_unless($activity->status === 'approved' || $user?->hasRole('admin', 'chairman'), 404);
 
         $activity->loadCount(['attendances', 'activeRegistrations', 'waitlistedRegistrations']);
-        $registration = $activity->registrations()->where('user_id', $user->id)->first();
+        $registration = $user ? $activity->registrations()->where('user_id', $user->id)->first() : null;
 
         if ($canManageAttendance) {
-            $activity->load('attendances.user', 'activeRegistrations.user', 'waitlistedRegistrations.user');
+            $activity->load('attendances.user', 'activeRegistrations.user', 'waitlistedRegistrations.user', 'guestRegistrations');
         }
 
         return view('activities.show', [
@@ -216,7 +237,7 @@ class ActivityController extends Controller
 
     private function timelineLogs(Activity $activity)
     {
-        if (! auth()->user()->hasRole('chairman', 'admin')) {
+        if (! auth()->check() || ! auth()->user()->hasRole('chairman', 'admin')) {
             return collect();
         }
 

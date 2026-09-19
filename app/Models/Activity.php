@@ -60,4 +60,9 @@ class Activity extends Model
     {
         return $this->hasMany(Feedback::class);
     }
+
+    public function guestRegistrations(): HasMany
+    {
+        return $this->hasMany(GuestActivityRegistration::class);
+    }
 }

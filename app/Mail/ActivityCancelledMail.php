@@ -25,7 +25,7 @@ class ActivityCancelledMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Aktiviti dibatalkan: '.$this->activity->title,
+            subject: '[POLIBEST] Aktiviti dibatalkan: '.$this->activity->title,
         );
     }
 

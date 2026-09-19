@@ -19,7 +19,7 @@ class ProfileController extends Controller
             ['name' => 'Ahli Baru', 'threshold' => 1, 'icon' => 'bi-stars'],
             ['name' => 'Ahli Aktif', 'threshold' => 3, 'icon' => 'bi-lightning-charge'],
             ['name' => 'Ahli Komited', 'threshold' => 5, 'icon' => 'bi-award'],
-            ['name' => 'Duta Polistaff', 'threshold' => 10, 'icon' => 'bi-trophy'],
+            ['name' => 'Duta POLIBEST', 'threshold' => 10, 'icon' => 'bi-trophy'],
         ];
         $earnedBadges = collect($badgeDefinitions)->filter(fn (array $badge) => $attendedCount >= $badge['threshold'])->values();
         $nextBadge = collect($badgeDefinitions)->first(fn (array $badge) => $attendedCount < $badge['threshold']);

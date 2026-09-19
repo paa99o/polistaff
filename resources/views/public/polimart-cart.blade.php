@@ -1,0 +1,12 @@
+@extends('layouts.public', ['title' => 'Troli PoliMart'])
+
+@section('content')
+<section class="public-container public-listing-hero"><p class="public-eyebrow">Pesanan anda</p><h1>Troli Beli-belah</h1><p>Semak produk dan kuantiti sebelum terus ke checkout.</p></section>
+<section class="public-container public-cart-section">
+    @if($items->isEmpty())
+        <div class="public-empty-state"><i class="bi bi-bag" aria-hidden="true"></i><h2>Troli anda masih kosong.</h2><p>Jelajah PoliMart untuk pilih produk.</p><a class="btn btn-primary mt-3" href="{{ route('polimart.index') }}#produk">Lihat Produk</a></div>
+    @else
+        <div class="public-cart-layout"><div><form method="post" action="{{ route('polimart.cart.update') }}">@csrf @foreach($items as $line)<article class="public-cart-item">@if($line['item']->image_path)<img src="{{ asset('storage/'.$line['item']->image_path) }}" alt="{{ $line['item']->name }}">@else<div class="public-cart-placeholder"><i class="bi bi-bag-heart" aria-hidden="true"></i></div>@endif<div class="public-cart-item-copy"><span class="public-product-category">{{ $line['item']->category }}</span><h2>{{ $line['item']->name }}</h2><span>RM {{ number_format((float) $line['item']->price, 2) }}</span><small class="text-muted">{{ $line['item']->stock }} stok tinggal</small></div><div><label class="form-label" for="cart-{{ $line['item']->id }}">Kuantiti</label><input class="form-control" id="cart-{{ $line['item']->id }}" type="number" name="quantities[{{ $line['item']->id }}]" value="{{ $line['quantity'] }}" min="0" max="{{ min(99, $line['item']->stock) }}"></div><strong>RM {{ number_format($line['lineTotal'], 2) }}</strong><button class="btn btn-link text-danger" type="submit" name="remove" value="{{ $line['item']->id }}" aria-label="Buang {{ $line['item']->name }}"><i class="bi bi-trash" aria-hidden="true"></i></button></article>@endforeach<button class="btn btn-outline-primary" type="submit">Kemas Kini Troli</button></form></div><aside class="public-order-summary"><h2>Ringkasan Pesanan</h2><div><span>Subtotal</span><strong>RM {{ number_format($subtotal, 2) }}</strong></div><div><span>Penghantaran</span><strong>RM {{ number_format($shippingFee, 2) }}</strong></div><div class="public-summary-total"><span>Jumlah</span><strong>RM {{ number_format($total, 2) }}</strong></div><a class="btn btn-primary w-100" href="{{ route('polimart.checkout') }}">Teruskan Checkout</a></aside></div>
+    @endif
+</section>
+@endsection

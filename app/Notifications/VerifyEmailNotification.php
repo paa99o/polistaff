@@ -20,9 +20,9 @@ class VerifyEmailNotification extends VerifyEmail
         );
 
         return (new MailMessage)
-            ->subject('[POLISTAFF] Sahkan alamat emel anda')
+            ->subject('[POLIBEST] Sahkan alamat emel anda')
             ->greeting('Salam '.$notifiable->name.',')
-            ->line('Sahkan alamat emel ini untuk mengaktifkan akses penuh ke portal POLISTAFF.')
+            ->line('Sahkan alamat emel ini untuk mengaktifkan akses penuh ke portal POLIBEST.')
             ->action('Sahkan Alamat Emel', $url)
             ->line('Pautan pengesahan ini sah selama 60 minit.')
             ->line('Jika anda tidak mendaftar akaun ini, abaikan emel ini.');

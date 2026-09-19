@@ -25,7 +25,7 @@ class ExpenseClaimApprovedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Tuntutan diluluskan: '.$this->claim->title,
+            subject: '[POLIBEST] Tuntutan diluluskan: '.$this->claim->title,
         );
     }
 

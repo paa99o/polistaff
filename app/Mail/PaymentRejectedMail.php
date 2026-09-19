@@ -25,7 +25,7 @@ class PaymentRejectedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Bayaran ditolak',
+            subject: '[POLIBEST] Bayaran ditolak',
         );
     }
 

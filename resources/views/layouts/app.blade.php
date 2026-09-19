@@ -7,8 +7,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="POLISTAFF &mdash; Portal Pengurusan Kelab Staf">
-    <title>{{ $title ?? 'POLISTAFF' }} &middot; POLISTAFF</title>
+    <meta name="description" content="POLIBEST &mdash; Portal Pengurusan Kelab Staf">
+    <title>{{ $title ?? 'POLIBEST' }} &middot; POLIBEST</title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <meta name="theme-color" content="#1557D8">
@@ -31,12 +31,6 @@
             ->latest()
             ->limit(5)
             ->get();
-        $unreadChatCount = \App\Models\PolimartMessage::whereNull('read_at')
-            ->where('sender_id', '!=', auth()->id())
-            ->whereHas('conversation', fn ($query) => $query
-                ->where('buyer_id', auth()->id())
-                ->orWhere('seller_id', auth()->id()))
-            ->count();
     @endphp
 
     <div class="app-shell">
@@ -45,7 +39,7 @@
                 <a class="app-navbar-brand" href="{{ route('dashboard') }}">
                     @include('partials.brand-mark')
                     <span>
-                        <span class="brand-name">POLISTAFF</span>
+                        <span class="brand-name">POLIBEST</span>
                         <span class="brand-description">Portal Pengurusan Kelab Staf</span>
                     </span>
                 </a>
@@ -139,6 +133,9 @@
                                 <a class="mega-menu-link {{ request()->routeIs('admin.polimart.*') ? 'active' : '' }}" href="{{ route('admin.polimart.reports') }}">
                                     <i class="bi bi-flag" aria-hidden="true"></i><span>Report PoliMart</span>
                                 </a>
+                                <a class="mega-menu-link {{ request()->routeIs('admin.polimart.orders') ? 'active' : '' }}" href="{{ route('admin.polimart.orders') }}">
+                                    <i class="bi bi-bag-check" aria-hidden="true"></i><span>Pesanan PoliMart</span>
+                                </a>
                                 <a class="mega-menu-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.delivery') }}">
                                     <i class="bi bi-envelope-check" aria-hidden="true"></i><span>Status Email</span>
                                 </a>
@@ -151,7 +148,7 @@
                 </nav>
 
                 <div class="topbar-heading">
-                    <div class="topbar-brandline">POLISTAFF</div>
+                    <div class="topbar-brandline">POLIBEST</div>
                     <h1 class="topbar-title">{{ $title ?? 'Dashboard' }}</h1>
                 </div>
 
@@ -165,13 +162,6 @@
                             <i class="bi bi-hourglass-split fs-5" aria-hidden="true"></i>
                         </a>
                     @endif
-
-                    <a class="icon-button" href="{{ route('polimart.chat.index') }}" aria-label="Chat PoliMart" title="Chat PoliMart">
-                        <i class="bi bi-chat-dots fs-5" aria-hidden="true"></i>
-                        @if($unreadChatCount > 0)
-                            <span class="notification-count">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
-                        @endif
-                    </a>
 
                     <div class="dropdown">
                         <button class="icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifikasi">
@@ -234,6 +224,7 @@
                 @endif
                 @yield('content')
             </main>
+            @include('partials.site-footer')
         </div>
     </div>
 @else
@@ -242,14 +233,13 @@
             <a class="public-brand" href="{{ url('/') }}">
                 @include('partials.brand-mark')
                 <span>
-                    <span class="brand-name">POLISTAFF</span>
+                    <span class="brand-name">POLIBEST</span>
                     <span class="brand-description">Portal Pengurusan Kelab Staf</span>
                 </span>
             </a>
             <nav class="public-links" aria-label="Navigasi utama">
-                <a href="{{ url('/') }}#tentang">Tentang POLISTAFF</a>
-                <a href="{{ url('/') }}#keupayaan">Keupayaan</a>
-                <a href="{{ url('/') }}#polimart">PoliMart</a>
+                <a href="{{ route('activities.index') }}">Aktiviti</a>
+                <a href="{{ route('polimart.index') }}">PoliMart</a>
                 <a class="public-nav-button" href="{{ url('/') }}">Halaman Utama</a>
             </nav>
             @include('partials.theme-switcher')
@@ -262,6 +252,7 @@
             @yield('content')
         </div>
     </main>
+    @include('partials.site-footer')
 @endauth
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

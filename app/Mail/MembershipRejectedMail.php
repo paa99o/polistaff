@@ -25,7 +25,7 @@ class MembershipRejectedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Permohonan keahlian tidak diluluskan',
+            subject: '[POLIBEST] Permohonan keahlian tidak diluluskan',
         );
     }
 

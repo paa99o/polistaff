@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#eee5d8">
-    <title>Sahkan Alamat Emel &middot; POLISTAFF</title>
+    <title>Sahkan Alamat Emel &middot; POLIBEST</title>
     @include('partials.theme-loader')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -21,7 +21,7 @@
             <header class="verification-brand">
                 @include('partials.brand-mark')
                 <span>
-                    <strong>POLISTAFF</strong>
+                    <strong>POLIBEST</strong>
                     <small>Portal Pengurusan Kelab Staf</small>
                 </span>
             </header>

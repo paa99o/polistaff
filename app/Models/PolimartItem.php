@@ -16,6 +16,7 @@ class PolimartItem extends Model
         'name',
         'category',
         'price',
+        'stock',
         'description',
         'contact',
         'image_path',
@@ -24,7 +25,7 @@ class PolimartItem extends Model
 
     protected function casts(): array
     {
-        return ['price' => 'decimal:2'];
+        return ['price' => 'decimal:2', 'stock' => 'integer'];
     }
 
     public function user(): BelongsTo

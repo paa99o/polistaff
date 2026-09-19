@@ -20,7 +20,8 @@
                     <div class="col-md-6"><label class="form-label">Nama Produk</label><input class="form-control" name="name" value="{{ old('name', $item->name) }}" required></div>
                     <div class="col-md-6"><label class="form-label">Kategori</label><input class="form-control" name="category" value="{{ old('category', $item->category) }}" required></div>
                     <div class="col-md-6"><label class="form-label">Harga</label><input class="form-control" type="number" step="0.01" min="0" name="price" value="{{ old('price', $item->price) }}" required></div>
-                    <div class="col-md-6"><label class="form-label">Nombor untuk urusan selepas chat</label><input class="form-control" name="contact" value="{{ old('contact', $item->contact) }}" required></div>
+                    <div class="col-md-6"><label class="form-label">Nombor telefon penjual</label><input class="form-control" name="contact" value="{{ old('contact', $item->contact) }}" required></div>
+                    <div class="col-md-6"><label class="form-label">Stok</label><input class="form-control" type="number" name="stock" value="{{ old('stock', $item->stock) }}" min="0" max="999999" required><div class="form-text">Produk akan ditanda habis stok apabila jumlah ini mencapai sifar.</div></div>
                     <div class="col-12"><label class="form-label">Gambar Produk</label><input class="form-control" type="file" name="image" accept=".jpg,.jpeg,.png"><div class="form-text">Biarkan kosong jika mahu kekalkan gambar semasa.</div></div>
                     <div class="col-12"><label class="form-label">Penerangan</label><textarea class="form-control" name="description" rows="4">{{ old('description', $item->description) }}</textarea></div>
                 </div>

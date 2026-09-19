@@ -25,7 +25,7 @@ class PaymentApprovedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[Polistaff] Resit bayaran '.$this->payment->transaction?->receipt_number,
+            subject: '[POLIBEST] Resit bayaran '.$this->payment->transaction?->receipt_number,
         );
     }
 

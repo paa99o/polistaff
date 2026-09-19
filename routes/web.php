@@ -18,17 +18,24 @@ use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PaymentSubmissionController;
 use App\Http\Controllers\PolimartController;
-use App\Http\Controllers\PolimartChatController;
 use App\Http\Controllers\PolimartReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserPreferenceController;
+use App\Models\Activity;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    $upcomingActivities = Activity::query()
+        ->where('status', 'approved')
+        ->where('date_time', '>=', now())
+        ->oldest('date_time')
+        ->limit(3)
+        ->get();
+
+    return view('welcome', compact('upcomingActivities'));
 });
 
 Route::middleware('guest')->group(function (): void {
@@ -62,19 +69,13 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/documents', [MemberDocumentController::class, 'store'])->name('documents.store');
     Route::get('/documents/{document}', [MemberDocumentController::class, 'show'])->name('documents.show');
     Route::delete('/documents/{document}', [MemberDocumentController::class, 'destroy'])->name('documents.destroy');
-    Route::get('/polimart', [PolimartController::class, 'index'])->name('polimart.index');
-    Route::get('/polimart/create', [PolimartController::class, 'create'])->name('polimart.create');
+    Route::get('/polimart/create', [PolimartController::class, 'create'])->middleware('role:admin')->name('polimart.create');
     Route::get('/polimart/favorites', [PolimartController::class, 'favorites'])->name('polimart.favorites');
-    Route::get('/polimart/chat', [PolimartChatController::class, 'index'])->name('polimart.chat.index');
-    Route::post('/polimart/{polimartItem}/chat', [PolimartChatController::class, 'start'])->name('polimart.chat.start');
-    Route::get('/polimart/chat/{conversation}', [PolimartChatController::class, 'show'])->name('polimart.chat.show');
-    Route::post('/polimart/chat/{conversation}/messages', [PolimartChatController::class, 'send'])->name('polimart.chat.send');
-    Route::post('/polimart', [PolimartController::class, 'store'])->name('polimart.store');
+    Route::post('/polimart', [PolimartController::class, 'store'])->middleware('role:admin')->name('polimart.store');
     Route::get('/polimart/seller/{user}', [PolimartController::class, 'seller'])->name('polimart.seller');
     Route::post('/polimart/{polimartItem}/report', [PolimartReportController::class, 'store'])->name('polimart.report');
     Route::post('/polimart/{polimartItem}/favorite', [PolimartController::class, 'toggleFavorite'])->name('polimart.favorite');
     Route::post('/polimart/{polimartItem}/review', [PolimartController::class, 'review'])->name('polimart.review');
-    Route::get('/polimart/{polimartItem}', [PolimartController::class, 'show'])->name('polimart.show');
     Route::get('/polimart/{polimartItem}/edit', [PolimartController::class, 'edit'])->name('polimart.edit');
     Route::put('/polimart/{polimartItem}', [PolimartController::class, 'update'])->name('polimart.update');
     Route::patch('/polimart/{polimartItem}/status', [PolimartController::class, 'updateStatus'])->name('polimart.status');
@@ -87,6 +88,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/admin/queue/retry-failed', [AdminController::class, 'retryFailedJobs'])->middleware('role:admin')->name('admin.queue.retry-failed');
     Route::get('/admin/audit', [AdminController::class, 'audit'])->middleware('role:admin')->name('admin.audit');
     Route::get('/admin/polimart/reports', [PolimartReportController::class, 'index'])->middleware('role:admin')->name('admin.polimart.reports');
+    Route::get('/admin/polimart/orders', [PolimartController::class, 'orders'])->middleware('role:admin')->name('admin.polimart.orders');
     Route::patch('/admin/polimart/reports/{polimartReport}', [PolimartReportController::class, 'update'])->middleware('role:admin')->name('admin.polimart.reports.update');
     Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->middleware('role:admin')->name('admin.users.update');
     Route::get('/admin/settings', [SystemSettingController::class, 'edit'])->middleware('role:admin')->name('settings.edit');
@@ -94,6 +96,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/finance/fees', [SystemSettingController::class, 'feeOperations'])->middleware('role:admin,chairman,treasurer')->name('finance.fees.index');
     Route::post('/finance/fees/generate', [SystemSettingController::class, 'generateMonthlyFees'])->middleware('role:admin,treasurer')->name('finance.fees.generate');
     Route::post('/finance/fees/reminders', [SystemSettingController::class, 'sendFeeReminders'])->middleware('role:admin,treasurer')->name('finance.fees.reminders');
+    Route::post('/finance/fees/reminders/{user}', [SystemSettingController::class, 'sendFeeReminder'])->middleware('role:admin,treasurer')->name('finance.fees.reminder');
     Route::post('/admin/settings/maintenance', [SystemSettingController::class, 'enableMaintenance'])->middleware('role:admin')->name('settings.maintenance.enable');
     Route::delete('/admin/settings/maintenance', [SystemSettingController::class, 'disableMaintenance'])->middleware('role:admin')->name('settings.maintenance.disable');
     Route::get('/admin/backup', [BackupController::class, 'export'])->middleware('role:admin')->name('backup.export');
@@ -102,6 +105,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/admin/backup/restore', [BackupController::class, 'restore'])->middleware('role:admin')->name('backup.restore');
 
     Route::resource('activities', ActivityController::class)
+        ->except(['index', 'show'])
         ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:admin');
     Route::patch('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('role:chairman,admin')->name('activities.approve');
     Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:chairman,admin,treasurer')->name('activities.refresh-qr');
@@ -155,3 +159,26 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
     Route::get('/admin/feedback', [FeedbackController::class, 'index'])->middleware('role:admin,chairman')->name('admin.feedback.index');
 });
+
+// Public storefront and public activity information. No account is needed to browse these pages.
+Route::get('/polimart', [PolimartController::class, 'publicIndex'])->name('polimart.index');
+Route::get('/polimart/cart', [PolimartController::class, 'cart'])->name('polimart.cart');
+Route::post('/polimart/cart', [PolimartController::class, 'updateCart'])->name('polimart.cart.update');
+Route::post('/polimart/cart/add/{polimartItem}', [PolimartController::class, 'addToCart'])->name('polimart.cart.add');
+Route::delete('/polimart/cart/{polimartItem}', [PolimartController::class, 'removeFromCart'])->name('polimart.cart.remove');
+Route::get('/polimart/checkout', [PolimartController::class, 'checkout'])->name('polimart.checkout');
+Route::post('/polimart/checkout', [PolimartController::class, 'placeOrder'])->name('polimart.checkout.store');
+Route::get('/polimart/{polimartItem}', [PolimartController::class, 'publicShow'])->name('polimart.show');
+Route::get('/activities', function (\Illuminate\Http\Request $request) {
+    return $request->user()
+        ? app(ActivityController::class)->index($request)
+        : app(ActivityController::class)->publicIndex($request);
+})->name('activities.index');
+Route::get('/activities/{activity}', function (\Illuminate\Http\Request $request, \App\Models\Activity $activity) {
+    return $request->user()
+        ? app(ActivityController::class)->show($activity)
+        : app(ActivityController::class)->publicShow($activity);
+})->name('activities.show');
+Route::post('/activities/{activity}/guest-register', [ActivityRegistrationController::class, 'guestStore'])
+    ->middleware('throttle:6,1')
+    ->name('activities.guest-register');

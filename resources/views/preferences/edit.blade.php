@@ -6,7 +6,7 @@
         <div>
             <span class="section-kicker">Akaun Saya</span>
             <h1>Tetapan Saya</h1>
-            <p>Urus cara Polistaff berhubung dan dipaparkan untuk akaun anda.</p>
+            <p>Urus cara POLIBEST berhubung dan dipaparkan untuk akaun anda.</p>
         </div>
         <a class="btn btn-outline-secondary" href="{{ route('profile.show') }}">
             <i class="bi bi-person me-2" aria-hidden="true"></i>Profil Saya
@@ -86,7 +86,7 @@
                             <div class="choice-grid">
                                 <label class="preference-choice">
                                     <input type="radio" name="text_size_preference" value="normal" @checked(old('text_size_preference', $user->text_size_preference) === 'normal')>
-                                    <span><i class="bi bi-fonts" aria-hidden="true"></i><strong>Standard</strong><small>Saiz asal Polistaff.</small></span>
+                                    <span><i class="bi bi-fonts" aria-hidden="true"></i><strong>Standard</strong><small>Saiz asal POLIBEST.</small></span>
                                 </label>
                                 <label class="preference-choice">
                                     <input type="radio" name="text_size_preference" value="large" @checked(old('text_size_preference', $user->text_size_preference) === 'large')>

@@ -47,7 +47,7 @@
     <div>
         <div class="auth-stripe mb-3" aria-hidden="true"><span></span><span></span><span></span></div>
         <p class="dashboard-kicker">Selamat datang, {{ $firstName }}</p>
-        <h1 class="brand-hero-title dashboard-brand-title" aria-label="POLISTAFF">
+        <h1 class="brand-hero-title dashboard-brand-title" aria-label="POLIBEST">
             <span>POLI</span><span>STAFF</span>
         </h1>
         <p>
@@ -72,9 +72,11 @@
             <a class="btn btn-light" href="{{ route('polimart.index') }}">
                 <i class="bi bi-shop me-2" aria-hidden="true"></i>Lihat PoliMart
             </a>
-            <a class="btn btn-outline-light" href="{{ route('polimart.create') }}">
-                <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Jual Barang
-            </a>
+            @if($role === 'admin')
+                <a class="btn btn-outline-light" href="{{ route('polimart.create') }}">
+                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Jual Barang
+                </a>
+            @endif
         </div>
     </article>
 </section>

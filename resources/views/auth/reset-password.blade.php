@@ -9,7 +9,7 @@
                     <a class="d-inline-flex align-items-center gap-3 text-dark" href="{{ url('/') }}">
                         @include('partials.brand-mark')
                         <span>
-                            <span class="brand-name">POLISTAFF</span>
+                            <span class="brand-name">POLIBEST</span>
                             <span class="brand-description">Portal Pengurusan Kelab Staf</span>
                         </span>
                     </a>

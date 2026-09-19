@@ -8,15 +8,14 @@
             <p class="polimart-start-kicker">POLIMART</p>
             <h2>Beli. Jual. Cari.</h2>
             <p>Barang menarik, semuanya di sini.</p>
-            <a class="btn btn-danger w-100" href="{{ route('polimart.create') }}">Mula Jual</a>
+            @if(auth()->user()->hasRole('admin'))
+                <a class="btn btn-danger w-100" href="{{ route('polimart.create') }}">Mula Jual</a>
+            @endif
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.index', ['mine' => 1]) }}">
                 <i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Listing Saya
             </a>
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.favorites') }}">
                 <i class="bi bi-heart me-2" aria-hidden="true"></i>Favorite Saya
-            </a>
-            <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.chat.index') }}">
-                <i class="bi bi-chat-dots me-2" aria-hidden="true"></i>Chat Saya
             </a>
         </aside>
 
@@ -27,7 +26,7 @@
                 <h1 class="polimart-title" aria-label="POLIMART">
                     <span>POLI</span><span>MART</span>
                 </h1>
-                <p>Ruang khas untuk staf menjual produk, makanan, servis kecil atau barangan pre-loved kepada komuniti POLISTAFF.</p>
+                <p>Ruang khas untuk staf menjual produk, makanan, servis kecil atau barangan pre-loved kepada komuniti POLIBEST.</p>
             </div>
         </section>
     </section>
@@ -87,6 +86,7 @@
                                 <span class="polimart-status polimart-status-{{ $item->status }} align-self-start">{{ ucfirst($item->status) }}</span>
                             @endif
                             <p>{{ $item->description ?: 'Tiada penerangan tambahan.' }}</p>
+                            <span class="polimart-stock {{ $item->stock > 0 ? 'text-success' : 'text-danger' }}"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>{{ $item->stock > 0 ? $item->stock.' stok tinggal' : 'Habis stok' }}</span>
                             <div class="polimart-seller">
                                 <a href="{{ route('polimart.seller', $item->user) }}"><i class="bi bi-person" aria-hidden="true"></i>{{ $item->user->name }}</a>
                                 <span><i class="bi bi-telephone" aria-hidden="true"></i>{{ $item->contact }}</span>

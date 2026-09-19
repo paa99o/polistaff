@@ -117,6 +117,17 @@
                         </div>
                     @endforeach
                 @endif
+
+                @if($activity->guestRegistrations->isNotEmpty())
+                    <hr>
+                    <h3 class="h6">Tetamu Berdaftar ({{ $activity->guestRegistrations->where('status', 'registered')->count() }})</h3>
+                    @foreach($activity->guestRegistrations as $guest)
+                        <div class="border-bottom py-2">
+                            <strong>{{ $guest->name }}</strong>
+                            <div class="small text-muted">{{ $guest->email }} &middot; {{ $guest->phone }} &middot; {{ $guest->status === 'waitlisted' ? 'Senarai menunggu' : 'Berdaftar' }}</div>
+                        </div>
+                    @endforeach
+                @endif
             </div>
         </div>
         @endif
