@@ -2542,6 +2542,8 @@ a:hover { color: var(--color-primary); opacity: .8; }
 /* Full-screen POLIBEST introduction with an optional background video. */
 .public-about-section {
     align-items: center;
+    /* Fallback colour when the optional background video is unavailable. */
+    background: linear-gradient(135deg, #183246 0%, #274f68 52%, #b56f32 140%);
     display: flex;
     min-height: calc(100vh - 72px);
     overflow: hidden;
