@@ -20,11 +20,16 @@
                         <p class="text-muted mb-0">{{ $activity->date_time->format('d/m/Y h:i A') }} &middot; {{ $activity->location }}</p>
                     </div>
                     <div class="d-flex gap-2">
-                        @if(auth()->user()->hasRole('chairman', 'admin') && $activity->status === 'pending_approval')
+                        @if(auth()->user()->hasRole('treasurer') && $activity->status === 'pending_approval')
                             <form method="post" action="{{ route('activities.approve', $activity) }}" data-confirm="Luluskan aktiviti ini dan buka kepada ahli?">
                                 @csrf
                                 @method('patch')
                                 <button class="btn btn-sm btn-danger">Luluskan</button>
+                            </form>
+                            <form method="post" action="{{ route('activities.reject', $activity) }}" data-confirm="Tolak aktiviti ini?">
+                                @csrf @method('patch')
+                                <input type="hidden" name="review_notes" value="Tidak memenuhi keperluan kelulusan.">
+                                <button class="btn btn-sm btn-outline-danger">Tolak</button>
                             </form>
                         @endif
                         @can('manage-activities')
@@ -146,14 +151,20 @@
                             <h2 class="h5 soft-panel-title mb-1">QR Kehadiran</h2>
                             <p class="small text-muted mb-0">Jana QR semasa aktiviti bermula. QR lama akan menjadi tidak sah.</p>
                         </div>
-                        <form method="post" action="{{ route('activities.refresh-qr', $activity) }}" data-confirm="Jana QR baharu? QR lama tidak boleh digunakan lagi.">
-                            @csrf
-                            @method('patch')
-                            <button class="btn btn-sm btn-outline-danger">Jana QR</button>
-                        </form>
+                        @if($activity->status === 'approved')
+                            <form method="post" action="{{ route('activities.refresh-qr', $activity) }}" data-confirm="Jana QR baharu? QR lama tidak boleh digunakan lagi.">
+                                @csrf
+                                @method('patch')
+                                <button class="btn btn-sm btn-outline-danger">Jana QR</button>
+                            </form>
+                        @endif
                     </div>
-                    <div class="bg-white p-3 d-inline-block mb-2">{!! QrCode::size(180)->generate(route('attendance.scan', ['token' => $activity->qr_code_token])) !!}</div>
-                    <p class="small text-muted">QR ini merekod kehadiran hanya untuk ahli yang sudah berdaftar.</p>
+                    @if($activity->status === 'approved' && now()->between($activity->date_time, $activity->end_time ?? $activity->date_time) && $activity->qr_code_token)
+                        <div class="bg-white p-3 d-inline-block mb-2">{!! QrCode::size(180)->generate(route('attendance.scan', ['token' => $activity->qr_code_token])) !!}</div>
+                        <p class="small text-muted">QR aktif sehingga aktiviti tamat.</p>
+                    @else
+                        <div class="alert alert-secondary">QR hanya aktif semasa aktiviti berlangsung.</div>
+                    @endif
                     <code class="d-block text-break mb-2">{{ $activity->qr_code_token }}</code>
                     <a class="small" href="{{ route('attendance.scan', ['token' => $activity->qr_code_token]) }}">{{ route('attendance.scan', ['token' => $activity->qr_code_token]) }}</a>
                     <hr>

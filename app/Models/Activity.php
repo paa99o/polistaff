@@ -5,16 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Activity extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'date_time', 'location', 'max_participants', 'registration_opens_at', 'registration_closes_at', 'attendance_opens_at', 'attendance_closes_at', 'status', 'qr_code_token', 'evidence_photo_path'];
+    protected $fillable = ['title', 'description', 'date_time', 'end_time', 'location', 'max_participants', 'registration_opens_at', 'registration_closes_at', 'attendance_opens_at', 'attendance_closes_at', 'status', 'qr_code_token', 'evidence_photo_path', 'created_by', 'reviewed_by', 'reviewed_at', 'review_notes'];
 
     protected function casts(): array
     {
-        return ['date_time' => 'datetime', 'registration_opens_at' => 'datetime', 'registration_closes_at' => 'datetime', 'attendance_opens_at' => 'datetime', 'attendance_closes_at' => 'datetime'];
+        return ['date_time' => 'datetime', 'end_time' => 'datetime', 'registration_opens_at' => 'datetime', 'registration_closes_at' => 'datetime', 'attendance_opens_at' => 'datetime', 'attendance_closes_at' => 'datetime', 'reviewed_at' => 'datetime'];
     }
 
     public function attendances(): HasMany
@@ -64,5 +65,15 @@ class Activity extends Model
     public function guestRegistrations(): HasMany
     {
         return $this->hasMany(GuestActivityRegistration::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function isFinished(): bool
+    {
+        return now()->greaterThan($this->end_time ?? $this->date_time);
     }
 }

@@ -3,9 +3,13 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3">Aktiviti</h1>
-    @can('manage-activities')
-        <a class="btn btn-danger" href="{{ route('activities.create') }}">Aktiviti Baru</a>
-    @endcan
+    @can('manage-activities')<a class="btn btn-danger" href="{{ route('activities.create') }}"><i class="bi bi-plus-lg me-1"></i>Cipta Aktiviti</a>@endcan
+</div>
+
+<div class="row g-3 mb-4">
+    @foreach([['approved', 'Aktiviti Diluluskan', 'bi-check-circle'], ['rejected', 'Aktiviti Ditolak', 'bi-x-circle'], ['pending', 'Menunggu Kelulusan', 'bi-hourglass-split']] as [$key, $label, $icon])
+        <div class="col-md-4"><div class="admin-stat-card activity-summary-card"><span class="admin-stat-icon"><i class="bi {{ $icon }}"></i></span><strong>{{ $stats[$key] }}</strong><span>{{ $label }}</span></div></div>
+    @endforeach
 </div>
 
 <section class="card activity-calendar-panel mb-4">
@@ -72,9 +76,12 @@
                         <td data-label="Tindakan">
                             <div class="d-flex gap-2 flex-wrap">
                                 <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.show', $activity) }}">Lihat</a>
-                                @can('manage-activities')
+                                @if(auth()->id() === $activity->created_by && $activity->status === 'pending_approval')
                                     <a class="btn btn-sm btn-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
-                                @endcan
+                                @endif
+                                @if($activity->status === 'approved' && $activity->isFinished() && ($activity->created_by === auth()->id() || auth()->user()->hasRole('treasurer','admin','chairman')))
+                                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('reports.activities.attendance.csv', $activity) }}">Report</a>
+                                @endif
                             </div>
                         </td>
                     </tr>

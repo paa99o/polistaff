@@ -149,7 +149,8 @@ class ReportController extends Controller
 
     public function activityAttendanceCsv(Activity $activity): Response
     {
-        abort_unless(auth()->user()->hasRole('admin', 'chairman', 'treasurer'), 403);
+        abort_unless(auth()->user()->hasRole('admin', 'chairman', 'treasurer') || $activity->created_by === auth()->id(), 403);
+        abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Report hanya boleh dijana selepas aktiviti tamat.');
 
         $rows = Attendance::with('user')
             ->where('activity_id', $activity->id)

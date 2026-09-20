@@ -6,12 +6,22 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ActivityRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('activity_date') && $this->filled('start_time')) {
+            $this->merge(['date_time' => $this->input('activity_date').' '.$this->input('start_time')]);
+        }
+    }
+
     public function rules(): array
     {
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'date_time' => ['required', 'date'],
+            'activity_date' => ['nullable', 'date'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i'],
             'location' => ['required', 'string', 'max:255'],
             'max_participants' => ['nullable', 'integer', 'min:1'],
             'registration_opens_at' => ['nullable', 'date'],
@@ -41,6 +51,9 @@ class ActivityRequest extends FormRequest
             'title' => 'tajuk',
             'description' => 'penerangan',
             'date_time' => 'tarikh dan masa',
+            'activity_date' => 'tarikh aktiviti',
+            'start_time' => 'masa bermula',
+            'end_time' => 'masa berakhir',
             'location' => 'lokasi',
             'max_participants' => 'maksimum peserta',
             'registration_opens_at' => 'registration opens',

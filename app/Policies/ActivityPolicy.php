@@ -9,11 +9,11 @@ class ActivityPolicy
 {
     public function manage(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('member');
     }
 
     public function approve(User $user, Activity $activity): bool
     {
-        return $user->hasRole('chairman', 'admin') && $activity->status !== 'approved';
+        return $user->hasRole('treasurer') && $activity->status === 'pending_approval';
     }
 }

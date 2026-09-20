@@ -35,7 +35,7 @@ class ActivityController extends Controller
         $calendarEnd = $calendarMonth->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $calendarActivities = Activity::query()
-            ->when(! $user || ! $user->hasRole('admin', 'chairman'), fn ($query) => $query->where('status', 'approved'))
+            ->when(! $user->hasRole('admin', 'chairman', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
             ->whereBetween('date_time', [$calendarStart, $calendarEnd])
             ->orderBy('date_time')
             ->get()
@@ -55,12 +55,19 @@ class ActivityController extends Controller
         }
 
         $activities = Activity::query()
-            ->when(! $user || ! $user->hasRole('admin', 'chairman'), fn ($query) => $query->where('status', 'approved'))
+            ->when(! $user->hasRole('admin', 'chairman', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
             ->when($request->filled('date'), fn ($query) => $query->whereDate('date_time', $request->date))
             ->orderBy('date_time')
             ->paginate(10);
 
-        return view('activities.index', compact('activities', 'calendarMonth', 'calendarWeeks'));
+        $scope = $user->hasRole('admin', 'chairman', 'treasurer') ? Activity::query() : Activity::where('created_by', $user->id);
+        $stats = [
+            'approved' => (clone $scope)->where('status', 'approved')->count(),
+            'rejected' => (clone $scope)->where('status', 'rejected')->count(),
+            'pending' => (clone $scope)->where('status', 'pending_approval')->count(),
+        ];
+
+        return view('activities.index', compact('activities', 'calendarMonth', 'calendarWeeks', 'stats'));
     }
 
     public function publicIndex(Request $request): View
@@ -101,7 +108,17 @@ class ActivityController extends Controller
             $data['evidence_photo_path'] = $request->file('evidence_photo')->store('activity-evidence', 'public');
         }
 
+        $data['status'] = 'pending_approval';
+        $data['created_by'] = $request->user()->id;
+        $data['attendance_opens_at'] = $data['date_time'];
+        $data['end_time'] = Carbon::parse($data['date_time'])->setTimeFromTimeString($request->input('end_time'));
+        abort_if($data['end_time']->lessThanOrEqualTo(Carbon::parse($data['date_time'])), 422, 'Masa berakhir mesti selepas masa bermula.');
+        $data['attendance_closes_at'] = $data['end_time'];
         $activity = Activity::create([...$data, 'qr_code_token' => Str::uuid()->toString()]);
+
+        User::where('role', 'treasurer')->where('membership_status', 'active')->get()->each(function (User $user) use ($activity): void {
+            PortalNotification::create(['user_id' => $user->id, 'title' => 'Permohonan aktiviti baharu', 'message' => $activity->title.' menunggu kelulusan bendahari.', 'type' => 'info', 'link' => route('activities.show', $activity)]);
+        });
 
         return redirect()->route('activities.show', $activity)->with('status', 'Aktiviti berjaya dicipta.');
     }
@@ -111,7 +128,7 @@ class ActivityController extends Controller
         $user = auth()->user();
         $canManageAttendance = $user?->hasRole('admin', 'chairman', 'treasurer') ?? false;
 
-        abort_unless($activity->status === 'approved' || $user?->hasRole('admin', 'chairman'), 404);
+        abort_unless($activity->status === 'approved' || $activity->created_by === $user?->id || $user?->hasRole('admin', 'chairman', 'treasurer'), 404);
 
         $activity->loadCount(['attendances', 'activeRegistrations', 'waitlistedRegistrations']);
         $registration = $user ? $activity->registrations()->where('user_id', $user->id)->first() : null;
@@ -131,6 +148,7 @@ class ActivityController extends Controller
     public function edit(Activity $activity): View
     {
         Gate::authorize('manage-activities');
+        abort_unless($activity->created_by === auth()->id() && $activity->status === 'pending_approval', 403);
 
         return view('activities.edit', compact('activity'));
     }
@@ -138,6 +156,7 @@ class ActivityController extends Controller
     public function update(ActivityRequest $request, Activity $activity): RedirectResponse
     {
         Gate::authorize('manage-activities');
+        abort_unless($activity->created_by === auth()->id() && $activity->status === 'pending_approval', 403);
 
         $beforeStatus = $activity->status;
         $data = $request->validated();
@@ -170,6 +189,7 @@ class ActivityController extends Controller
     public function destroy(Activity $activity): RedirectResponse
     {
         Gate::authorize('manage-activities');
+        abort_unless($activity->created_by === auth()->id() && $activity->status === 'pending_approval', 403);
         $activity->delete();
 
         return redirect()->route('activities.index')->with('status', 'Aktiviti dipadam.');
@@ -177,10 +197,14 @@ class ActivityController extends Controller
 
     public function approve(Activity $activity): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('chairman', 'admin'), 403);
+        abort_unless(auth()->user()->hasRole('treasurer'), 403);
         abort_unless($activity->status === 'pending_approval', 422, 'Hanya aktiviti yang menunggu kelulusan boleh diluluskan.');
 
-        $activity->update(['status' => 'approved']);
+        $activity->update(['status' => 'approved', 'reviewed_by' => auth()->id(), 'reviewed_at' => now()]);
+
+        if ($activity->created_by) {
+            PortalNotification::create(['user_id' => $activity->created_by, 'title' => 'Aktiviti diluluskan', 'message' => 'Permohonan '.$activity->title.' telah diluluskan oleh bendahari.', 'type' => 'success', 'link' => route('activities.show', $activity)]);
+        }
 
         User::where('membership_status', 'active')->where('role', 'member')->chunkById(100, function ($users) use ($activity): void {
             foreach ($users as $user) {
@@ -204,12 +228,24 @@ class ActivityController extends Controller
             'ip_address' => request()->ip(),
         ]);
 
-        return back()->with('status', 'Aktiviti diluluskan. Emel diproses mengikut tetapan ahli aktif.');
+        return back()->with('status', 'Aktiviti diluluskan.');
+    }
+
+    public function reject(Request $request, Activity $activity): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('treasurer'), 403);
+        abort_unless($activity->status === 'pending_approval', 422);
+        $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']]);
+        $activity->update(['status' => 'rejected', 'reviewed_by' => $request->user()->id, 'reviewed_at' => now(), 'review_notes' => $data['review_notes']]);
+        if ($activity->created_by) {
+            PortalNotification::create(['user_id' => $activity->created_by, 'title' => 'Aktiviti ditolak', 'message' => 'Permohonan '.$activity->title.' telah ditolak: '.$data['review_notes'], 'type' => 'warning', 'link' => route('activities.show', $activity)]);
+        }
+        return back()->with('status', 'Aktiviti ditolak.');
     }
 
     public function refreshQrToken(Activity $activity): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('chairman', 'admin', 'treasurer'), 403);
+        abort_unless(auth()->user()->hasRole('treasurer', 'admin'), 403);
         abort_if($activity->status === 'cancelled', 422, 'QR tidak boleh dijana untuk aktiviti yang telah dibatalkan.');
 
         $oldToken = $activity->qr_code_token;
