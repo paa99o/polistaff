@@ -2532,6 +2532,69 @@ a:hover { color: var(--color-primary); opacity: .8; }
     padding-top: 96px;
 }
 
+/* Keep the introduction and upcoming activities sections on the same
+   POLIBEST gradient background as the hero/header area. */
+#tentang.public-section,
+#aktiviti.public-section {
+    background: transparent;
+}
+
+/* Full-screen POLIBEST introduction with an optional background video. */
+.public-about-section {
+    align-items: center;
+    display: flex;
+    min-height: calc(100vh - 72px);
+    overflow: hidden;
+    padding-bottom: 96px;
+    padding-top: 96px;
+    position: relative;
+}
+
+.public-about-video,
+.public-about-overlay {
+    inset: 0;
+    height: 100%;
+    position: absolute;
+    width: 100%;
+}
+
+.public-about-video {
+    object-fit: cover;
+    z-index: 0;
+}
+
+.public-about-overlay {
+    background: linear-gradient(90deg, rgba(20, 35, 45, .84) 0%, rgba(20, 35, 45, .62) 48%, rgba(20, 35, 45, .42) 100%);
+    z-index: 1;
+}
+
+.public-about-section > .public-container {
+    position: relative;
+    z-index: 2;
+}
+
+.public-about-section .public-section-header h2,
+.public-about-section .public-section-header p,
+.public-about-section .public-feature h3,
+.public-about-section .public-feature p {
+    color: #fff;
+}
+
+.public-about-section .public-feature {
+    background: rgba(255, 255, 255, .08);
+    border-color: rgba(255, 255, 255, .34);
+    backdrop-filter: blur(4px);
+}
+
+.public-about-section .public-feature:last-child {
+    border-right-color: rgba(255, 255, 255, .34);
+}
+
+.public-about-section .public-feature:hover {
+    background: rgba(255, 255, 255, .16);
+    border-color: rgba(255, 255, 255, .52);
+}
+
 .public-section-header {
     display: grid;
     gap: 24px;

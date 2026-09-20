@@ -73,7 +73,11 @@
             </aside>
         </section>
 
-        <section id="tentang" class="public-section">
+        <section id="tentang" class="public-section public-about-section">
+            <video class="public-about-video" autoplay muted loop playsinline aria-hidden="true">
+                <source src="{{ asset('videos/polibest-about.mp4') }}" type="video/mp4">
+            </video>
+            <div class="public-about-overlay" aria-hidden="true"></div>
             <div class="public-container">
                 <div class="public-section-header">
                     <h2>Mengenali POLIBEST.</h2>
