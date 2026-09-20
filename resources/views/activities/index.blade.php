@@ -7,10 +7,14 @@
 </div>
 
 <div class="row g-3 mb-4">
-    @foreach([['approved', 'Aktiviti Diluluskan', 'bi-check-circle'], ['rejected', 'Aktiviti Ditolak', 'bi-x-circle'], ['pending', 'Menunggu Kelulusan', 'bi-hourglass-split']] as [$key, $label, $icon])
-        <div class="col-md-4"><div class="admin-stat-card activity-summary-card"><span class="admin-stat-icon"><i class="bi {{ $icon }}"></i></span><strong>{{ $stats[$key] }}</strong><span>{{ $label }}</span></div></div>
+    @foreach([['approved', 'Aktiviti Diluluskan', 'bi-check-circle'], ['rejected', 'Aktiviti Ditolak', 'bi-x-circle'], ['pending_approval', 'Menunggu Kelulusan', 'bi-hourglass-split']] as [$key, $label, $icon])
+        <div class="col-md-4"><a class="admin-stat-card activity-summary-card" href="{{ route('activities.index', ['status' => $key]) }}"><span class="admin-stat-icon"><i class="bi {{ $icon }}"></i></span><strong>{{ $stats[$key === 'pending_approval' ? 'pending' : $key] }}</strong><span>{{ $label }}</span><small class="text-muted">Klik untuk lihat senarai</small></a></div>
     @endforeach
 </div>
+
+@if(request()->filled('status'))
+    <div class="alert alert-info d-flex justify-content-between align-items-center"><span>Menapis: <strong>{{ \App\Support\PolistaffLabels::status(request('status')) }}</strong></span><a href="{{ route('activities.index') }}" class="btn btn-sm btn-outline-secondary">Buang Tapis</a></div>
+@endif
 
 <section class="card activity-calendar-panel mb-4">
     <div class="card-body">
@@ -79,8 +83,14 @@
                                 @if(auth()->id() === $activity->created_by && $activity->status === 'pending_approval')
                                     <a class="btn btn-sm btn-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                                 @endif
-                                @if($activity->status === 'approved' && $activity->isFinished() && ($activity->created_by === auth()->id() || auth()->user()->hasRole('treasurer','admin','chairman')))
-                                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('reports.activities.attendance.csv', $activity) }}">Report</a>
+                                @if($activity->status === 'approved' && $activity->isFinished())
+                                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('reports.activities.pdf', $activity) }}">Download Report</a>
+                                    @if($activity->created_by === auth()->id() || auth()->user()->hasRole('treasurer','admin','chairman'))
+                                        <form method="post" action="{{ route('activities.report-photo', $activity) }}" enctype="multipart/form-data" class="d-flex gap-1 align-items-center">
+                                            @csrf
+                                            <label class="btn btn-sm btn-outline-secondary mb-0">Gambar<input class="d-none" type="file" name="report_photo" accept="image/*" required onchange="this.form.submit()"></label>
+                                        </form>
+                                    @endif
                                 @endif
                             </div>
                         </td>

@@ -56,9 +56,11 @@ class ActivityController extends Controller
 
         $activities = Activity::query()
             ->when(! $user->hasRole('admin', 'chairman', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
+            ->when(in_array($request->input('status'), ['approved', 'rejected', 'pending_approval'], true), fn ($query) => $query->where('status', $request->input('status')))
             ->when($request->filled('date'), fn ($query) => $query->whereDate('date_time', $request->date))
             ->orderBy('date_time')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         $scope = $user->hasRole('admin', 'chairman', 'treasurer') ? Activity::query() : Activity::where('created_by', $user->id);
         $stats = [
@@ -195,6 +197,26 @@ class ActivityController extends Controller
         return redirect()->route('activities.index')->with('status', 'Aktiviti dipadam.');
     }
 
+    public function uploadReportPhoto(Request $request, Activity $activity): RedirectResponse
+    {
+        abort_unless($activity->created_by === $request->user()->id || $request->user()->hasRole('treasurer', 'chairman', 'admin'), 403);
+        abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Gambar report hanya boleh dimuat naik selepas aktiviti tamat.');
+
+        $data = $request->validate(['report_photo' => ['required', 'image', 'max:8192']], [
+            'report_photo.required' => 'Sila pilih gambar report.',
+            'report_photo.image' => 'Fail report mesti dalam format gambar.',
+            'report_photo.max' => 'Gambar report tidak boleh melebihi 8MB.',
+        ]);
+
+        if ($activity->report_photo_path) {
+            Storage::disk('private')->delete($activity->report_photo_path);
+        }
+
+        $activity->update(['report_photo_path' => $data['report_photo']->store('activity-reports', 'private')]);
+
+        return back()->with('status', 'Gambar report berjaya dimuat naik.');
+    }
+
     public function approve(Activity $activity): RedirectResponse
     {
         abort_unless(auth()->user()->hasRole('treasurer'), 403);
@@ -269,6 +291,25 @@ class ActivityController extends Controller
         ]);
 
         return back()->with('status', 'QR kehadiran baharu berjaya dijana. QR lama tidak lagi sah.');
+    }
+
+    public function attendanceStatus(Activity $activity): \Illuminate\Http\JsonResponse
+    {
+        abort_unless(auth()->user()->hasRole('admin', 'chairman', 'treasurer'), 403);
+
+        $activity->load(['activeRegistrations.user', 'attendances']);
+        $attendanceByUser = $activity->attendances->keyBy('user_id');
+
+        return response()->json([
+            'registered_count' => $activity->activeRegistrations->count(),
+            'attended_count' => $activity->attendances->whereIn('user_id', $activity->activeRegistrations->pluck('user_id'))->count(),
+            'participants' => $activity->activeRegistrations->map(fn ($registration) => [
+                'user_id' => $registration->user_id,
+                'name' => $registration->user->name,
+                'attended' => $attendanceByUser->has($registration->user_id),
+                'scanned_at' => $attendanceByUser->get($registration->user_id)?->scanned_at?->format('d/m/Y h:i A'),
+            ])->values(),
+        ]);
     }
 
     private function timelineLogs(Activity $activity)

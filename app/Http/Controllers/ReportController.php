@@ -11,6 +11,7 @@ use Dompdf\Dompdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -177,6 +178,31 @@ class ReportController extends Controller
         $filename = 'attendance-'.$activity->id.'-'.Str::slug($activity->title).'.csv';
 
         return response($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="'.$filename.'"']);
+    }
+
+    public function activityReportPdf(Activity $activity): Response
+    {
+        abort_unless(auth()->user()->hasRole('member', 'treasurer', 'chairman', 'admin'), 403);
+        abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Report hanya boleh dijana selepas aktiviti tamat.');
+
+        $activity->loadCount(['activeRegistrations', 'attendances']);
+        $attendances = Attendance::with('user')->where('activity_id', $activity->id)->orderBy('scanned_at')->get();
+        $reportPhoto = null;
+
+        if ($activity->report_photo_path && Storage::disk('private')->exists($activity->report_photo_path)) {
+            $mime = Storage::disk('private')->mimeType($activity->report_photo_path) ?: 'image/jpeg';
+            $reportPhoto = 'data:'.$mime.';base64,'.base64_encode(Storage::disk('private')->get($activity->report_photo_path));
+        }
+
+        $pdf = new Dompdf;
+        $pdf->loadHtml(view('reports.activity_pdf', compact('activity', 'attendances', 'reportPhoto'))->render());
+        $pdf->setPaper('A4');
+        $pdf->render();
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="activity-report-'.Str::slug($activity->title).'.pdf"',
+        ]);
     }
 
     private function financialReportData(Request $request): array

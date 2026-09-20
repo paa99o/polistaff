@@ -32,9 +32,9 @@
                                 <button class="btn btn-sm btn-outline-danger">Tolak</button>
                             </form>
                         @endif
-                        @can('manage-activities')
+                        @if(auth()->id() === $activity->created_by && $activity->status === 'pending_approval')
                             <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
-                        @endcan
+                        @endif
                     </div>
                 </div>
                 <hr>
@@ -50,8 +50,8 @@
 
                 <div class="row g-3 my-3">
                     <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Status</div><strong>{{ \App\Support\PolistaffLabels::status($activity->status) }}</strong></div></div>
-                    <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Berdaftar</div><strong>{{ $registeredCount }} / {{ $capacity }}</strong></div></div>
-                    <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Kehadiran</div><strong>{{ $activity->attendances_count }}</strong></div></div>
+                    <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Berdaftar</div><strong id="activity-registered-count">{{ $registeredCount }} / {{ $capacity }}</strong></div></div>
+                    <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Kehadiran</div><strong id="activity-attendance-count">{{ $activity->attendances_count }}</strong></div></div>
                 </div>
 
                 <div class="small text-muted mb-3">
@@ -93,15 +93,18 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="h5 soft-panel-title">Peserta Berdaftar</h2>
+                <p class="small text-muted">Data akan dikemas kini automatik setiap 10 saat semasa aktiviti berlangsung.</p>
+                <div id="activity-participants-list">
                 @forelse($activity->activeRegistrations as $item)
-                    <div class="border-bottom py-2 d-flex justify-content-between gap-3 align-items-center">
+                    <div class="border-bottom py-2 d-flex justify-content-between gap-3 align-items-center activity-participant-row" data-user-id="{{ $item->user_id }}">
                         <div>
                             <strong>{{ $item->user->name }}</strong>
                             <div class="small text-muted">Berdaftar pada {{ $item->registered_at->format('d/m/Y h:i A') }}</div>
                         </div>
                         @if(in_array($item->user_id, $attendedUserIds, true))
-                            <span class="badge text-bg-success">Hadir</span>
+                            <span class="badge text-bg-success attendance-status">Hadir</span>
                         @elseif(auth()->user()->hasRole('admin', 'chairman', 'treasurer'))
+                            <span class="badge text-bg-secondary attendance-status">Belum Hadir</span>
                             <form method="post" action="{{ route('activities.attendance.store', [$activity, $item]) }}" data-confirm="Tanda {{ $item->user->name }} sebagai hadir?">
                                 @csrf
                                 <button class="btn btn-sm btn-outline-danger">Tanda Hadir</button>
@@ -111,6 +114,7 @@
                 @empty
                     <p class="text-muted mb-0">Belum ada pendaftaran.</p>
                 @endforelse
+                </div>
 
                 @if($waitlistedCount > 0)
                     <hr>
@@ -183,3 +187,39 @@
     @endif
 </div>
 @endsection
+
+@if($canManageAttendance && $activity->status === 'approved')
+@pushOnce('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const endpoint = @json(route('activities.attendance-status', $activity));
+    const endAt = new Date(@json(($activity->end_time ?? $activity->date_time)->toIso8601String()));
+    const list = document.getElementById('activity-participants-list');
+    const registeredCount = document.getElementById('activity-registered-count');
+    const attendanceCount = document.getElementById('activity-attendance-count');
+
+    const refreshAttendance = async () => {
+        if (new Date() > endAt) return;
+        try {
+            const response = await fetch(endpoint, {headers: {'Accept': 'application/json'}});
+            if (!response.ok) return;
+            const data = await response.json();
+            registeredCount.textContent = `${data.registered_count} / @json($capacity)`;
+            attendanceCount.textContent = data.attended_count;
+            data.participants.forEach((participant) => {
+                const row = list.querySelector(`[data-user-id="${participant.user_id}"]`);
+                if (!row) return;
+                const badge = row.querySelector('.attendance-status');
+                if (!badge) return;
+                badge.textContent = participant.attended ? 'Hadir' : 'Belum Hadir';
+                badge.className = `badge attendance-status ${participant.attended ? 'text-bg-success' : 'text-bg-secondary'}`;
+            });
+        } catch (error) {}
+    };
+
+    refreshAttendance();
+    window.setInterval(refreshAttendance, 10000);
+});
+</script>
+@endPushOnce
+@endif

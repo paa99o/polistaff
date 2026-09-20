@@ -110,6 +110,8 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('role:treasurer')->name('activities.approve');
     Route::patch('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('role:treasurer')->name('activities.reject');
     Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:treasurer,admin')->name('activities.refresh-qr');
+    Route::post('/activities/{activity}/report-photo', [ActivityController::class, 'uploadReportPhoto'])->name('activities.report-photo');
+    Route::get('/activities/{activity}/attendance-status', [ActivityController::class, 'attendanceStatus'])->middleware('role:admin,chairman,treasurer')->name('activities.attendance-status');
     Route::post('/activities/{activity}/register', [ActivityRegistrationController::class, 'store'])->name('activities.register');
     Route::delete('/activities/{activity}/register', [ActivityRegistrationController::class, 'destroy'])->name('activities.unregister');
     Route::get('/attendance', [AttendanceController::class, 'index'])->middleware('role:admin,chairman,treasurer')->name('attendance.index');
@@ -127,6 +129,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/reports/financial.csv', [ReportController::class, 'financialCsv'])->middleware('role:treasurer,chairman,admin')->name('reports.financial.csv');
     Route::get('/reports/attendance.csv', [ReportController::class, 'attendanceCsv'])->middleware('role:treasurer,chairman,admin')->name('reports.attendance.csv');
     Route::get('/reports/activities/{activity}/attendance.csv', [ReportController::class, 'activityAttendanceCsv'])->name('reports.activities.attendance.csv');
+    Route::get('/reports/activities/{activity}/report.pdf', [ReportController::class, 'activityReportPdf'])->name('reports.activities.pdf');
 
     Route::resource('claims', ExpenseClaimController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
     Route::get('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmitForm'])->name('claims.resubmit.form');

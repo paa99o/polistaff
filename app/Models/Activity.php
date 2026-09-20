@@ -11,7 +11,7 @@ class Activity extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'date_time', 'end_time', 'location', 'max_participants', 'registration_opens_at', 'registration_closes_at', 'attendance_opens_at', 'attendance_closes_at', 'status', 'qr_code_token', 'evidence_photo_path', 'created_by', 'reviewed_by', 'reviewed_at', 'review_notes'];
+    protected $fillable = ['title', 'description', 'date_time', 'end_time', 'location', 'max_participants', 'registration_opens_at', 'registration_closes_at', 'attendance_opens_at', 'attendance_closes_at', 'status', 'qr_code_token', 'evidence_photo_path', 'report_photo_path', 'created_by', 'reviewed_by', 'reviewed_at', 'review_notes'];
 
     protected function casts(): array
     {
