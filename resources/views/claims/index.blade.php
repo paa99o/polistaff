@@ -17,9 +17,16 @@
         <h1 class="h3 mb-0">Tuntutan Perbelanjaan</h1>
         <p class="text-muted mb-0">Hantar tuntutan dan semak status kelulusan.</p>
     </div>
-    <a class="btn btn-danger" href="{{ route('claims.create') }}">
-        <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Tuntutan Baru
-    </a>
+    <form class="d-flex flex-wrap align-items-center gap-2" method="get" action="{{ route('claims.create') }}">
+        <select class="form-select" name="category" aria-label="Pilih jenis tuntutan" required>
+            <option value="">Pilih jenis tuntutan</option>
+            <option value="Khairat Kematian">Khairat Kematian</option>
+            <option value="Sambutan Harijadi Staff">Sambutan Harijadi Staff</option>
+            <option value="Hadiah Kejayaan Anak">Hadiah Kejayaan Anak</option>
+        </select>
+        <span class="claim-fixed-amount">RM 100.00</span>
+        <button class="btn btn-danger" type="submit"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Buat Tuntutan</button>
+    </form>
 </div>
 
 <div class="card mb-3">

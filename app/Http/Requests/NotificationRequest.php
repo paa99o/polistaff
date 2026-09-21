@@ -12,7 +12,7 @@ class NotificationRequest extends FormRequest
         return [
             'target' => ['required', Rule::in(['all_active', 'department', 'role', 'individual'])],
             'department' => ['nullable', 'required_if:target,department', 'string', 'max:255'],
-            'role' => ['nullable', 'required_if:target,role', Rule::in(['member', 'treasurer', 'chairman', 'admin'])],
+            'role' => ['nullable', 'required_if:target,role', Rule::in(['member', 'treasurer', 'admin'])],
             'user_id' => ['nullable', 'required_if:target,individual', 'exists:users,id'],
             'title' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],

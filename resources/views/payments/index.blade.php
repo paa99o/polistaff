@@ -12,10 +12,30 @@
         <p class="text-muted mb-0">Hantar bukti bayaran dan semak status kelulusan bendahari.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <a class="btn btn-outline-danger" href="{{ route('payments.statement') }}">Penyata Yuran</a>
         <a class="btn btn-danger" href="{{ route('payments.create') }}">
             <i class="bi bi-upload me-2" aria-hidden="true"></i>Muat Naik Bukti
         </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4 payment-summary-cards">
+    <div class="col-md-4">
+        <button class="payment-summary-card payment-summary-card-danger w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#overdueFeesModal">
+            <span class="payment-summary-icon"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span>
+            <span class="payment-summary-copy"><small>Bayaran tertunggak</small><strong>RM {{ number_format((float) $overdueBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong><span>{{ $overdueBills->count() }} bulan tahun sebelumnya <i class="bi bi-arrow-right"></i></span></span>
+        </button>
+    </div>
+    <div class="col-md-4">
+        <button class="payment-summary-card payment-summary-card-success w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#recentFeesModal">
+            <span class="payment-summary-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
+            <span class="payment-summary-copy"><small>Bayaran terkini</small><strong>{{ $recentApprovedPayments->count() }} bayaran</strong><span>{{ $recentApprovedPayments->first()?->payment_date?->translatedFormat('F Y') ?? 'Belum ada bayaran selesai' }} <i class="bi bi-arrow-right"></i></span></span>
+        </button>
+    </div>
+    <div class="col-md-4">
+        <button class="payment-summary-card payment-summary-card-warning w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#unpaidFeesModal">
+            <span class="payment-summary-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+            <span class="payment-summary-copy"><small>Belum dibayar tahun {{ now()->year }}</small><strong>RM {{ number_format((float) $currentUnpaidBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong><span>{{ $currentUnpaidBills->count() }} bulan belum selesai <i class="bi bi-arrow-right"></i></span></span>
+        </button>
     </div>
 </div>
 
@@ -75,4 +95,63 @@
     </div>
 </div>
 <div class="mt-3">{{ $payments->links() }}</div>
+
+<div class="modal fade" id="overdueFeesModal" tabindex="-1" aria-labelledby="overdueFeesTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title h5" id="overdueFeesTitle">Yuran tertunggak</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button></div>
+            <div class="modal-body">
+                <p class="text-muted">Berikut ialah bulan tahun sebelumnya yang masih belum dibayar.</p>
+                @forelse($overdueBills as $bill)
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2"><span>{{ $bill->billing_month->translatedFormat('F Y') }}</span><strong>RM {{ number_format($bill->remainingAmount(), 2) }}</strong></div>
+                @empty
+                    <div class="alert alert-success mb-0">Tiada bayaran tertunggak.</div>
+                @endforelse
+            </div>
+            <div class="modal-footer"><a class="btn btn-danger" href="{{ route('payments.create') }}" @if($overdueBills->isEmpty()) aria-disabled="true" tabindex="-1" @endif>Bayar yuran</a></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="recentFeesModal" tabindex="-1" aria-labelledby="recentFeesTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title h5" id="recentFeesTitle">Bayaran bulan yang telah selesai</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button></div>
+            <div class="modal-body">
+                <p class="text-muted">Senarai bulan yuran yang telah dibayar dan masa bukti bayaran dihantar.</p>
+                @forelse($paidBills as $bill)
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-3 gap-3">
+                        <div><strong>{{ $bill->billing_month->translatedFormat('F Y') }}</strong><div class="small text-muted">Dibayar pada {{ $bill->payment_datetime?->format('d/m/Y, h:i A') ?? 'Tarikh tidak direkodkan' }}</div></div>
+                        <span class="badge bg-success">Selesai</span>
+                    </div>
+                @empty
+                    <div class="alert alert-info mb-0">Belum ada bulan yuran yang selesai dibayar.</div>
+                @endforelse
+            </div>
+            <div class="modal-footer"><a class="btn btn-danger" href="{{ route('payments.create') }}"><i class="bi bi-upload me-2" aria-hidden="true"></i>Upload bukti bayaran</a></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="unpaidFeesModal" tabindex="-1" aria-labelledby="unpaidFeesTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title h5" id="unpaidFeesTitle">Bayaran yuran belum selesai</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button></div>
+            <div class="modal-body">
+                <p class="text-muted">Pilih bulan yang ingin dibayar. Bukti pembayaran perlu dimuat naik selepas pilihan dibuat.</p>
+                @forelse($currentUnpaidBills as $bill)
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-3 gap-3">
+                        <div><strong>{{ $bill->billing_month->translatedFormat('F Y') }}</strong><div class="small text-muted">Baki RM {{ number_format($bill->remainingAmount(), 2) }}</div></div>
+                        <a class="btn btn-sm btn-outline-danger" href="{{ route('payments.create', ['bill_id' => $bill->id]) }}">Bayar</a>
+                    </div>
+                @empty
+                    <div class="alert alert-success mb-0">Semua yuran tahun {{ now()->year }} telah diselesaikan.</div>
+                @endforelse
+            </div>
+            @if($currentUnpaidBills->isNotEmpty())
+                <div class="modal-footer"><a class="btn btn-danger" href="{{ route('payments.create') }}">Bayar &amp; upload bukti pembayaran</a></div>
+            @endif
+        </div>
+    </div>
+</div>
 @endsection

@@ -13,7 +13,7 @@
             @method('patch')
             <button class="btn btn-outline-danger">Tanda Semua Dibaca</button>
         </form>
-        @if(auth()->user()->hasRole('admin', 'chairman'))
+        @if(auth()->user()->hasRole('admin'))
             <a class="btn btn-danger" href="{{ route('notifications.create') }}">
                 <i class="bi bi-send me-2" aria-hidden="true"></i>Hantar Notifikasi
             </a>

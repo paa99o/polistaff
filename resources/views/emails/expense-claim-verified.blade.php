@@ -9,7 +9,7 @@
         <p style="margin-top: 0; color: #6b7280;">Tuntutan POLIBEST</p>
         <h1 style="font-size: 22px; margin: 0 0 16px; color: #111827;">Tuntutan Disahkan Bendahari</h1>
         <p>Salam {{ $claim->user->name }},</p>
-        <p>Tuntutan anda telah disahkan oleh bendahari dan menunggu kelulusan pengerusi.</p>
+        <p>Tuntutan anda telah disahkan oleh bendahari dan menunggu kelulusan admin.</p>
         <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr><td style="padding: 8px 0; color: #6b7280; width: 150px;">Tuntutan</td><td style="padding: 8px 0;">{{ $claim->title }}</td></tr>
             <tr><td style="padding: 8px 0; color: #6b7280;">Jumlah</td><td style="padding: 8px 0;">RM {{ number_format((float) $claim->amount, 2) }}</td></tr>

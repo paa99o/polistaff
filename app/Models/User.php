@@ -64,10 +64,6 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasMany(ExpenseClaim::class);
     }
 
-    public function documents(): HasMany
-    {
-        return $this->hasMany(MemberDocument::class);
-    }
 
     public function polimartItems(): HasMany
     {
@@ -84,10 +80,6 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasMany(ActivityRegistration::class);
     }
 
-    public function feedbacks(): HasMany
-    {
-        return $this->hasMany(Feedback::class);
-    }
 
     public function portalNotifications(): HasMany
     {

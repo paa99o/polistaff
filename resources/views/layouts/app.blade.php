@@ -57,7 +57,7 @@
                         </div>
                     </div>
 
-                    <div class="mega-nav-item {{ request()->routeIs('payments.*') || request()->routeIs('claims.*') || request()->routeIs('transactions.*') || request()->routeIs('reports.financial') || request()->routeIs('finance.fees.*') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('payments.*') || request()->routeIs('claims.*') || request()->routeIs('donations.*') || request()->routeIs('transactions.*') || request()->routeIs('reports.financial') || request()->routeIs('finance.fees.*') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Kewangan</button>
                         <div class="mega-menu mega-menu-wide">
                             <a class="mega-menu-link {{ request()->routeIs('payments.*') ? 'active' : '' }}" href="{{ route('payments.index') }}">
@@ -66,7 +66,10 @@
                             <a class="mega-menu-link {{ request()->routeIs('claims.*') ? 'active' : '' }}" href="{{ route('claims.index') }}">
                                 <i class="bi bi-receipt" aria-hidden="true"></i><span>Tuntutan</span>
                             </a>
-                            @if(auth()->user()->hasRole('treasurer','chairman','admin'))
+                            <a class="mega-menu-link {{ request()->routeIs('donations.*') ? 'active' : '' }}" href="{{ route('donations.index') }}">
+                                <i class="bi bi-heart" aria-hidden="true"></i><span>Sumbangan</span>
+                            </a>
+                            @if(auth()->user()->hasRole('treasurer','admin'))
                                 <a class="mega-menu-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}" href="{{ route('transactions.index') }}">
                                     <i class="bi bi-arrow-left-right" aria-hidden="true"></i><span>Transaksi</span>
                                 </a>
@@ -74,7 +77,7 @@
                                     <i class="bi bi-graph-up-arrow" aria-hidden="true"></i><span>Laporan Kewangan</span>
                                 </a>
                             @endif
-                            @if(auth()->user()->hasRole('admin', 'chairman', 'treasurer'))
+                            @if(auth()->user()->hasRole('admin', 'treasurer'))
                                 <a class="mega-menu-link {{ request()->routeIs('finance.fees.*') ? 'active' : '' }}" href="{{ route('finance.fees.index') }}">
                                     <i class="bi bi-calendar2-check" aria-hidden="true"></i><span>Pengurusan Yuran</span>
                                 </a>
@@ -88,7 +91,7 @@
                         </a>
                     </div>
 
-                    <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('documents.*') || request()->routeIs('feedback.*') || request()->routeIs('reports.overview') || request()->routeIs('attendance.index') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('reports.overview') || request()->routeIs('attendance.index') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Pengurusan</button>
                         <div class="mega-menu mega-menu-wide">
                             <a class="mega-menu-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.show') }}">
@@ -97,13 +100,7 @@
                             <a class="mega-menu-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
                                 <i class="bi bi-bell" aria-hidden="true"></i><span>Notifikasi</span>
                             </a>
-                            <a class="mega-menu-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}">
-                                <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span>Dokumen</span>
-                            </a>
-                            <a class="mega-menu-link {{ request()->routeIs('feedback.*') ? 'active' : '' }}" href="{{ route('feedback.create') }}">
-                                <i class="bi bi-chat-left-text" aria-hidden="true"></i><span>Maklum Balas</span>
-                            </a>
-                            @if(auth()->user()->hasRole('treasurer','chairman','admin'))
+                            @if(auth()->user()->hasRole('treasurer','admin'))
                                 <a class="mega-menu-link {{ request()->routeIs('reports.overview') ? 'active' : '' }}" href="{{ route('reports.overview') }}">
                                     <i class="bi bi-bar-chart" aria-hidden="true"></i><span>Laporan Ringkasan</span>
                                 </a>
@@ -126,9 +123,6 @@
                                 </a>
                                 <a class="mega-menu-link {{ request()->routeIs('admin.audit') ? 'active' : '' }}" href="{{ route('admin.audit') }}">
                                     <i class="bi bi-shield-check" aria-hidden="true"></i><span>Jejak Audit</span>
-                                </a>
-                                <a class="mega-menu-link {{ request()->routeIs('admin.feedback.*') ? 'active' : '' }}" href="{{ route('admin.feedback.index') }}">
-                                    <i class="bi bi-inbox" aria-hidden="true"></i><span>Senarai Maklum Balas</span>
                                 </a>
                                 <a class="mega-menu-link {{ request()->routeIs('admin.polimart.*') ? 'active' : '' }}" href="{{ route('admin.polimart.reports') }}">
                                     <i class="bi bi-flag" aria-hidden="true"></i><span>Report PoliMart</span>

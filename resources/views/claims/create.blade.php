@@ -5,7 +5,8 @@
     $isEditing = isset($claim) && $claim;
     $isResubmitting = $resubmission ?? false;
     $formAction = $isResubmitting ? route('claims.resubmit', $claim) : ($isEditing ? route('claims.update', $claim) : route('claims.store'));
-    $pageTitle = $isResubmitting ? 'Hantar Semula Tuntutan' : ($isEditing ? 'Ubah Tuntutan' : 'Tuntutan Baru');
+    $pageTitle = $isResubmitting ? 'Hantar Semula Tuntutan' : ($isEditing ? 'Ubah Tuntutan' : 'Buat Tuntutan');
+    $selectedCategory = old('category', request('category', $claim->category ?? ''));
 @endphp
 <div class="card">
     <div class="card-body">
@@ -18,13 +19,19 @@
             @if($isEditing)<input type="hidden" name="_method" value="PUT">@endif
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label" for="title">Tajuk</label>
-                    <input class="form-control @error('title') is-invalid @enderror" id="title" name="title" value="{{ old('title', $claim->title ?? '') }}" required>
-                    @include('partials.errors', ['name' => 'title'])
+                    <label class="form-label" for="category">Jenis Tuntutan</label>
+                    <select class="form-select @error('category') is-invalid @enderror" id="category" name="category" required>
+                        <option value="">Pilih jenis tuntutan</option>
+                        @foreach($claimTypes as $claimType)
+                            <option value="{{ $claimType }}" @selected($selectedCategory === $claimType)>{{ $claimType }}</option>
+                        @endforeach
+                    </select>
+                    @include('partials.errors', ['name' => 'category'])
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="amount">Jumlah</label>
-                    <input class="form-control @error('amount') is-invalid @enderror" id="amount" type="number" step="0.01" name="amount" value="{{ old('amount', $claim->amount ?? '') }}" required>
+                    <input class="form-control @error('amount') is-invalid @enderror" id="amount" type="number" value="100.00" readonly required>
+                    <input type="hidden" name="amount" value="100">
                     @include('partials.errors', ['name' => 'amount'])
                 </div>
                 <div class="col-md-3">
@@ -32,11 +39,7 @@
                     <input class="form-control @error('claim_date') is-invalid @enderror" id="claim_date" type="date" name="claim_date" value="{{ old('claim_date', $claim?->claim_date?->format('Y-m-d') ?? now()->toDateString()) }}" max="{{ now()->toDateString() }}" required>
                     @include('partials.errors', ['name' => 'claim_date'])
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="category">Kategori</label>
-                    <input class="form-control @error('category') is-invalid @enderror" id="category" name="category" value="{{ old('category', $claim->category ?? '') }}" required>
-                    @include('partials.errors', ['name' => 'category'])
-                </div>
+                <input type="hidden" name="title" value="{{ $selectedCategory }}">
                 <div class="col-md-6">
                     <label class="form-label" for="receipt">Resit</label>
                     <input class="form-control @error('receipt') is-invalid @enderror" id="receipt" type="file" name="receipt" accept=".jpg,.jpeg,.png,.pdf" @required(! $isEditing || $isResubmitting)>

@@ -19,7 +19,7 @@ class ReportController extends Controller
 {
     public function overview(Request $request): View
     {
-        abort_unless($request->user()->hasRole('admin', 'chairman', 'treasurer'), 403);
+        abort_unless($request->user()->hasRole('admin', 'treasurer'), 403);
 
         $year = (int) $request->input('year', now()->year);
         $month = $request->filled('month') ? (int) $request->month : now()->month;
@@ -150,7 +150,7 @@ class ReportController extends Controller
 
     public function activityAttendanceCsv(Activity $activity): Response
     {
-        abort_unless(auth()->user()->hasRole('admin', 'chairman', 'treasurer') || $activity->created_by === auth()->id(), 403);
+        abort_unless(auth()->user()->hasRole('admin', 'treasurer') || $activity->created_by === auth()->id(), 403);
         abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Report hanya boleh dijana selepas aktiviti tamat.');
 
         $rows = Attendance::with('user')
@@ -182,7 +182,7 @@ class ReportController extends Controller
 
     public function activityReportPdf(Activity $activity): Response
     {
-        abort_unless(auth()->user()->hasRole('member', 'treasurer', 'chairman', 'admin'), 403);
+        abort_unless(auth()->user()->hasRole('member', 'treasurer', 'admin'), 403);
         abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Report hanya boleh dijana selepas aktiviti tamat.');
 
         $activity->loadCount(['activeRegistrations', 'attendances']);

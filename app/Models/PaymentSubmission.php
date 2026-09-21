@@ -17,6 +17,7 @@ class PaymentSubmission extends Model
         'payment_date',
         'proof_path',
         'notes',
+        'bill_ids',
         'status',
         'review_notes',
         'reviewed_at',
@@ -28,6 +29,7 @@ class PaymentSubmission extends Model
             'amount' => 'decimal:2',
             'allocated_amount' => 'decimal:2',
             'payment_date' => 'date',
+            'bill_ids' => 'array',
             'reviewed_at' => 'datetime',
         ];
     }

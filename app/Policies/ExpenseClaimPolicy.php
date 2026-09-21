@@ -9,7 +9,7 @@ class ExpenseClaimPolicy
 {
     public function view(User $user, ExpenseClaim $claim): bool
     {
-        return $user->hasRole('treasurer', 'chairman', 'admin') || $claim->user_id === $user->id;
+        return $user->hasRole('treasurer', 'admin') || $claim->user_id === $user->id;
     }
 
     public function verify(User $user, ExpenseClaim $claim): bool
@@ -19,6 +19,6 @@ class ExpenseClaimPolicy
 
     public function approve(User $user, ExpenseClaim $claim): bool
     {
-        return $user->hasRole('chairman', 'admin') && $claim->status === 'treasurer_verified';
+        return $user->hasRole('admin') && $claim->status === 'treasurer_verified';
     }
 }

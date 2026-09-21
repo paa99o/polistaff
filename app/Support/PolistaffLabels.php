@@ -38,7 +38,6 @@ class PolistaffLabels
         return match ($role) {
             'member' => 'Ahli',
             'treasurer' => 'Bendahari',
-            'chairman' => 'Pengerusi',
             'admin' => 'Admin',
             default => $role ? str($role)->replace('_', ' ')->title()->toString() : '-',
         };

@@ -21,16 +21,16 @@
                     </div>
                     <div class="d-flex gap-2">
                         @if(auth()->user()->hasRole('treasurer') && $activity->status === 'pending_approval')
-                            <form method="post" action="{{ route('activities.approve', $activity) }}" data-confirm="Luluskan aktiviti ini dan buka kepada ahli?">
+                            <form method="post" action="{{ route('activities.verify', $activity) }}" data-confirm="Sahkan aktiviti ini dan hantar kepada admin?">
                                 @csrf
                                 @method('patch')
-                                <button class="btn btn-sm btn-danger">Luluskan</button>
+                                <input type="hidden" name="treasurer_notes" value="Aktiviti disokong bendahari.">
+                                <button class="btn btn-sm btn-danger">Sokong</button>
                             </form>
-                            <form method="post" action="{{ route('activities.reject', $activity) }}" data-confirm="Tolak aktiviti ini?">
-                                @csrf @method('patch')
-                                <input type="hidden" name="review_notes" value="Tidak memenuhi keperluan kelulusan.">
-                                <button class="btn btn-sm btn-outline-danger">Tolak</button>
-                            </form>
+                        @endif
+                        @if(auth()->user()->hasRole('admin') && $activity->status === 'treasurer_verified')
+                            <form method="post" action="{{ route('activities.approve', $activity) }}" data-confirm="Luluskan aktiviti ini dan buka kepada ahli?">@csrf @method('patch')<button class="btn btn-sm btn-danger">Luluskan</button></form>
+                            <form method="post" action="{{ route('activities.reject', $activity) }}" data-confirm="Tolak aktiviti ini?">@csrf @method('patch')<input type="hidden" name="review_notes" value="Tidak memenuhi keperluan kelulusan."><button class="btn btn-sm btn-outline-danger">Tolak</button></form>
                         @endif
                         @if(auth()->id() === $activity->created_by && $activity->status === 'pending_approval')
                             <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
@@ -53,6 +53,9 @@
                     <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Berdaftar</div><strong id="activity-registered-count">{{ $registeredCount }} / {{ $capacity }}</strong></div></div>
                     <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Kehadiran</div><strong id="activity-attendance-count">{{ $activity->attendances_count }}</strong></div></div>
                 </div>
+                @if($activity->treasurer_verified_at)
+                    <div class="alert alert-info small">Disahkan bendahari pada {{ $activity->treasurer_verified_at->format('d/m/Y H:i') }}. {{ $activity->treasurer_notes }}</div>
+                @endif
 
                 <div class="small text-muted mb-3">
                     Pendaftaran: {{ $activity->registration_opens_at?->format('d/m/Y h:i A') ?? 'Bila-bila masa' }} - {{ $activity->registration_closes_at?->format('d/m/Y h:i A') ?? 'Sehingga aktiviti' }}<br>
@@ -103,7 +106,7 @@
                         </div>
                         @if(in_array($item->user_id, $attendedUserIds, true))
                             <span class="badge text-bg-success attendance-status">Hadir</span>
-                        @elseif(auth()->user()->hasRole('admin', 'chairman', 'treasurer'))
+                        @elseif(auth()->user()->hasRole('admin', 'treasurer'))
                             <span class="badge text-bg-secondary attendance-status">Belum Hadir</span>
                             <form method="post" action="{{ route('activities.attendance.store', [$activity, $item]) }}" data-confirm="Tanda {{ $item->user->name }} sebagai hadir?">
                                 @csrf
@@ -141,7 +144,7 @@
         </div>
         @endif
 
-        @if(auth()->user()->hasRole('chairman', 'admin'))
+                @if(auth()->user()->hasRole('admin'))
             @include('partials.audit-timeline', ['logs' => $timelineLogs])
         @endif
     </div>

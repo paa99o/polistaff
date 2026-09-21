@@ -10,6 +10,7 @@ use App\Models\ExpenseClaim;
 use App\Models\PortalNotification;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\EmailAuditService;
 use App\Services\EmailDeliveryService;
 use Illuminate\Http\RedirectResponse;
@@ -17,17 +18,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ExpenseClaimController extends Controller
 {
+    private const CLAIM_TYPES = ['Khairat Kematian', 'Sambutan Harijadi Staff', 'Hadiah Kejayaan Anak'];
+    private const CLAIM_AMOUNT = 100;
     public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
     public function index(Request $request): View
     {
         $query = ExpenseClaim::with('user', 'reviewer', 'treasurerVerifier', 'transaction')->latest();
 
-        if (! $request->user()->hasRole('treasurer', 'chairman', 'admin')) {
+        if (! $request->user()->hasRole('treasurer', 'admin')) {
             $query->where('user_id', $request->user()->id);
         }
 
@@ -41,7 +45,7 @@ class ExpenseClaimController extends Controller
 
     public function create(): View
     {
-        return view('claims.create', ['claim' => null, 'resubmission' => false]);
+        return view('claims.create', ['claim' => null, 'resubmission' => false, 'claimTypes' => self::CLAIM_TYPES]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -51,11 +55,20 @@ class ExpenseClaimController extends Controller
         $claim = ExpenseClaim::create([
             ...collect($data)->except('receipt')->all(),
             'user_id' => $request->user()->id,
+            'title' => $data['category'],
+            'amount' => self::CLAIM_AMOUNT,
             'receipt_path' => $request->file('receipt')->store('expense-claims', 'private'),
             'status' => 'pending',
         ]);
 
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'submitted', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Submitted expense claim '.$claim->title.'.', 'changes' => $claim->only(['title', 'amount', 'category', 'status']), 'ip_address' => $request->ip()]);
+        User::where('role', 'treasurer')->where('membership_status', 'active')->get()->each(fn (User $treasurer) => PortalNotification::create([
+            'user_id' => $treasurer->id,
+            'title' => 'Tuntutan baharu menunggu semakan',
+            'message' => $request->user()->name.' menghantar tuntutan '.$claim->category.' berjumlah RM 100.00. Sila semak dan sahkan tuntutan ini.',
+            'type' => 'info',
+            'link' => route('claims.show', $claim),
+        ]));
 
         return redirect()->route('claims.index')->with('status', 'Tuntutan perbelanjaan dihantar untuk semakan.');
     }
@@ -64,7 +77,7 @@ class ExpenseClaimController extends Controller
     {
         $this->authorizeOwnerAction($claim, 'pending');
 
-        return view('claims.create', ['claim' => $claim, 'resubmission' => false]);
+        return view('claims.create', ['claim' => $claim, 'resubmission' => false, 'claimTypes' => self::CLAIM_TYPES]);
     }
 
     public function update(Request $request, ExpenseClaim $claim): RedirectResponse
@@ -79,6 +92,8 @@ class ExpenseClaimController extends Controller
 
         $claim->update([
             ...collect($data)->except('receipt')->all(),
+            'title' => $data['category'],
+            'amount' => self::CLAIM_AMOUNT,
             'receipt_path' => $newReceiptPath,
         ]);
 
@@ -106,7 +121,7 @@ class ExpenseClaimController extends Controller
     {
         $this->authorizeOwnerAction($claim, 'rejected');
 
-        return view('claims.create', ['claim' => $claim, 'resubmission' => true]);
+        return view('claims.create', ['claim' => $claim, 'resubmission' => true, 'claimTypes' => self::CLAIM_TYPES]);
     }
 
     public function resubmit(Request $request, ExpenseClaim $claim): RedirectResponse
@@ -118,6 +133,8 @@ class ExpenseClaimController extends Controller
 
         $claim->update([
             ...collect($data)->except('receipt')->all(),
+            'title' => $data['category'],
+            'amount' => self::CLAIM_AMOUNT,
             'receipt_path' => $newReceiptPath,
             'status' => 'pending',
             'reviewed_by' => null,
@@ -155,7 +172,14 @@ class ExpenseClaimController extends Controller
             'treasurer_notes.max' => 'Catatan bendahari tidak boleh melebihi 1000 aksara.',
         ]);
         $claim->update(['status' => 'treasurer_verified', 'treasurer_verified_by' => $request->user()->id, 'treasurer_notes' => $data['treasurer_notes'] ?? null, 'treasurer_verified_at' => now()]);
-        PortalNotification::create(['user_id' => $claim->user_id, 'title' => 'Tuntutan disahkan bendahari', 'message' => 'Tuntutan '.$claim->title.' telah disahkan dan menunggu kelulusan pengerusi.', 'type' => 'info', 'link' => route('claims.show', $claim)]);
+        PortalNotification::create(['user_id' => $claim->user_id, 'title' => 'Tuntutan disahkan bendahari', 'message' => 'Tuntutan '.$claim->title.' telah disahkan dan menunggu kelulusan admin.', 'type' => 'info', 'link' => route('claims.show', $claim)]);
+        User::where('role', 'admin')->where('membership_status', 'active')->get()->each(fn (User $admin) => PortalNotification::create([
+            'user_id' => $admin->id,
+            'title' => 'Tuntutan menunggu kelulusan admin',
+            'message' => 'Tuntutan '.$claim->category.' oleh '.$claim->user->name.' berjumlah RM 100.00 telah disahkan bendahari dan menunggu kelulusan anda.',
+            'type' => 'info',
+            'link' => route('claims.show', $claim),
+        ]));
         $claim->loadMissing('user');
 
         if ($claim->user->email && $claim->user->wantsEmail('finance')) {
@@ -165,7 +189,7 @@ class ExpenseClaimController extends Controller
 
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'verified', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Treasurer verified expense claim '.$claim->title.'.', 'changes' => ['status' => 'treasurer_verified'], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan disahkan dan dihantar untuk kelulusan pengerusi. Emel diproses mengikut tetapan ahli.');
+        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan disahkan dan dihantar untuk kelulusan admin. Emel diproses mengikut tetapan ahli.');
     }
 
     public function approve(Request $request, ExpenseClaim $claim): RedirectResponse
@@ -225,7 +249,7 @@ class ExpenseClaimController extends Controller
 
     private function authorizeClaimAccess(ExpenseClaim $claim): void
     {
-        abort_unless(auth()->user()->hasRole('treasurer', 'chairman', 'admin') || $claim->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()->hasRole('treasurer', 'admin') || $claim->user_id === auth()->id(), 403);
     }
 
     private function authorizeOwnerAction(ExpenseClaim $claim, string $status): void
@@ -237,10 +261,10 @@ class ExpenseClaimController extends Controller
     private function validateClaim(Request $request, bool $receiptRequired): array
     {
         return $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'category' => ['required', 'string', 'max:120'],
+            'amount' => ['required', 'numeric', Rule::in([self::CLAIM_AMOUNT])],
+            'category' => ['required', Rule::in(self::CLAIM_TYPES)],
             'claim_date' => ['required', 'date', 'before_or_equal:today'],
             'receipt' => [$receiptRequired ? 'required' : 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
         ], [
@@ -283,7 +307,7 @@ class ExpenseClaimController extends Controller
 
     private function timelineLogs(ExpenseClaim $claim)
     {
-        if (! auth()->user()->hasRole('treasurer', 'chairman', 'admin')) {
+        if (! auth()->user()->hasRole('treasurer', 'admin')) {
             return collect();
         }
 

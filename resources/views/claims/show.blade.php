@@ -34,7 +34,7 @@
             </div>
         </div>
 
-        @if(auth()->user()->hasRole('treasurer','chairman','admin'))
+        @if(auth()->user()->hasRole('treasurer','admin'))
             @include('partials.audit-timeline', ['logs' => $timelineLogs])
         @endif
     </div>
@@ -53,7 +53,7 @@
                     </form>
                 @endif
 
-                @if(auth()->user()->hasRole('chairman','admin') && $claim->status === 'treasurer_verified')
+                @if(auth()->user()->hasRole('admin') && $claim->status === 'treasurer_verified')
                     <form method="post" action="{{ route('claims.approve', $claim) }}" class="mb-3" data-confirm="Luluskan tuntutan dan jana transaksi perbelanjaan?">
                         @csrf
                         @method('patch')
@@ -64,7 +64,7 @@
                     </form>
                 @endif
 
-                @if(auth()->user()->hasRole('chairman','admin') && in_array($claim->status, ['pending','treasurer_verified'], true))
+                @if(auth()->user()->hasRole('admin') && in_array($claim->status, ['pending','treasurer_verified'], true))
                     <form method="post" action="{{ route('claims.reject', $claim) }}" data-confirm="Tolak tuntutan ini? Emel akan dihantar kepada ahli.">
                         @csrf
                         @method('patch')

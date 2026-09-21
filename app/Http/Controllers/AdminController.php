@@ -45,7 +45,7 @@ class AdminController extends Controller
             'totalAttendances' => Attendance::count(),
             'pendingPayments' => PaymentSubmission::where('status', 'pending')->count(),
             'pendingClaims' => ExpenseClaim::whereIn('status', ['pending', 'treasurer_verified'])->count(),
-            'pendingActivities' => Activity::where('status', 'pending_approval')->count(),
+            'pendingActivities' => Activity::whereIn('status', ['pending_approval', 'treasurer_verified'])->count(),
             'incompleteProfiles' => User::profileIncomplete()->count(),
             'outstandingFees' => User::where('membership_status', 'active')->sum('fee_balance'),
             'upcomingActivities' => Activity::where('status', 'approved')->where('date_time', '>=', now())->orderBy('date_time')->limit(4)->get(),
@@ -96,7 +96,7 @@ class AdminController extends Controller
     public function updateUser(Request $request, User $user): RedirectResponse
     {
         $data = $request->validate([
-            'role' => ['required', 'in:member,treasurer,chairman,admin'],
+            'role' => ['required', 'in:member,treasurer,admin'],
             'membership_status' => ['required', 'in:pending,active,inactive'],
             'fee_balance' => ['required', 'numeric', 'min:0'],
         ]);

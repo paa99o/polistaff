@@ -15,11 +15,12 @@
                         @endif
                     </div>
                     <div class="table-responsive mb-3">
-                        <table class="table table-sm align-middle mb-0">
-                            <thead><tr><th>Bulan</th><th>Baki</th><th>Status</th></tr></thead>
+                        <table class="table table-sm align-middle mb-0 fee-selection-table">
+                            <thead><tr><th><input class="form-check-input" type="checkbox" id="select-all-fees" aria-label="Pilih semua bulan"></th><th>Bulan</th><th>Baki</th><th>Status</th></tr></thead>
                             <tbody>
                             @foreach($bills as $bill)
                                 <tr>
+                                    <td><input class="form-check-input js-bill-checkbox" type="checkbox" name="bill_ids[]" value="{{ $bill->id }}" data-amount="{{ number_format($bill->remainingAmount(), 2, '.', '') }}" @checked((string) request('bill_id') === (string) $bill->id || in_array($bill->id, (array) old('bill_ids', [])))></td>
                                     <td>{{ $bill->billing_month->format('F Y') }} @if($loop->first)<span class="badge bg-danger">Bayar dahulu</span>@endif</td>
                                     <td>RM {{ number_format($bill->remainingAmount(), 2) }}</td>
                                     <td>{{ $bill->status === 'partial' ? 'Sebahagian' : 'Belum dibayar' }}</td>
@@ -36,29 +37,25 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="amount">Jumlah Bayaran</label>
-                            <input class="form-control @error('amount') is-invalid @enderror" id="amount" type="number" step="0.01" min="0.01" max="{{ number_format($outstanding, 2, '.', '') }}" name="amount" value="{{ old('amount', $outstanding > 0 ? number_format($outstanding, 2, '.', '') : '') }}" required>
+                            <input class="form-control @error('amount') is-invalid @enderror" id="amount" type="number" step="0.01" min="0.01" max="{{ number_format($outstanding, 2, '.', '') }}" name="amount" value="{{ old('amount', '') }}" readonly required>
                             @include('partials.errors', ['name' => 'amount'])
-                            @if($bills->isNotEmpty())
-                                <div class="d-flex flex-wrap gap-2 mt-2">
-                                    @php($running = 0)
-                                    @foreach($bills as $bill)
-                                        @php($running += $bill->remainingAmount())
-                                        <button type="button" class="btn btn-sm btn-outline-secondary js-fee-amount" data-amount="{{ number_format($running, 2, '.', '') }}">
-                                            {{ $loop->first ? 'Bulan paling lama' : 'Hingga '.$bill->billing_month->format('M Y') }}
-                                        </button>
-                                    @endforeach
-                                    <button type="button" class="btn btn-sm btn-outline-danger js-fee-amount" data-amount="{{ number_format($outstanding, 2, '.', '') }}">Semua tunggakan</button>
-                                </div>
-                            @endif
+                            <div class="form-text">Tandakan bulan yang ingin dibayar. Jumlah dikira secara automatik.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="payment_method">Kaedah Bayaran</label>
                             <select class="form-select @error('payment_method') is-invalid @enderror" id="payment_method" name="payment_method" required>
-                                @foreach(['Online Transfer', 'Tunai', 'DuitNow', 'Bank Islam'] as $method)
-                                    <option value="{{ $method }}" @selected(old('payment_method', 'Online Transfer') === $method)>{{ $method }}</option>
+                                @foreach(['DuitNow QR', 'Transfer', 'Cash'] as $method)
+                                    <option value="{{ $method }}" @selected(old('payment_method', 'DuitNow QR') === $method)>{{ $method }}</option>
                                 @endforeach
                             </select>
                             @include('partials.errors', ['name' => 'payment_method'])
+                        </div>
+                        <div class="col-12">
+                            <div id="payment-method-details" class="payment-method-details" data-qr="{{ 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='.urlencode('POLIBEST Kelab Staf - DuitNow') }}">
+                                <div class="method-detail js-method-detail" data-method="DuitNow QR"><img class="payment-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode('POLIBEST Kelab Staf - DuitNow') }}" alt="QR DuitNow Kelab Staf"><span>Imbas QR DuitNow Kelab Staf untuk membuat bayaran.</span></div>
+                                <div class="method-detail js-method-detail d-none" data-method="Transfer"><strong>Maklumat akaun Kelab Staf</strong><span>Bank: tetapkan nama bank kelab<br>No. Akaun: tetapkan nombor akaun kelab</span><small>Sila gunakan nama penuh sebagai rujukan transaksi.</small></div>
+                                <div class="method-detail js-method-detail d-none" data-method="Cash"><strong>Bayaran tunai</strong><span>Sila serahkan bayaran tunai kepada bendahari Kelab Staf.</span></div>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="payment_date">Tarikh Bayaran</label>
@@ -66,10 +63,10 @@
                             @include('partials.errors', ['name' => 'payment_date'])
                         </div>
                         <div class="col-12">
-                            <label class="form-label" for="proof">Fail Bukti Bayaran</label>
-                            <input class="form-control @error('proof') is-invalid @enderror" id="proof" type="file" name="proof" accept=".jpg,.jpeg,.png,.pdf" required>
+                            <label class="form-label" for="proof">Fail Bukti Bayaran <span class="text-muted">(pilihan)</span></label>
+                            <input class="form-control @error('proof') is-invalid @enderror" id="proof" type="file" name="proof" accept=".jpg,.jpeg,.png,.pdf">
                             @include('partials.errors', ['name' => 'proof'])
-                            <div class="form-text">Format: JPG, PNG atau PDF. Maksimum 4MB.</div>
+                            <div class="form-text">Boleh dimuat naik sekarang atau dihantar kemudian. Format: JPG, PNG atau PDF. Maksimum 4MB.</div>
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="notes">Catatan</label>
@@ -84,10 +81,25 @@
     </div>
 </div>
 <script>
-document.querySelectorAll('.js-fee-amount').forEach(function (button) {
-    button.addEventListener('click', function () {
-        document.getElementById('amount').value = this.dataset.amount;
-    });
+const feeCheckboxes = [...document.querySelectorAll('.js-bill-checkbox')];
+const amountField = document.getElementById('amount');
+const selectAll = document.getElementById('select-all-fees');
+function updateFeeTotal() {
+    const total = feeCheckboxes.filter(input => input.checked).reduce((sum, input) => sum + Number(input.dataset.amount), 0);
+    amountField.value = total ? total.toFixed(2) : '';
+    if (selectAll) selectAll.checked = feeCheckboxes.length > 0 && feeCheckboxes.every(input => input.checked);
+}
+feeCheckboxes.forEach(input => input.addEventListener('change', updateFeeTotal));
+if (selectAll) selectAll.addEventListener('change', () => { feeCheckboxes.forEach(input => input.checked = selectAll.checked); updateFeeTotal(); });
+const methodSelect = document.getElementById('payment_method');
+function updateMethodDetails() {
+    document.querySelectorAll('.js-method-detail').forEach(detail => detail.classList.toggle('d-none', detail.dataset.method !== methodSelect.value));
+}
+methodSelect.addEventListener('change', updateMethodDetails);
+updateMethodDetails();
+updateFeeTotal();
+document.querySelector('form').addEventListener('submit', function (event) {
+    if (!feeCheckboxes.some(input => input.checked)) { event.preventDefault(); alert('Sila pilih sekurang-kurangnya satu bulan untuk dibayar.'); }
 });
 </script>
 @endsection

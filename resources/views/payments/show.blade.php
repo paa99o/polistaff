@@ -23,7 +23,11 @@
                     <dt class="col-sm-4">Catatan Semakan</dt><dd class="col-sm-8">{{ $payment->review_notes ?? '-' }}</dd>
                     <dt class="col-sm-4">Resit</dt><dd class="col-sm-8">@if($payment->transaction)<a href="{{ route('transactions.show', $payment->transaction) }}">{{ $payment->transaction->receipt_number }}</a>@else - @endif</dd>
                 </dl>
-                <a class="btn btn-outline-danger" target="_blank" href="{{ route('payments.proof', $payment) }}">Lihat Bukti Bayaran</a>
+                @if($payment->proof_path)
+                    <a class="btn btn-outline-danger" target="_blank" href="{{ route('payments.proof', $payment) }}">Lihat Bukti Bayaran</a>
+                @else
+                    <span class="badge bg-warning text-dark">Bukti bayaran belum dimuat naik</span>
+                @endif
 
                 @if(auth()->id() === $payment->user_id && $payment->status === 'rejected')
                     <hr>
@@ -68,7 +72,7 @@
             </div>
         </div>
 
-        @if(auth()->user()->hasRole('treasurer','chairman','admin'))
+        @if(auth()->user()->hasRole('treasurer','admin'))
             @include('partials.audit-timeline', ['logs' => $timelineLogs])
         @endif
     </div>

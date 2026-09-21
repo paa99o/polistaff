@@ -5291,3 +5291,26 @@ html[data-theme="dark"] .btn-outline-primary {
     border-color: #9dbcf5;
     color: #dce8ff;
 }
+
+/* Fee payment summary and guided payment selection. */
+.payment-summary-card { align-items: center; background: var(--color-surface, #fff); border: 1px solid var(--color-border, #e3e8ef); border-radius: 16px; color: var(--color-text, #17243a); display: flex; gap: 16px; min-height: 142px; padding: 22px; text-decoration: none; transition: transform .2s ease, box-shadow .2s ease; }
+.payment-summary-card:hover { box-shadow: 0 12px 28px rgba(23,36,58,.1); color: inherit; transform: translateY(-3px); }
+.payment-summary-card-danger { border-left: 5px solid #c45e64; }
+.payment-summary-card-success { border-left: 5px solid #3c9a72; }
+.payment-summary-card-warning { border-left: 5px solid #d69a3a; }
+.payment-summary-icon { align-items: center; background: #fff1f1; border-radius: 14px; color: #bc5960; display: inline-flex; font-size: 25px; height: 54px; justify-content: center; min-width: 54px; }
+.payment-summary-card-success .payment-summary-icon { background: #edf9f2; color: #32845f; }
+.payment-summary-card-warning .payment-summary-icon { background: #fff8e8; color: #bd7c20; }
+.payment-summary-copy { display: flex; flex-direction: column; gap: 3px; }
+.payment-summary-copy small { color: var(--color-muted, #6c7888); font-size: 13px; }
+.payment-summary-copy strong { font-size: 24px; line-height: 1.2; }
+.payment-summary-copy span { color: var(--color-muted, #6c7888); font-size: 13px; }
+.payment-summary-copy span i { margin-left: 4px; }
+.fee-selection-table tbody tr:has(.js-bill-checkbox:checked) { background: #fff8ed; }
+.payment-method-details { align-items: center; background: #f8fafc; border: 1px solid var(--color-border, #e3e8ef); border-radius: 12px; display: flex; min-height: 110px; padding: 16px; }
+.method-detail { align-items: center; display: flex; gap: 18px; width: 100%; }
+.method-detail strong, .method-detail span, .method-detail small { display: block; }
+.method-detail span { color: var(--color-muted, #6c7888); }
+.payment-qr { background: #fff; border-radius: 5px; height: 92px; object-fit: contain; width: 92px; }
+@media (max-width: 575.98px) { .payment-summary-card { padding: 17px; } .payment-summary-copy strong { font-size: 20px; } .method-detail { align-items: flex-start; flex-direction: column; gap: 8px; } }
+.claim-fixed-amount { align-items: center; background: #fff8ed; border: 1px solid #edd7ad; border-radius: 8px; color: #8b5c16; display: inline-flex; font-weight: 700; min-height: 38px; padding: 0 13px; white-space: nowrap; }

@@ -12,7 +12,7 @@ class EnsureActiveMembership
     {
         $user = $request->user();
 
-        if (! $user || $user->membership_status === 'active' || $user->hasRole('admin', 'chairman', 'treasurer')) {
+        if (! $user || $user->membership_status === 'active' || $user->hasRole('admin', 'treasurer')) {
             return $next($request);
         }
 

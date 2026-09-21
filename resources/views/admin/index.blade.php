@@ -231,7 +231,7 @@
                 <input class="form-control" name="search" value="{{ request('search') }}" placeholder="Cari nama, emel atau jabatan">
                 <select class="form-select" name="role">
                     <option value="">Semua Role</option>
-                    @foreach(['member','treasurer','chairman','admin'] as $role)
+                    @foreach(['member','treasurer','admin'] as $role)
                         <option value="{{ $role }}" @selected(request('role') === $role)>{{ \App\Support\PolistaffLabels::role($role) }}</option>
                     @endforeach
                 </select>
@@ -285,7 +285,7 @@
                                     @csrf
                                     @method('patch')
                                     <select class="form-select form-select-sm" name="role" aria-label="Role {{ $user->name }}">
-                                        @foreach(['member','treasurer','chairman','admin'] as $role)
+                                        @foreach(['member','treasurer','admin'] as $role)
                                             <option value="{{ $role }}" @selected($user->role === $role)>{{ \App\Support\PolistaffLabels::role($role) }}</option>
                                         @endforeach
                                     </select>

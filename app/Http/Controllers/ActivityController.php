@@ -35,7 +35,7 @@ class ActivityController extends Controller
         $calendarEnd = $calendarMonth->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $calendarActivities = Activity::query()
-            ->when(! $user->hasRole('admin', 'chairman', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
+            ->when(! $user->hasRole('admin', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
             ->whereBetween('date_time', [$calendarStart, $calendarEnd])
             ->orderBy('date_time')
             ->get()
@@ -55,18 +55,19 @@ class ActivityController extends Controller
         }
 
         $activities = Activity::query()
-            ->when(! $user->hasRole('admin', 'chairman', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
-            ->when(in_array($request->input('status'), ['approved', 'rejected', 'pending_approval'], true), fn ($query) => $query->where('status', $request->input('status')))
+            ->when(! $user->hasRole('admin', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
+            ->when(in_array($request->input('status'), ['approved', 'rejected', 'pending_approval', 'treasurer_verified'], true), fn ($query) => $query->where('status', $request->input('status')))
             ->when($request->filled('date'), fn ($query) => $query->whereDate('date_time', $request->date))
             ->orderBy('date_time')
             ->paginate(10)
             ->withQueryString();
 
-        $scope = $user->hasRole('admin', 'chairman', 'treasurer') ? Activity::query() : Activity::where('created_by', $user->id);
+        $scope = $user->hasRole('admin', 'treasurer') ? Activity::query() : Activity::where('created_by', $user->id);
         $stats = [
             'approved' => (clone $scope)->where('status', 'approved')->count(),
             'rejected' => (clone $scope)->where('status', 'rejected')->count(),
             'pending' => (clone $scope)->where('status', 'pending_approval')->count(),
+            'treasurer_verified' => (clone $scope)->where('status', 'treasurer_verified')->count(),
         ];
 
         return view('activities.index', compact('activities', 'calendarMonth', 'calendarWeeks', 'stats'));
@@ -128,9 +129,9 @@ class ActivityController extends Controller
     public function show(Activity $activity): View
     {
         $user = auth()->user();
-        $canManageAttendance = $user?->hasRole('admin', 'chairman', 'treasurer') ?? false;
+        $canManageAttendance = $user?->hasRole('admin', 'treasurer') ?? false;
 
-        abort_unless($activity->status === 'approved' || $activity->created_by === $user?->id || $user?->hasRole('admin', 'chairman', 'treasurer'), 404);
+        abort_unless($activity->status === 'approved' || $activity->created_by === $user?->id || $user?->hasRole('admin', 'treasurer'), 404);
 
         $activity->loadCount(['attendances', 'activeRegistrations', 'waitlistedRegistrations']);
         $registration = $user ? $activity->registrations()->where('user_id', $user->id)->first() : null;
@@ -199,7 +200,7 @@ class ActivityController extends Controller
 
     public function uploadReportPhoto(Request $request, Activity $activity): RedirectResponse
     {
-        abort_unless($activity->created_by === $request->user()->id || $request->user()->hasRole('treasurer', 'chairman', 'admin'), 403);
+        abort_unless($activity->created_by === $request->user()->id || $request->user()->hasRole('treasurer', 'admin'), 403);
         abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Gambar report hanya boleh dimuat naik selepas aktiviti tamat.');
 
         $data = $request->validate(['report_photo' => ['required', 'image', 'max:8192']], [
@@ -217,15 +218,28 @@ class ActivityController extends Controller
         return back()->with('status', 'Gambar report berjaya dimuat naik.');
     }
 
+    public function verify(Request $request, Activity $activity): RedirectResponse
+    {
+        abort_unless($activity->status === 'pending_approval', 422, 'Hanya aktiviti yang menunggu kelulusan boleh diluluskan.');
+        $data = $request->validate(['treasurer_notes' => ['nullable', 'string', 'max:1000']]);
+        $activity->update(['status' => 'treasurer_verified', 'treasurer_verified_by' => $request->user()->id, 'treasurer_verified_at' => now(), 'treasurer_notes' => $data['treasurer_notes'] ?? null]);
+        if ($activity->created_by) {
+            PortalNotification::create(['user_id' => $activity->created_by, 'title' => 'Aktiviti disahkan bendahari', 'message' => 'Permohonan '.$activity->title.' telah disahkan bendahari dan menunggu kelulusan admin.', 'type' => 'info', 'link' => route('activities.show', $activity)]);
+        }
+        User::where('role', 'admin')->where('membership_status', 'active')->get()->each(fn (User $user) => PortalNotification::create(['user_id' => $user->id, 'title' => 'Aktiviti menunggu kelulusan', 'message' => 'Aktiviti '.$activity->title.' telah disahkan bendahari dan memerlukan kelulusan anda.', 'type' => 'info', 'link' => route('activities.show', $activity)]));
+        AuditLog::create(['user_id' => $request->user()->id, 'action' => 'verified', 'module' => 'Activity Approval', 'record_type' => Activity::class, 'record_id' => $activity->id, 'description' => 'Treasurer verified activity '.$activity->title.'.', 'changes' => ['status' => 'treasurer_verified'], 'ip_address' => $request->ip()]);
+        return back()->with('status', 'Aktiviti disahkan bendahari dan dihantar kepada admin.');
+    }
+
     public function approve(Activity $activity): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('treasurer'), 403);
-        abort_unless($activity->status === 'pending_approval', 422, 'Hanya aktiviti yang menunggu kelulusan boleh diluluskan.');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+        abort_unless($activity->status === 'treasurer_verified', 422, 'Aktiviti perlu disahkan bendahari dahulu.');
 
         $activity->update(['status' => 'approved', 'reviewed_by' => auth()->id(), 'reviewed_at' => now()]);
 
         if ($activity->created_by) {
-            PortalNotification::create(['user_id' => $activity->created_by, 'title' => 'Aktiviti diluluskan', 'message' => 'Permohonan '.$activity->title.' telah diluluskan oleh bendahari.', 'type' => 'success', 'link' => route('activities.show', $activity)]);
+            PortalNotification::create(['user_id' => $activity->created_by, 'title' => 'Aktiviti diluluskan', 'message' => 'Permohonan '.$activity->title.' telah diluluskan oleh admin.', 'type' => 'success', 'link' => route('activities.show', $activity)]);
         }
 
         User::where('membership_status', 'active')->where('role', 'member')->chunkById(100, function ($users) use ($activity): void {
@@ -255,8 +269,8 @@ class ActivityController extends Controller
 
     public function reject(Request $request, Activity $activity): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('treasurer'), 403);
-        abort_unless($activity->status === 'pending_approval', 422);
+        abort_unless($request->user()->hasRole('admin'), 403);
+        abort_unless($activity->status === 'treasurer_verified', 422);
         $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']]);
         $activity->update(['status' => 'rejected', 'reviewed_by' => $request->user()->id, 'reviewed_at' => now(), 'review_notes' => $data['review_notes']]);
         if ($activity->created_by) {
@@ -295,7 +309,7 @@ class ActivityController extends Controller
 
     public function attendanceStatus(Activity $activity): \Illuminate\Http\JsonResponse
     {
-        abort_unless(auth()->user()->hasRole('admin', 'chairman', 'treasurer'), 403);
+        abort_unless(auth()->user()->hasRole('admin', 'treasurer'), 403);
 
         $activity->load(['activeRegistrations.user', 'attendances']);
         $attendanceByUser = $activity->attendances->keyBy('user_id');
@@ -314,7 +328,7 @@ class ActivityController extends Controller
 
     private function timelineLogs(Activity $activity)
     {
-        if (! auth()->check() || ! auth()->user()->hasRole('chairman', 'admin')) {
+        if (! auth()->check() || ! auth()->user()->hasRole('admin')) {
             return collect();
         }
 

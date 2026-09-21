@@ -10,8 +10,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\ExpenseClaimController;
-use App\Http\Controllers\FeedbackController;
-use App\Http\Controllers\MemberDocumentController;
+use App\Http\Controllers\DonationController;
 use App\Http\Controllers\MembershipApplicationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
@@ -65,10 +64,6 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/profile/password', [PasswordController::class, 'update'])->name('profile.password.update');
     Route::get('/preferences', [UserPreferenceController::class, 'edit'])->name('preferences.edit');
     Route::put('/preferences', [UserPreferenceController::class, 'update'])->name('preferences.update');
-    Route::get('/documents', [MemberDocumentController::class, 'index'])->name('documents.index');
-    Route::post('/documents', [MemberDocumentController::class, 'store'])->name('documents.store');
-    Route::get('/documents/{document}', [MemberDocumentController::class, 'show'])->name('documents.show');
-    Route::delete('/documents/{document}', [MemberDocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/polimart/create', [PolimartController::class, 'create'])->middleware('role:admin')->name('polimart.create');
     Route::get('/polimart/favorites', [PolimartController::class, 'favorites'])->name('polimart.favorites');
     Route::post('/polimart', [PolimartController::class, 'store'])->middleware('role:admin')->name('polimart.store');
@@ -93,7 +88,7 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->middleware('role:admin')->name('admin.users.update');
     Route::get('/admin/settings', [SystemSettingController::class, 'edit'])->middleware('role:admin')->name('settings.edit');
     Route::put('/admin/settings', [SystemSettingController::class, 'update'])->middleware('role:admin')->name('settings.update');
-    Route::get('/finance/fees', [SystemSettingController::class, 'feeOperations'])->middleware('role:admin,chairman,treasurer')->name('finance.fees.index');
+    Route::get('/finance/fees', [SystemSettingController::class, 'feeOperations'])->middleware('role:admin,treasurer')->name('finance.fees.index');
     Route::post('/finance/fees/generate', [SystemSettingController::class, 'generateMonthlyFees'])->middleware('role:admin,treasurer')->name('finance.fees.generate');
     Route::post('/finance/fees/reminders', [SystemSettingController::class, 'sendFeeReminders'])->middleware('role:admin,treasurer')->name('finance.fees.reminders');
     Route::post('/finance/fees/reminders/{user}', [SystemSettingController::class, 'sendFeeReminder'])->middleware('role:admin,treasurer')->name('finance.fees.reminder');
@@ -107,37 +102,42 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('activities', ActivityController::class)
         ->except(['index', 'show'])
         ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:member');
-    Route::patch('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('role:treasurer')->name('activities.approve');
-    Route::patch('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('role:treasurer')->name('activities.reject');
+    Route::patch('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('role:admin')->name('activities.approve');
+    Route::patch('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('role:admin')->name('activities.reject');
+    Route::patch('/activities/{activity}/verify', [ActivityController::class, 'verify'])->middleware('role:treasurer,admin')->name('activities.verify');
     Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:treasurer,admin')->name('activities.refresh-qr');
     Route::post('/activities/{activity}/report-photo', [ActivityController::class, 'uploadReportPhoto'])->name('activities.report-photo');
-    Route::get('/activities/{activity}/attendance-status', [ActivityController::class, 'attendanceStatus'])->middleware('role:admin,chairman,treasurer')->name('activities.attendance-status');
+    Route::get('/activities/{activity}/attendance-status', [ActivityController::class, 'attendanceStatus'])->middleware('role:admin,treasurer')->name('activities.attendance-status');
     Route::post('/activities/{activity}/register', [ActivityRegistrationController::class, 'store'])->name('activities.register');
     Route::delete('/activities/{activity}/register', [ActivityRegistrationController::class, 'destroy'])->name('activities.unregister');
-    Route::get('/attendance', [AttendanceController::class, 'index'])->middleware('role:admin,chairman,treasurer')->name('attendance.index');
+    Route::get('/attendance', [AttendanceController::class, 'index'])->middleware('role:admin,treasurer')->name('attendance.index');
     Route::get('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
     Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
-    Route::post('/activities/{activity}/attendance/{registration}', [AttendanceController::class, 'storeForRegistration'])->middleware('role:admin,chairman,treasurer')->name('activities.attendance.store');
+    Route::post('/activities/{activity}/attendance/{registration}', [AttendanceController::class, 'storeForRegistration'])->middleware('role:admin,treasurer')->name('activities.attendance.store');
 
     Route::resource('transactions', TransactionController::class)
-        ->middleware('role:treasurer,chairman,admin')
+        ->middleware('role:treasurer,admin')
         ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:treasurer,admin');
-    Route::get('/transactions/{transaction}/receipt.pdf', [TransactionController::class, 'receiptPdf'])->middleware('role:treasurer,chairman,admin')->name('transactions.receipt.pdf');
-    Route::get('/reports/overview', [ReportController::class, 'overview'])->middleware('role:treasurer,chairman,admin')->name('reports.overview');
-    Route::get('/reports/financial', [ReportController::class, 'financial'])->middleware('role:treasurer,chairman,admin')->name('reports.financial');
-    Route::get('/reports/financial.pdf', [ReportController::class, 'financialPdf'])->middleware('role:treasurer,chairman,admin')->name('reports.financial.pdf');
-    Route::get('/reports/financial.csv', [ReportController::class, 'financialCsv'])->middleware('role:treasurer,chairman,admin')->name('reports.financial.csv');
-    Route::get('/reports/attendance.csv', [ReportController::class, 'attendanceCsv'])->middleware('role:treasurer,chairman,admin')->name('reports.attendance.csv');
+    Route::get('/transactions/{transaction}/receipt.pdf', [TransactionController::class, 'receiptPdf'])->middleware('role:treasurer,admin')->name('transactions.receipt.pdf');
+    Route::get('/reports/overview', [ReportController::class, 'overview'])->middleware('role:treasurer,admin')->name('reports.overview');
+    Route::get('/reports/financial', [ReportController::class, 'financial'])->middleware('role:treasurer,admin')->name('reports.financial');
+    Route::get('/reports/financial.pdf', [ReportController::class, 'financialPdf'])->middleware('role:treasurer,admin')->name('reports.financial.pdf');
+    Route::get('/reports/financial.csv', [ReportController::class, 'financialCsv'])->middleware('role:treasurer,admin')->name('reports.financial.csv');
+    Route::get('/reports/attendance.csv', [ReportController::class, 'attendanceCsv'])->middleware('role:treasurer,admin')->name('reports.attendance.csv');
     Route::get('/reports/activities/{activity}/attendance.csv', [ReportController::class, 'activityAttendanceCsv'])->name('reports.activities.attendance.csv');
     Route::get('/reports/activities/{activity}/report.pdf', [ReportController::class, 'activityReportPdf'])->name('reports.activities.pdf');
 
     Route::resource('claims', ExpenseClaimController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+    Route::resource('donations', DonationController::class)->only(['index', 'create', 'store', 'show']);
+    Route::patch('/donations/{donation}/verify', [DonationController::class, 'verify'])->middleware('role:treasurer,admin')->name('donations.verify');
+    Route::patch('/donations/{donation}/approve', [DonationController::class, 'approve'])->middleware('role:admin')->name('donations.approve');
+    Route::patch('/donations/{donation}/reject', [DonationController::class, 'reject'])->middleware('role:admin')->name('donations.reject');
     Route::get('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmitForm'])->name('claims.resubmit.form');
     Route::post('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmit'])->name('claims.resubmit');
     Route::get('/claims/{claim}/receipt', [ExpenseClaimController::class, 'receipt'])->name('claims.receipt');
     Route::patch('/claims/{claim}/verify', [ExpenseClaimController::class, 'verify'])->middleware('role:treasurer,admin')->name('claims.verify');
-    Route::patch('/claims/{claim}/approve', [ExpenseClaimController::class, 'approve'])->middleware('role:chairman,admin')->name('claims.approve');
-    Route::patch('/claims/{claim}/reject', [ExpenseClaimController::class, 'reject'])->middleware('role:chairman,admin')->name('claims.reject');
+    Route::patch('/claims/{claim}/approve', [ExpenseClaimController::class, 'approve'])->middleware('role:admin')->name('claims.approve');
+    Route::patch('/claims/{claim}/reject', [ExpenseClaimController::class, 'reject'])->middleware('role:admin')->name('claims.reject');
 
     Route::get('/payments', [PaymentSubmissionController::class, 'index'])->name('payments.index');
     Route::get('/payments/statement', [PaymentSubmissionController::class, 'statement'])->name('payments.statement');
@@ -154,14 +154,11 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/admin/notifications/delivery', [NotificationController::class, 'deliveryMonitor'])->middleware('role:admin')->name('admin.notifications.delivery');
     Route::post('/admin/email-deliveries/{delivery}/retry', [NotificationController::class, 'retryDelivery'])->middleware('role:admin')->name('admin.email-deliveries.retry');
     Route::post('/admin/notifications/{notification}/retry', [NotificationController::class, 'retryEmail'])->middleware('role:admin')->name('admin.notifications.retry');
-    Route::get('/notifications/create', [NotificationController::class, 'create'])->middleware('role:admin,chairman')->name('notifications.create');
-    Route::post('/notifications', [NotificationController::class, 'store'])->middleware('role:admin,chairman')->name('notifications.store');
+    Route::get('/notifications/create', [NotificationController::class, 'create'])->middleware('role:admin')->name('notifications.create');
+    Route::post('/notifications', [NotificationController::class, 'store'])->middleware('role:admin')->name('notifications.store');
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
-    Route::get('/feedback', [FeedbackController::class, 'create'])->name('feedback.create');
-    Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
-    Route::get('/admin/feedback', [FeedbackController::class, 'index'])->middleware('role:admin,chairman')->name('admin.feedback.index');
 });
 
 // Public storefront and public activity information. No account is needed to browse these pages.

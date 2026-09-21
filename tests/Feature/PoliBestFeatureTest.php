@@ -17,7 +17,6 @@ use App\Models\Activity;
 use App\Models\ActivityRegistration;
 use App\Models\Attendance;
 use App\Models\ExpenseClaim;
-use App\Models\MemberDocument;
 use App\Models\PaymentSubmission;
 use App\Models\PolimartItem;
 use App\Models\PolimartConversation;
@@ -812,49 +811,6 @@ class PoliBestFeatureTest extends TestCase
         $this->actingAs($user)->post(route('activities.register', $activity))->assertRedirect();
 
         $this->assertDatabaseHas('activity_registrations', ['user_id' => $user->id, 'activity_id' => $activity->id, 'status' => 'registered']);
-    }
-
-    public function test_only_members_who_attended_can_submit_one_activity_feedback(): void
-    {
-        $member = User::factory()->create();
-        $activity = Activity::create([
-            'title' => 'Aktiviti Feedback',
-            'date_time' => now()->subDay(),
-            'location' => 'Dewan',
-            'status' => 'approved',
-            'qr_code_token' => Str::uuid()->toString(),
-        ]);
-
-        $this->actingAs($member)->post(route('feedback.store'), [
-            'activity_id' => $activity->id,
-            'rating' => 5,
-            'content' => 'Aktiviti sangat baik.',
-        ])->assertSessionHasErrors([
-            'activity_id' => 'Anda hanya boleh memberi maklum balas selepas hadir ke aktiviti tersebut.',
-        ]);
-
-        Attendance::create([
-            'user_id' => $member->id,
-            'activity_id' => $activity->id,
-            'scanned_at' => now()->subDay(),
-            'qr_code_token' => $activity->qr_code_token,
-        ]);
-
-        $this->actingAs($member)->post(route('feedback.store'), [
-            'activity_id' => $activity->id,
-            'rating' => 5,
-            'content' => 'Aktiviti sangat baik.',
-        ])->assertRedirect(route('dashboard'));
-
-        $this->actingAs($member)->post(route('feedback.store'), [
-            'activity_id' => $activity->id,
-            'rating' => 4,
-            'content' => 'Maklum balas kedua.',
-        ])->assertSessionHasErrors([
-            'activity_id' => 'Anda sudah menghantar maklum balas untuk aktiviti ini.',
-        ]);
-
-        $this->assertDatabaseCount('feedbacks', 1);
     }
 
     public function test_admin_can_create_and_update_activity_with_evidence_photo(): void
@@ -2179,19 +2135,11 @@ class PoliBestFeatureTest extends TestCase
             'receipt_path' => 'expense-claims/private.pdf',
             'status' => 'pending',
         ]);
-        $document = MemberDocument::create([
-            'user_id' => $owner->id,
-            'title' => 'Dokumen Sulit',
-            'document_type' => 'Peribadi',
-            'file_path' => 'member-documents/private.pdf',
-        ]);
 
         $this->actingAs($member)->get(route('payments.show', $payment))->assertForbidden();
         $this->actingAs($member)->get(route('payments.proof', $payment))->assertForbidden();
         $this->actingAs($member)->get(route('claims.show', $claim))->assertForbidden();
         $this->actingAs($member)->get(route('claims.receipt', $claim))->assertForbidden();
-        $this->actingAs($member)->get(route('documents.show', $document))->assertForbidden();
-        $this->actingAs($member)->delete(route('documents.destroy', $document))->assertForbidden();
     }
 
     public function test_admin_cannot_remove_access_from_their_own_account(): void

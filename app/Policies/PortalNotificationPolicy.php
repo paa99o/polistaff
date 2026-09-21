@@ -14,6 +14,6 @@ class PortalNotificationPolicy
 
     public function send(User $user): bool
     {
-        return $user->hasRole('admin', 'chairman');
+        return $user->hasRole('admin');
     }
 }

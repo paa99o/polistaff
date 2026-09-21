@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\AuditLog;
-use App\Models\Feedback;
 use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
 use App\Models\PortalNotification;
@@ -33,7 +32,6 @@ class DashboardController extends Controller
             'totalActivities' => Activity::count(),
             'approvedActivities' => Activity::where('status', 'approved')->count(),
             'totalAttendances' => Attendance::count(),
-            'totalFeedbacks' => Feedback::count(),
             'recentTransactions' => Transaction::with('user')->where('status', 'active')->latest('transaction_date')->limit(5)->get(),
             'recentAuditLogs' => AuditLog::with('user')->latest()->limit(5)->get(),
             'income' => Transaction::where('status', 'active')->where('type', 'income')->sum('amount'),

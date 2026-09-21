@@ -44,7 +44,7 @@ class AttendanceController extends Controller
             ->where('status', 'registered')
             ->exists();
 
-        if (! $isRegistered && ! $request->user()->hasRole('admin', 'chairman', 'treasurer')) {
+        if (! $isRegistered && ! $request->user()->hasRole('admin', 'treasurer')) {
             return redirect()->route('activities.show', $activity)->withErrors(['token' => 'Sila daftar aktiviti dahulu sebelum rekod kehadiran.']);
         }
 
@@ -74,7 +74,7 @@ class AttendanceController extends Controller
 
     public function storeForRegistration(Request $request, Activity $activity, ActivityRegistration $registration): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('admin', 'chairman', 'treasurer'), 403);
+        abort_unless($request->user()->hasRole('admin', 'treasurer'), 403);
         abort_unless((int) $registration->activity_id === (int) $activity->id, 404);
 
         if ($activity->status !== 'approved') {

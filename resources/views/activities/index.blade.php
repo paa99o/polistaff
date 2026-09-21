@@ -7,8 +7,8 @@
 </div>
 
 <div class="row g-3 mb-4">
-    @foreach([['approved', 'Aktiviti Diluluskan', 'bi-check-circle'], ['rejected', 'Aktiviti Ditolak', 'bi-x-circle'], ['pending_approval', 'Menunggu Kelulusan', 'bi-hourglass-split']] as [$key, $label, $icon])
-        <div class="col-md-4"><a class="admin-stat-card activity-summary-card" href="{{ route('activities.index', ['status' => $key]) }}"><span class="admin-stat-icon"><i class="bi {{ $icon }}"></i></span><strong>{{ $stats[$key === 'pending_approval' ? 'pending' : $key] }}</strong><span>{{ $label }}</span><small class="text-muted">Klik untuk lihat senarai</small></a></div>
+    @foreach([['approved', 'Aktiviti Diluluskan', 'bi-check-circle'], ['rejected', 'Aktiviti Ditolak', 'bi-x-circle'], ['pending_approval', 'Menunggu Semakan', 'bi-hourglass-split'], ['treasurer_verified', 'Disahkan Bendahari', 'bi-person-check']] as [$key, $label, $icon])
+        <div class="col-md-3"><a class="admin-stat-card activity-summary-card" href="{{ route('activities.index', ['status' => $key]) }}"><span class="admin-stat-icon"><i class="bi {{ $icon }}"></i></span><strong>{{ $stats[$key === 'pending_approval' ? 'pending' : $key] }}</strong><span>{{ $label }}</span><small class="text-muted">Klik untuk lihat senarai</small></a></div>
     @endforeach
 </div>
 
@@ -85,7 +85,7 @@
                                 @endif
                                 @if($activity->status === 'approved' && $activity->isFinished())
                                     <a class="btn btn-sm btn-outline-secondary" href="{{ route('reports.activities.pdf', $activity) }}">Download Report</a>
-                                    @if($activity->created_by === auth()->id() || auth()->user()->hasRole('treasurer','admin','chairman'))
+                                    @if($activity->created_by === auth()->id() || auth()->user()->hasRole('treasurer','admin'))
                                         <form method="post" action="{{ route('activities.report-photo', $activity) }}" enctype="multipart/form-data" class="d-flex gap-1 align-items-center">
                                             @csrf
                                             <label class="btn btn-sm btn-outline-secondary mb-0">Gambar<input class="d-none" type="file" name="report_photo" accept="image/*" required onchange="this.form.submit()"></label>

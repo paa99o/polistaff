@@ -27,7 +27,7 @@ CREATE TABLE `users` (
     `email` VARCHAR(255) NOT NULL,
     `email_verified_at` TIMESTAMP NULL,
     `password` VARCHAR(255) NOT NULL,
-    `role` ENUM('member', 'treasurer', 'chairman', 'admin') NOT NULL DEFAULT 'member',
+    `role` ENUM('member', 'treasurer', 'admin') NOT NULL DEFAULT 'member',
     `department` VARCHAR(255) NULL,
     `phone` VARCHAR(255) NULL,
     `membership_status` ENUM('pending', 'active', 'inactive') NOT NULL DEFAULT 'pending',
@@ -245,7 +245,6 @@ CREATE TABLE `audit_logs` (
 INSERT INTO `users` (`id`, `name`, `ic_number`, `email`, `email_verified_at`, `password`, `role`, `department`, `phone`, `membership_status`, `joined_date`, `fee_balance`, `remember_token`, `created_at`, `updated_at`) VALUES
 (1, 'Admin PoliBest', '900101110001', 'admin@polibest.test', NULL, '$2y$12$ysOHj4iu6n3dHUSDZ2Dny.X5yuGOUv2szDkRPmtngFL1fAXvWTPY2', 'admin', 'JTMK', '0111111001', 'active', CURDATE(), 0.00, NULL, NOW(), NOW()),
 (2, 'Bendahari PoliBest', '900101110002', 'treasurer@polibest.test', NULL, '$2y$12$ysOHj4iu6n3dHUSDZ2Dny.X5yuGOUv2szDkRPmtngFL1fAXvWTPY2', 'treasurer', 'JTMK', '0111111002', 'active', CURDATE(), 0.00, NULL, NOW(), NOW()),
-(3, 'Pengerusi PoliBest', '900101110003', 'chairman@polibest.test', NULL, '$2y$12$ysOHj4iu6n3dHUSDZ2Dny.X5yuGOUv2szDkRPmtngFL1fAXvWTPY2', 'chairman', 'JTMK', '0111111003', 'active', CURDATE(), 0.00, NULL, NOW(), NOW()),
 (4, 'Muhammad Hilmi Aqil Bin Zulkifli', '900101110004', 'hilmi@polibest.test', NULL, '$2y$12$ysOHj4iu6n3dHUSDZ2Dny.X5yuGOUv2szDkRPmtngFL1fAXvWTPY2', 'member', 'JTMK', '0111111004', 'active', CURDATE(), 20.00, NULL, NOW(), NOW()),
 (5, 'Muhammad Fayyad Aqel Bin Mohd Faizal', '900101110005', 'fayyad@polibest.test', NULL, '$2y$12$ysOHj4iu6n3dHUSDZ2Dny.X5yuGOUv2szDkRPmtngFL1fAXvWTPY2', 'member', 'JTMK', '0111111005', 'active', CURDATE(), 20.00, NULL, NOW(), NOW()),
 (6, 'Muhammad Afiq Azfar Bin Ramli', '900101110006', 'afiq@polibest.test', NULL, '$2y$12$ysOHj4iu6n3dHUSDZ2Dny.X5yuGOUv2szDkRPmtngFL1fAXvWTPY2', 'member', 'JTMK', '0111111006', 'active', CURDATE(), 20.00, NULL, NOW(), NOW());

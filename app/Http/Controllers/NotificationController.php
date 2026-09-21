@@ -120,7 +120,7 @@ class NotificationController extends Controller
     {
         return view('notifications.create', [
             'departments' => User::whereNotNull('department')->distinct()->orderBy('department')->pluck('department'),
-            'roles' => ['member' => 'Member', 'treasurer' => 'Treasurer', 'chairman' => 'Chairman', 'admin' => 'Admin'],
+            'roles' => ['member' => 'Member', 'treasurer' => 'Treasurer', 'admin' => 'Admin'],
             'users' => User::orderBy('name')->get(),
         ]);
     }

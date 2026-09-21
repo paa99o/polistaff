@@ -10,7 +10,6 @@
     $pendingActionCount = ($profileIncomplete ? 1 : 0) + match ($role) {
         'admin' => $pendingMembers + $pendingPayments + $pendingActivities + $pendingClaims,
         'treasurer' => $pendingPayments + $pendingClaims,
-        'chairman' => $pendingActivities + $pendingClaims,
         'member' => ($user->fee_balance > 0 ? 1 : 0),
         default => 0,
     };
@@ -27,12 +26,6 @@
             ['icon' => 'bi-arrow-up-right', 'label' => 'Perbelanjaan', 'value' => 'RM '.number_format((float) $expenses, 2), 'meta' => 'Jumlah transaksi aktif', 'route' => route('transactions.index'), 'link' => 'Lihat transaksi'],
             ['icon' => 'bi-wallet2', 'label' => 'Baki Semasa', 'value' => 'RM '.number_format((float) ($income - $expenses), 2), 'meta' => 'Pendapatan selepas belanja', 'route' => route('reports.financial'), 'link' => 'Lihat ringkasan'],
             ['icon' => 'bi-hourglass-split', 'label' => 'Perlu Disemak', 'value' => $pendingPayments, 'meta' => 'Bukti bayaran tertunda', 'route' => route('payments.index'), 'link' => 'Semak sekarang'],
-        ],
-        'chairman' => [
-            ['icon' => 'bi-calendar3', 'label' => 'Jumlah Aktiviti', 'value' => $totalActivities, 'meta' => 'Aktiviti direkodkan', 'route' => route('activities.index'), 'link' => 'Lihat aktiviti'],
-            ['icon' => 'bi-check-circle', 'label' => 'Aktiviti Diluluskan', 'value' => $approvedActivities, 'meta' => 'Sedia untuk penyertaan', 'route' => route('activities.index'), 'link' => 'Semak aktiviti'],
-            ['icon' => 'bi-clipboard-check', 'label' => 'Kehadiran', 'value' => $totalAttendances, 'meta' => 'Jumlah rekod kehadiran', 'route' => route('attendance.index'), 'link' => 'Lihat laporan'],
-            ['icon' => 'bi-chat-left-text', 'label' => 'Maklum Balas', 'value' => $totalFeedbacks, 'meta' => 'Respons diterima', 'route' => route('admin.feedback.index'), 'link' => 'Semak respons'],
         ],
         default => [
             ['icon' => 'bi-calendar3', 'label' => 'Aktiviti Akan Datang', 'value' => $upcomingActivities->count(), 'meta' => 'Dalam jadual kelab', 'route' => route('activities.index'), 'link' => 'Lihat semua'],
@@ -148,7 +141,7 @@
                         </div>
                     @endif
 
-                    @if(in_array($role, ['chairman', 'admin'], true) && $pendingActivities > 0)
+                    @if($role === 'admin' && $pendingActivities > 0)
                         <div class="action-item">
                             <span class="action-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
                             <div>
@@ -159,7 +152,7 @@
                         </div>
                     @endif
 
-                    @if(in_array($role, ['chairman', 'admin'], true) && $pendingClaims > 0)
+                    @if($role === 'admin' && $pendingClaims > 0)
                         <div class="action-item">
                             <span class="action-icon"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></span>
                             <div>

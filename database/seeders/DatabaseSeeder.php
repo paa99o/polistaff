@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
         $users = collect([
             ['Admin PoliBest', 'admin@polibest.test', 'admin'],
             ['Bendahari PoliBest', 'treasurer@polibest.test', 'treasurer'],
-            ['Pengerusi PoliBest', 'chairman@polibest.test', 'chairman'],
+            ['Admin PoliBest 2', 'admin2@polibest.test', 'admin'],
             ['Muhammad Hilmi Aqil Bin Zulkifli', 'hilmi@polibest.test', 'member'],
         ])->map(fn (array $data) => User::updateOrCreate(['email' => $data[1]], [
             'name' => $data[0],
