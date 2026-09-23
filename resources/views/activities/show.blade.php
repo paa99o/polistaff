@@ -35,18 +35,29 @@
                         @if(auth()->id() === $activity->created_by && $activity->status === 'pending_approval')
                             <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                         @endif
+                        @if($activity->status === 'approved' && $activity->isFinished())
+                            @php
+                                $activityExportOptions = [
+                                    ['label' => 'PDF', 'url' => route('reports.activities.pdf', $activity), 'icon' => 'bi-file-earmark-pdf'],
+                                ];
+
+                                if ($canManageAttendance || auth()->id() === $activity->created_by) {
+                                    $activityExportOptions[] = ['label' => 'CSV Kehadiran', 'url' => route('reports.activities.attendance.csv', $activity), 'icon' => 'bi-filetype-csv'];
+                                }
+                            @endphp
+                            @include('reports._export-menu', ['label' => 'Eksport Laporan', 'buttonClass' => 'btn-sm btn-outline-secondary', 'options' => $activityExportOptions])
+                        @endif
                     </div>
                 </div>
                 <hr>
 
-                @if($activity->evidence_photo_path)
-                    <figure class="activity-evidence mb-4">
-                        <img src="{{ Storage::disk('public')->url($activity->evidence_photo_path) }}" alt="Foto bukti untuk {{ $activity->title }}">
-                        <figcaption>Foto bukti aktiviti</figcaption>
-                    </figure>
+                @if($activity->evidencePhotos->isNotEmpty())
+                    <div class="row g-2 mb-4">
+                        @foreach($activity->evidencePhotos as $photo)
+                            <div class="col-6 col-md-4"><img class="img-fluid rounded" src="{{ Storage::disk('public')->url($photo->path) }}" alt="Bukti aktiviti oleh {{ $photo->user->name }}"></div>
+                        @endforeach
+                    </div>
                 @endif
-
-                <p>{{ $activity->description }}</p>
 
                 <div class="row g-3 my-3">
                     <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Status</div><strong>{{ \App\Support\PolistaffLabels::status($activity->status) }}</strong></div></div>
@@ -59,14 +70,25 @@
 
                 <div class="small text-muted mb-3">
                     Pendaftaran: {{ $activity->registration_opens_at?->format('d/m/Y h:i A') ?? 'Bila-bila masa' }} - {{ $activity->registration_closes_at?->format('d/m/Y h:i A') ?? 'Sehingga aktiviti' }}<br>
-                    Kehadiran: {{ $activity->attendance_opens_at?->format('d/m/Y h:i A') ?? 'Bila-bila masa' }} - {{ $activity->attendance_closes_at?->format('d/m/Y h:i A') ?? 'Tiada waktu tutup' }}
                 </div>
+
+                @if($activity->isFinished() && $isRegistered)
+                    <div class="card bg-light border-0 mb-3"><div class="card-body">
+                        <h2 class="h6">Bukti aktiviti</h2>
+                        <p class="small text-muted">Muat naik gambar semasa aktiviti telah selesai.</p>
+                        <form method="post" action="{{ route('activities.evidence-photos', $activity) }}" enctype="multipart/form-data">
+                            @csrf
+                            <input class="form-control" type="file" name="photos[]" accept="image/*" multiple required>
+                            @include('partials.errors', ['name' => 'photos'])
+                            <button class="btn btn-sm btn-danger mt-2">Muat Naik Gambar</button>
+                        </form>
+                    </div></div>
+                @endif
 
                 @if($activity->registrationIsOpen())
                     @if($isRegistered)
                         <div class="alert alert-success">Anda sudah berdaftar untuk aktiviti ini.</div>
                         <div class="d-flex gap-2 flex-wrap">
-                            <a class="btn btn-danger" href="{{ route('attendance.scan') }}">Imbas QR Kehadiran</a>
                             <form method="post" action="{{ route('activities.unregister', $activity) }}" data-confirm="Batalkan pendaftaran aktiviti ini?">
                                 @csrf
                                 @method('delete')
@@ -149,41 +171,44 @@
         @endif
     </div>
 
-    @if($canManageAttendance)
+    @if($activity->status === 'approved')
         <div class="col-lg-5">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3">
                         <div>
                             <h2 class="h5 soft-panel-title mb-1">QR Kehadiran</h2>
-                            <p class="small text-muted mb-0">Jana QR semasa aktiviti bermula. QR lama akan menjadi tidak sah.</p>
+                            <p class="small text-muted mb-0">QR dijana secara manual oleh bendahari untuk aktiviti ini.</p>
                         </div>
-                        @if($activity->status === 'approved')
-                            <form method="post" action="{{ route('activities.refresh-qr', $activity) }}" data-confirm="Jana QR baharu? QR lama tidak boleh digunakan lagi.">
+                        @if($canGenerateQr && now()->between($activity->date_time, $activity->end_time ?? $activity->date_time))
+                            <form method="post" action="{{ route('activities.refresh-qr', $activity) }}" data-confirm="{{ $activity->qr_code_token ? 'Jana semula QR? QR lama tidak boleh digunakan lagi.' : 'Jana QR kehadiran untuk aktiviti ini?' }}">
                                 @csrf
                                 @method('patch')
-                                <button class="btn btn-sm btn-outline-danger">Jana QR</button>
+                                <button class="btn btn-sm btn-outline-danger">{{ $activity->qr_code_token ? 'Jana Semula QR' : 'Jana QR' }}</button>
                             </form>
                         @endif
                     </div>
-                    @if($activity->status === 'approved' && now()->between($activity->date_time, $activity->end_time ?? $activity->date_time) && $activity->qr_code_token)
+                    @if(now()->between($activity->date_time, $activity->end_time ?? $activity->date_time) && $activity->qr_code_token)
                         <div class="bg-white p-3 d-inline-block mb-2">{!! QrCode::size(180)->generate(route('attendance.scan', ['token' => $activity->qr_code_token])) !!}</div>
                         <p class="small text-muted">QR aktif sehingga aktiviti tamat.</p>
+                    @elseif(now()->lt($activity->date_time))
+                        <div class="alert alert-secondary mb-0">QR belum boleh dijana. Bendahari boleh menjana QR apabila aktiviti bermula.</div>
+                    @elseif(now()->gt($activity->end_time ?? $activity->date_time))
+                        <div class="alert alert-secondary mb-0">Aktiviti telah tamat dan QR kehadiran tidak lagi aktif.</div>
                     @else
-                        <div class="alert alert-secondary">QR hanya aktif semasa aktiviti berlangsung.</div>
+                        <div class="alert alert-secondary mb-0">QR kehadiran belum dijana oleh bendahari.</div>
                     @endif
-                    <code class="d-block text-break mb-2">{{ $activity->qr_code_token }}</code>
-                    <a class="small" href="{{ route('attendance.scan', ['token' => $activity->qr_code_token]) }}">{{ route('attendance.scan', ['token' => $activity->qr_code_token]) }}</a>
-                    <hr>
-                    <div class="d-flex flex-wrap justify-content-between gap-3 align-items-center mb-2">
-                        <h3 class="h6 mb-0">Kehadiran</h3>
-                        <a class="btn btn-sm btn-outline-secondary" href="{{ route('reports.activities.attendance.csv', $activity) }}">CSV Kehadiran</a>
-                    </div>
-                    @forelse($activity->attendances as $attendance)
-                        <div class="small border-bottom py-1">{{ $attendance->user->name }} &middot; {{ $attendance->scanned_at->format('d/m/Y h:i A') }}</div>
-                    @empty
-                        <p class="text-muted small mb-0">Belum ada kehadiran.</p>
-                    @endforelse
+                    @if($canManageAttendance)
+                        <hr>
+                        <div class="d-flex flex-wrap justify-content-between gap-3 align-items-center mb-2">
+                            <h3 class="h6 mb-0">Kehadiran</h3>
+                        </div>
+                        @forelse($activity->attendances as $attendance)
+                            <div class="small border-bottom py-1">{{ $attendance->user->name }} &middot; {{ $attendance->scanned_at->format('d/m/Y h:i A') }}</div>
+                        @empty
+                            <p class="text-muted small mb-0">Belum ada kehadiran.</p>
+                        @endforelse
+                    @endif
                 </div>
             </div>
         </div>

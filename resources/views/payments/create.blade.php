@@ -16,6 +16,7 @@
                     </div>
                     <div class="table-responsive mb-3">
                         <table class="table table-sm align-middle mb-0 fee-selection-table">
+                            <caption class="visually-hidden">Bil tertunggak dan belum dibayar yang boleh dipilih untuk bayaran</caption>
                             <thead><tr><th><input class="form-check-input" type="checkbox" id="select-all-fees" aria-label="Pilih semua bulan"></th><th>Bulan</th><th>Baki</th><th>Status</th></tr></thead>
                             <tbody>
                             @foreach($bills as $bill)
@@ -32,6 +33,28 @@
                 @else
                     <div class="alert alert-success">Tiada tunggakan yuran untuk dibayar.</div>
                 @endif
+
+                <section class="mb-4" aria-labelledby="paid-current-year-fees-title">
+                    <h2 class="h6 mb-2" id="paid-current-year-fees-title">Bayaran Tahun Semasa ({{ now()->year }})</h2>
+                    <p class="small text-muted mb-2">Bulan yang telah selesai dibayar turut dipaparkan sebagai rekod dan tidak boleh dipilih semula.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 fee-selection-table">
+                            <caption class="visually-hidden">Bil yuran tahun semasa yang telah selesai dibayar</caption>
+                            <thead><tr><th>Bulan</th><th>Jumlah Dibayar</th><th>Status</th></tr></thead>
+                            <tbody>
+                            @forelse($paidCurrentYearBills as $bill)
+                                <tr>
+                                    <td>{{ $bill->billing_month->format('F Y') }}</td>
+                                    <td>RM {{ number_format((float) $bill->paid_amount, 2) }}</td>
+                                    <td><span class="badge bg-success">Selesai</span></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3" class="text-muted">Belum ada bayaran yuran yang selesai bagi tahun {{ now()->year }}.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
                 <form method="post" action="{{ route('payments.store') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">

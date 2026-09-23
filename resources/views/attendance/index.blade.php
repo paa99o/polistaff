@@ -6,8 +6,11 @@
         <h1 class="h3 mb-0">Laporan Kehadiran</h1>
     </div>
     <div class="no-print d-flex gap-2 flex-wrap">
-        <a class="btn btn-outline-danger" href="{{ route('reports.attendance.csv') }}">CSV</a>
-        <button onclick="print()" class="btn btn-outline-secondary">Cetak</button>
+        @include('reports._export-menu', ['options' => [
+            ['label' => 'PDF', 'url' => route('reports.attendance.pdf', request()->query()), 'icon' => 'bi-file-earmark-pdf'],
+            ['label' => 'CSV', 'url' => route('reports.attendance.csv', request()->query()), 'icon' => 'bi-filetype-csv'],
+            ['label' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'bi-printer'],
+        ]])
     </div>
 </div>
 

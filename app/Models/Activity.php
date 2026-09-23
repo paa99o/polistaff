@@ -11,16 +11,21 @@ class Activity extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'date_time', 'end_time', 'location', 'max_participants', 'registration_opens_at', 'registration_closes_at', 'attendance_opens_at', 'attendance_closes_at', 'status', 'qr_code_token', 'evidence_photo_path', 'report_photo_path', 'created_by', 'reviewed_by', 'reviewed_at', 'review_notes', 'treasurer_verified_by', 'treasurer_verified_at', 'treasurer_notes'];
+    protected $fillable = ['title', 'description', 'date_time', 'end_time', 'location', 'max_participants', 'registration_opens_at', 'registration_closes_at', 'status', 'qr_code_token', 'evidence_photo_path', 'report_photo_path', 'created_by', 'reviewed_by', 'reviewed_at', 'review_notes', 'treasurer_verified_by', 'treasurer_verified_at', 'treasurer_notes'];
 
     protected function casts(): array
     {
-        return ['date_time' => 'datetime', 'end_time' => 'datetime', 'registration_opens_at' => 'datetime', 'registration_closes_at' => 'datetime', 'attendance_opens_at' => 'datetime', 'attendance_closes_at' => 'datetime', 'reviewed_at' => 'datetime', 'treasurer_verified_at' => 'datetime'];
+        return ['date_time' => 'datetime', 'end_time' => 'datetime', 'registration_opens_at' => 'datetime', 'registration_closes_at' => 'datetime', 'reviewed_at' => 'datetime', 'treasurer_verified_at' => 'datetime'];
     }
 
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function evidencePhotos(): HasMany
+    {
+        return $this->hasMany(ActivityEvidencePhoto::class);
     }
 
     public function registrations(): HasMany
@@ -53,8 +58,9 @@ class Activity extends Model
     public function attendanceIsOpen(): bool
     {
         return $this->status === 'approved'
-            && ($this->attendance_opens_at === null || now()->greaterThanOrEqualTo($this->attendance_opens_at))
-            && ($this->attendance_closes_at === null || now()->lessThanOrEqualTo($this->attendance_closes_at));
+            && filled($this->qr_code_token)
+            && now()->greaterThanOrEqualTo($this->date_time)
+            && now()->lessThanOrEqualTo($this->end_time ?? $this->date_time);
     }
 
 

@@ -13,28 +13,34 @@
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-danger" href="{{ route('payments.create') }}">
-            <i class="bi bi-upload me-2" aria-hidden="true"></i>Muat Naik Bukti
+            <i class="bi bi-wallet2 me-2" aria-hidden="true"></i>Bayar Yuran
         </a>
     </div>
 </div>
 
 <div class="row g-3 mb-4 payment-summary-cards">
     <div class="col-md-4">
-        <button class="payment-summary-card payment-summary-card-danger w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#overdueFeesModal">
-            <span class="payment-summary-icon"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span>
-            <span class="payment-summary-copy"><small>Bayaran tertunggak</small><strong>RM {{ number_format((float) $overdueBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong><span>{{ $overdueBills->count() }} bulan tahun sebelumnya <i class="bi bi-arrow-right"></i></span></span>
+        <button class="admin-stat-card payment-fee-stat-card w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#overdueFeesModal">
+            <span class="admin-stat-icon"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span>
+            <strong>RM {{ number_format((float) $overdueBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong>
+            <span>Bayaran Tertunggak</span>
+            <small class="text-muted">{{ $overdueBills->count() }} bulan tahun sebelumnya</small>
         </button>
     </div>
     <div class="col-md-4">
-        <button class="payment-summary-card payment-summary-card-success w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#recentFeesModal">
-            <span class="payment-summary-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
-            <span class="payment-summary-copy"><small>Bayaran terkini</small><strong>{{ $recentApprovedPayments->count() }} bayaran</strong><span>{{ $recentApprovedPayments->first()?->payment_date?->translatedFormat('F Y') ?? 'Belum ada bayaran selesai' }} <i class="bi bi-arrow-right"></i></span></span>
+        <button class="admin-stat-card payment-fee-stat-card w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#recentFeesModal">
+            <span class="admin-stat-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
+            <strong>{{ $recentApprovedPayments->count() }}</strong>
+            <span>Bayaran Terkini</span>
+            <small class="text-muted">{{ $recentApprovedPayments->first()?->payment_date?->translatedFormat('F Y') ?? 'Belum ada bayaran selesai' }}</small>
         </button>
     </div>
     <div class="col-md-4">
-        <button class="payment-summary-card payment-summary-card-warning w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#unpaidFeesModal">
-            <span class="payment-summary-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
-            <span class="payment-summary-copy"><small>Belum dibayar tahun {{ now()->year }}</small><strong>RM {{ number_format((float) $currentUnpaidBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong><span>{{ $currentUnpaidBills->count() }} bulan belum selesai <i class="bi bi-arrow-right"></i></span></span>
+        <button class="admin-stat-card payment-fee-stat-card w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#unpaidFeesModal">
+            <span class="admin-stat-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+            <strong>RM {{ number_format((float) $currentUnpaidBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong>
+            <span>Belum Dibayar {{ now()->year }}</span>
+            <small class="text-muted">{{ $currentUnpaidBills->count() }} bulan belum selesai</small>
         </button>
     </div>
 </div>

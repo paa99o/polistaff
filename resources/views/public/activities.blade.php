@@ -15,7 +15,6 @@
                 <div>
                     <p class="public-activity-meta">{{ $activity->date_time->format('d/m/Y · h:i A') }} · {{ $activity->location }}</p>
                     <h2>{{ $activity->title }}</h2>
-                    <p>{{ $activity->description ?: 'Maklumat aktiviti akan dikemas kini oleh pihak penganjur.' }}</p>
                     <a class="btn btn-outline-primary" href="{{ route('activities.show', $activity) }}">Lihat aktiviti <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a>
                 </div>
             </article>

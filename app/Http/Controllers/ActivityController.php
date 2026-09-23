@@ -6,6 +6,7 @@ use App\Http\Requests\ActivityRequest;
 use App\Mail\ActivityApprovedMail;
 use App\Mail\ActivityCancelledMail;
 use App\Models\Activity;
+use App\Models\ActivityEvidencePhoto;
 use App\Models\AuditLog;
 use App\Models\PortalNotification;
 use App\Models\User;
@@ -54,14 +55,6 @@ class ActivityController extends Controller
             $calendarWeeks[] = $week;
         }
 
-        $activities = Activity::query()
-            ->when(! $user->hasRole('admin', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
-            ->when(in_array($request->input('status'), ['approved', 'rejected', 'pending_approval', 'treasurer_verified'], true), fn ($query) => $query->where('status', $request->input('status')))
-            ->when($request->filled('date'), fn ($query) => $query->whereDate('date_time', $request->date))
-            ->orderBy('date_time')
-            ->paginate(10)
-            ->withQueryString();
-
         $scope = $user->hasRole('admin', 'treasurer') ? Activity::query() : Activity::where('created_by', $user->id);
         $stats = [
             'approved' => (clone $scope)->where('status', 'approved')->count(),
@@ -70,7 +63,22 @@ class ActivityController extends Controller
             'treasurer_verified' => (clone $scope)->where('status', 'treasurer_verified')->count(),
         ];
 
-        return view('activities.index', compact('activities', 'calendarMonth', 'calendarWeeks', 'stats'));
+        return view('activities.index', compact('calendarMonth', 'calendarWeeks', 'stats'));
+    }
+
+    public function statusList(Request $request, string $status): View
+    {
+        abort_unless(in_array($status, ['approved', 'rejected', 'pending_approval', 'treasurer_verified'], true), 404);
+
+        $user = $request->user();
+        $scope = $user->hasRole('admin', 'treasurer')
+            ? Activity::query()
+            : Activity::where('created_by', $user->id);
+        $activities = $scope->where('status', $status)
+            ->orderByDesc('date_time')
+            ->paginate(15);
+
+        return view('activities.status-list', compact('activities', 'status'));
     }
 
     public function publicIndex(Request $request): View
@@ -89,6 +97,7 @@ class ActivityController extends Controller
     public function publicShow(Activity $activity): View
     {
         abort_unless($activity->status === 'approved', 404);
+        $activity->load('evidencePhotos.user');
 
         return view('public.activity-show', compact('activity'));
     }
@@ -105,19 +114,11 @@ class ActivityController extends Controller
         Gate::authorize('manage-activities');
 
         $data = $request->validated();
-        unset($data['evidence_photo']);
-
-        if ($request->hasFile('evidence_photo')) {
-            $data['evidence_photo_path'] = $request->file('evidence_photo')->store('activity-evidence', 'public');
-        }
-
         $data['status'] = 'pending_approval';
         $data['created_by'] = $request->user()->id;
-        $data['attendance_opens_at'] = $data['date_time'];
         $data['end_time'] = Carbon::parse($data['date_time'])->setTimeFromTimeString($request->input('end_time'));
         abort_if($data['end_time']->lessThanOrEqualTo(Carbon::parse($data['date_time'])), 422, 'Masa berakhir mesti selepas masa bermula.');
-        $data['attendance_closes_at'] = $data['end_time'];
-        $activity = Activity::create([...$data, 'qr_code_token' => Str::uuid()->toString()]);
+        $activity = Activity::create([...$data, 'qr_code_token' => null]);
 
         User::where('role', 'treasurer')->where('membership_status', 'active')->get()->each(function (User $user) use ($activity): void {
             PortalNotification::create(['user_id' => $user->id, 'title' => 'Permohonan aktiviti baharu', 'message' => $activity->title.' menunggu kelulusan bendahari.', 'type' => 'info', 'link' => route('activities.show', $activity)]);
@@ -130,6 +131,7 @@ class ActivityController extends Controller
     {
         $user = auth()->user();
         $canManageAttendance = $user?->hasRole('admin', 'treasurer') ?? false;
+        $canGenerateQr = $user?->hasRole('treasurer') ?? false;
 
         abort_unless($activity->status === 'approved' || $activity->created_by === $user?->id || $user?->hasRole('admin', 'treasurer'), 404);
 
@@ -137,13 +139,16 @@ class ActivityController extends Controller
         $registration = $user ? $activity->registrations()->where('user_id', $user->id)->first() : null;
 
         if ($canManageAttendance) {
-            $activity->load('attendances.user', 'activeRegistrations.user', 'waitlistedRegistrations.user', 'guestRegistrations');
+            $activity->load('attendances.user', 'activeRegistrations.user', 'waitlistedRegistrations.user', 'guestRegistrations', 'evidencePhotos.user');
+        } else {
+            $activity->load('evidencePhotos.user');
         }
 
         return view('activities.show', [
             'activity' => $activity,
             'registration' => $registration,
             'canManageAttendance' => $canManageAttendance,
+            'canGenerateQr' => $canGenerateQr,
             'timelineLogs' => $this->timelineLogs($activity),
         ]);
     }
@@ -163,16 +168,6 @@ class ActivityController extends Controller
 
         $beforeStatus = $activity->status;
         $data = $request->validated();
-        unset($data['evidence_photo']);
-
-        if ($request->hasFile('evidence_photo')) {
-            if ($activity->evidence_photo_path) {
-                Storage::disk('public')->delete($activity->evidence_photo_path);
-            }
-
-            $data['evidence_photo_path'] = $request->file('evidence_photo')->store('activity-evidence', 'public');
-        }
-
         $activity->update($data);
 
         if ($beforeStatus !== 'cancelled' && $activity->status === 'cancelled') {
@@ -198,24 +193,27 @@ class ActivityController extends Controller
         return redirect()->route('activities.index')->with('status', 'Aktiviti dipadam.');
     }
 
-    public function uploadReportPhoto(Request $request, Activity $activity): RedirectResponse
+    public function uploadEvidencePhotos(Request $request, Activity $activity): RedirectResponse
     {
-        abort_unless($activity->created_by === $request->user()->id || $request->user()->hasRole('treasurer', 'admin'), 403);
-        abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Gambar report hanya boleh dimuat naik selepas aktiviti tamat.');
+        $isRegistered = $activity->registrations()->where('user_id', $request->user()->id)->where('status', 'registered')->exists();
+        abort_unless($isRegistered || $request->user()->hasRole('treasurer', 'admin'), 403);
+        abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Gambar bukti hanya boleh dimuat naik selepas aktiviti tamat.');
 
-        $data = $request->validate(['report_photo' => ['required', 'image', 'max:8192']], [
-            'report_photo.required' => 'Sila pilih gambar report.',
-            'report_photo.image' => 'Fail report mesti dalam format gambar.',
-            'report_photo.max' => 'Gambar report tidak boleh melebihi 8MB.',
+        $data = $request->validate(['photos' => ['required', 'array', 'min:1', 'max:10'], 'photos.*' => ['required', 'image', 'max:8192']], [
+            'photos.required' => 'Sila pilih sekurang-kurangnya satu gambar.',
+            'photos.*.image' => 'Semua fail mesti dalam format gambar.',
+            'photos.*.max' => 'Setiap gambar tidak boleh melebihi 8MB.',
         ]);
 
-        if ($activity->report_photo_path) {
-            Storage::disk('private')->delete($activity->report_photo_path);
+        foreach ($data['photos'] as $photo) {
+            ActivityEvidencePhoto::create([
+                'activity_id' => $activity->id,
+                'user_id' => $request->user()->id,
+                'path' => $photo->store('activity-evidence', 'public'),
+            ]);
         }
 
-        $activity->update(['report_photo_path' => $data['report_photo']->store('activity-reports', 'private')]);
-
-        return back()->with('status', 'Gambar report berjaya dimuat naik.');
+        return back()->with('status', 'Gambar bukti aktiviti berjaya dimuat naik.');
     }
 
     public function verify(Request $request, Activity $activity): RedirectResponse
@@ -281,8 +279,9 @@ class ActivityController extends Controller
 
     public function refreshQrToken(Activity $activity): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('treasurer', 'admin'), 403);
+        abort_unless(auth()->user()->hasRole('treasurer'), 403);
         abort_if($activity->status === 'cancelled', 422, 'QR tidak boleh dijana untuk aktiviti yang telah dibatalkan.');
+        abort_unless($activity->status === 'approved' && now()->between($activity->date_time, $activity->end_time ?? $activity->date_time), 422, 'QR hanya boleh dijana semasa aktiviti berlangsung.');
 
         $oldToken = $activity->qr_code_token;
 
@@ -292,11 +291,11 @@ class ActivityController extends Controller
 
         AuditLog::create([
             'user_id' => auth()->id(),
-            'action' => 'updated',
+            'action' => $oldToken ? 'updated' : 'generated',
             'module' => 'Activity QR',
             'record_type' => Activity::class,
             'record_id' => $activity->id,
-            'description' => 'Refreshed attendance QR token for '.$activity->title.'.',
+            'description' => ($oldToken ? 'Regenerated' : 'Generated').' attendance QR token for '.$activity->title.'.',
             'changes' => [
                 'old_token' => $oldToken,
                 'new_token' => $activity->qr_code_token,
@@ -304,7 +303,9 @@ class ActivityController extends Controller
             'ip_address' => request()->ip(),
         ]);
 
-        return back()->with('status', 'QR kehadiran baharu berjaya dijana. QR lama tidak lagi sah.');
+        return back()->with('status', $oldToken
+            ? 'QR kehadiran berjaya dijana semula. QR lama tidak lagi sah.'
+            : 'QR kehadiran berjaya dijana.');
     }
 
     public function attendanceStatus(Activity $activity): \Illuminate\Http\JsonResponse

@@ -23,9 +23,6 @@
             </tr>
         </table>
 
-        @if($activity->description)
-            <p style="white-space: pre-line;">{{ $activity->description }}</p>
-        @endif
 
         <p>
             <a href="{{ route('activities.show', $activity) }}" style="display: inline-block; background: #dc2626; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px;">

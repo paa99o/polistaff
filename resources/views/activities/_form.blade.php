@@ -44,61 +44,6 @@
         <input class="form-control @error('registration_closes_at') is-invalid @enderror" id="registration_closes_at" type="datetime-local" name="registration_closes_at" value="{{ old('registration_closes_at', isset($activity) && $activity->registration_closes_at ? $activity->registration_closes_at->format('Y-m-d\TH:i') : '') }}">
         @include('partials.errors', ['name' => 'registration_closes_at'])
     </div>
-    <div class="col-md-6">
-        <label class="form-label" for="attendance_opens_at">Kehadiran Dibuka</label>
-        <input class="form-control @error('attendance_opens_at') is-invalid @enderror" id="attendance_opens_at" type="datetime-local" name="attendance_opens_at" value="{{ old('attendance_opens_at', isset($activity) && $activity->attendance_opens_at ? $activity->attendance_opens_at->format('Y-m-d\TH:i') : '') }}">
-        @include('partials.errors', ['name' => 'attendance_opens_at'])
-    </div>
-    <div class="col-md-6">
-        <label class="form-label" for="attendance_closes_at">Kehadiran Ditutup</label>
-        <input class="form-control @error('attendance_closes_at') is-invalid @enderror" id="attendance_closes_at" type="datetime-local" name="attendance_closes_at" value="{{ old('attendance_closes_at', isset($activity) && $activity->attendance_closes_at ? $activity->attendance_closes_at->format('Y-m-d\TH:i') : '') }}">
-        @include('partials.errors', ['name' => 'attendance_closes_at'])
-    </div>
-    <div class="col-12">
-        <label class="form-label" for="description">Penerangan</label>
-        <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="4">{{ old('description', $activity->description ?? '') }}</textarea>
-        @include('partials.errors', ['name' => 'description'])
-    </div>
-    <div class="col-12">
-        <label class="form-label" for="evidence_photo">Foto bukti aktiviti</label>
-        <input class="form-control @error('evidence_photo') is-invalid @enderror" id="evidence_photo" type="file" name="evidence_photo" accept="image/*">
-        @include('partials.errors', ['name' => 'evidence_photo'])
-        <div class="mt-3 d-none" id="evidence-photo-preview-wrap">
-            <img class="activity-evidence-preview" id="evidence-photo-preview" src="" alt="Pratonton foto bukti aktiviti">
-        </div>
-        @if(! empty($activity?->evidence_photo_path))
-            <div class="mt-3">
-                <img class="activity-evidence-preview" src="{{ Storage::disk('public')->url($activity->evidence_photo_path) }}" alt="Foto bukti aktiviti semasa">
-            </div>
-        @endif
-    </div>
 </div>
 @unless($isCreate ?? false)<input type="hidden" name="end_time" value="{{ old('end_time', isset($activity) && $activity->end_time ? $activity->end_time->format('H:i') : '23:59') }}"><input type="hidden" name="status" value="{{ old('status', $activity->status ?? 'approved') }}">@endunless
 <button class="btn btn-danger mt-3">{{ ($isCreate ?? false) ? 'Hantar Permohonan' : 'Simpan' }}</button>
-
-@pushOnce('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const input = document.getElementById('evidence_photo');
-        const preview = document.getElementById('evidence-photo-preview');
-        const previewWrap = document.getElementById('evidence-photo-preview-wrap');
-
-        if (!input || !preview || !previewWrap) {
-            return;
-        }
-
-        input.addEventListener('change', () => {
-            const [file] = input.files;
-
-            if (!file) {
-                preview.removeAttribute('src');
-                previewWrap.classList.add('d-none');
-                return;
-            }
-
-            preview.src = URL.createObjectURL(file);
-            previewWrap.classList.remove('d-none');
-        });
-    });
-</script>
-@endPushOnce

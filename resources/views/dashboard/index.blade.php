@@ -182,16 +182,6 @@
                         </div>
                     @endif
 
-                    @if($role === 'member')
-                        <div class="action-item">
-                            <span class="action-icon"><i class="bi bi-qr-code-scan" aria-hidden="true"></i></span>
-                            <div>
-                                <div class="list-item-title">Rekod kehadiran aktiviti</div>
-                                <div class="list-item-meta">Gunakan pengimbas QR apabila anda tiba di lokasi.</div>
-                            </div>
-                            <a class="btn btn-outline-primary align-self-center" href="{{ route('attendance.scan') }}">Imbas Kehadiran</a>
-                        </div>
-                    @endif
                 </div>
             </article>
         </div>

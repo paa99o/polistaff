@@ -658,24 +658,44 @@ class PoliBestFeatureTest extends TestCase
             ->assertDontSee('Aktiviti Belum Diluluskan');
     }
 
-    public function test_management_can_view_report_overview_dashboard(): void
+    public function test_activity_status_cards_open_separate_lists_with_approved_actions_only(): void
     {
-        $treasurer = User::factory()->create(['role' => 'treasurer']);
-        $member = User::factory()->create(['membership_status' => 'active', 'fee_balance' => 25, 'department' => 'JTMK']);
-        $activity = Activity::create(['title' => 'Program Laporan', 'date_time' => now(), 'location' => 'Dewan', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
+        $member = User::factory()->create(['role' => 'member']);
+        $approved = Activity::create([
+            'title' => 'Aktiviti Diluluskan Saya',
+            'date_time' => now()->subHours(2),
+            'end_time' => now()->subHour(),
+            'location' => 'Dewan Utama',
+            'status' => 'approved',
+            'created_by' => $member->id,
+            'qr_code_token' => null,
+        ]);
+        Activity::create([
+            'title' => 'Aktiviti Ditolak Saya',
+            'date_time' => now()->subDay(),
+            'location' => 'Bilik Mesyuarat',
+            'status' => 'rejected',
+            'created_by' => $member->id,
+            'qr_code_token' => null,
+        ]);
 
-        Transaction::create(['user_id' => $member->id, 'type' => 'income', 'amount' => 60, 'description' => 'Bayaran yuran', 'receipt_number' => 'PB-TST-001', 'transaction_date' => now()->toDateString(), 'category' => 'Yuran', 'status' => 'active']);
-        Transaction::create(['user_id' => $member->id, 'type' => 'expense', 'amount' => 10, 'description' => 'Alat tulis', 'receipt_number' => 'PB-TST-002', 'transaction_date' => now()->toDateString(), 'category' => 'Operasi', 'status' => 'active']);
-        ActivityRegistration::create(['user_id' => $member->id, 'activity_id' => $activity->id, 'status' => 'registered', 'registered_at' => now()]);
-        Attendance::create(['user_id' => $member->id, 'activity_id' => $activity->id, 'scanned_at' => now(), 'qr_code_token' => $activity->qr_code_token]);
-
-        $this->actingAs($treasurer)->get(route('reports.overview'))
+        $this->actingAs($member)->get(route('activities.index'))
             ->assertOk()
-            ->assertSee('Laporan Ringkasan')
-            ->assertSee('RM 60.00')
-            ->assertSee('RM 10.00')
-            ->assertSee('Program Laporan')
-            ->assertSee('JTMK');
+            ->assertSee(route('activities.status-list', 'approved'))
+            ->assertDontSee('<table class="table mobile-records mb-0">', false);
+
+        $this->actingAs($member)->get(route('activities.status-list', 'approved'))
+            ->assertOk()
+            ->assertSee('Aktiviti Diluluskan Saya')
+            ->assertSee('Lihat Butiran')
+            ->assertSee('Muat Turun Kertas Kerja')
+            ->assertSee(route('activities.show', $approved));
+
+        $this->actingAs($member)->get(route('activities.status-list', 'rejected'))
+            ->assertOk()
+            ->assertSee('Aktiviti Ditolak Saya')
+            ->assertDontSee('Lihat Butiran')
+            ->assertDontSee('Muat Turun Kertas Kerja');
     }
 
     public function test_management_can_filter_financial_report_with_visual_summary(): void
@@ -705,10 +725,51 @@ class PoliBestFeatureTest extends TestCase
         Transaction::create(['user_id' => $member->id, 'type' => 'income', 'amount' => 80, 'description' => 'Yuran September', 'receipt_number' => 'PB-CSV-001', 'transaction_date' => '2026-09-06', 'category' => 'Yuran', 'status' => 'active']);
         Transaction::create(['user_id' => $member->id, 'type' => 'income', 'amount' => 200, 'description' => 'Yuran Ogos', 'receipt_number' => 'PB-CSV-002', 'transaction_date' => '2026-08-01', 'category' => 'Yuran', 'status' => 'active']);
 
-        $this->actingAs($treasurer)->get(route('reports.financial.csv', ['mode' => 'monthly', 'year' => 2026, 'month' => 9]))
+        $this->actingAs($treasurer)->get(route('reports.financial.csv', ['mode' => 'monthly', 'year' => 2026, 'month' => 9, 'download' => 1]))
             ->assertOk()
             ->assertSee('Yuran September', false)
             ->assertDontSee('Yuran Ogos', false);
+    }
+
+    public function test_financial_pdf_requires_preview_before_download(): void
+    {
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+
+        $this->actingAs($treasurer)->get(route('reports.financial.pdf'))
+            ->assertOk()
+            ->assertSee('Semakan sebelum muat turun')
+            ->assertSee('Muat Turun PDF');
+
+        $this->actingAs($treasurer)->get(route('reports.financial.pdf', ['render' => 1]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'inline; filename="laporan-kewangan.pdf"');
+
+        $this->actingAs($treasurer)->get(route('reports.financial.pdf', ['download' => 1]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'attachment; filename="laporan-kewangan.pdf"');
+    }
+
+    public function test_attendance_report_offers_pdf_preview_and_download(): void
+    {
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+
+        $this->actingAs($treasurer)->get(route('attendance.index'))
+            ->assertOk()
+            ->assertSee('Eksport Laporan')
+            ->assertSee('PDF')
+            ->assertSee('CSV');
+
+        $this->actingAs($treasurer)->get(route('reports.attendance.pdf'))
+            ->assertOk()
+            ->assertSee('Semakan sebelum muat turun')
+            ->assertSee('Muat Turun PDF');
+
+        $this->actingAs($treasurer)->get(route('reports.attendance.pdf', ['download' => 1]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'attachment; filename="laporan-kehadiran.pdf"');
     }
 
     public function test_member_can_record_attendance_by_token(): void
@@ -753,30 +814,33 @@ class PoliBestFeatureTest extends TestCase
         ]);
     }
 
-    public function test_management_can_refresh_activity_qr_token(): void
+    public function test_only_treasurer_can_generate_activity_qr_token(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
         $member = User::factory()->create();
-        $activity = Activity::create(['title' => 'Program QR', 'date_time' => now()->addDay(), 'location' => 'Dewan', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
+        $activity = Activity::create(['title' => 'Program QR', 'date_time' => now()->subMinute(), 'end_time' => now()->addHour(), 'location' => 'Dewan', 'status' => 'approved', 'qr_code_token' => null]);
         $oldToken = $activity->qr_code_token;
 
         ActivityRegistration::create(['user_id' => $member->id, 'activity_id' => $activity->id, 'status' => 'registered', 'registered_at' => now()]);
 
         $this->actingAs($admin)->patch(route('activities.refresh-qr', $activity))
+            ->assertForbidden();
+
+        $this->actingAs($treasurer)->patch(route('activities.refresh-qr', $activity))
             ->assertRedirect();
 
         $activity->refresh();
 
         $this->assertNotSame($oldToken, $activity->qr_code_token);
         $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $admin->id,
-            'action' => 'updated',
+            'user_id' => $treasurer->id,
+            'action' => 'generated',
             'module' => 'Activity QR',
             'record_type' => Activity::class,
             'record_id' => $activity->id,
         ]);
 
-        $this->actingAs($member)->post('/attendance/store', ['token' => $oldToken])->assertNotFound();
         $this->actingAs($member)->post('/attendance/store', ['token' => $activity->qr_code_token])->assertRedirect(route('activities.show', $activity));
 
         $this->assertDatabaseHas('attendances', ['user_id' => $member->id, 'activity_id' => $activity->id]);
@@ -786,7 +850,7 @@ class PoliBestFeatureTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $member = User::factory()->create(['name' => 'Ali Staff', 'email' => 'ali@example.test', 'department' => 'JTMK']);
-        $activity = Activity::create(['title' => 'Program CSV', 'date_time' => now()->addDay(), 'location' => 'Dewan', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
+        $activity = Activity::create(['title' => 'Program CSV', 'date_time' => now()->subHours(2), 'end_time' => now()->subHour(), 'location' => 'Dewan', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
 
         Attendance::create([
             'user_id' => $member->id,
@@ -796,6 +860,12 @@ class PoliBestFeatureTest extends TestCase
         ]);
 
         $this->actingAs($admin)->get(route('reports.activities.attendance.csv', $activity))
+            ->assertOk()
+            ->assertSee('Semakan sebelum muat turun')
+            ->assertSee('Ali Staff')
+            ->assertSee('Muat Turun CSV');
+
+        $this->actingAs($admin)->get(route('reports.activities.attendance.csv', ['activity' => $activity, 'download' => 1]))
             ->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
             ->assertSee('member,email,department,activity,scanned_at', false)
@@ -1066,6 +1136,42 @@ class PoliBestFeatureTest extends TestCase
         $this->assertNotNull($payment);
         Storage::disk('private')->assertExists($payment->proof_path);
         $this->assertSame('pending', $payment->status);
+    }
+
+    public function test_payment_form_shows_paid_and_unpaid_bills_for_current_year(): void
+    {
+        $user = User::factory()->create();
+        $paidMonth = now()->startOfYear()->addMonth();
+        $unpaidMonth = now()->startOfYear()->addMonths(2);
+
+        DB::table('member_fee_bills')->insert([
+            'user_id' => $user->id,
+            'billing_month' => $paidMonth->toDateString(),
+            'due_date' => $paidMonth->copy()->endOfMonth(),
+            'amount' => 20,
+            'paid_amount' => 20,
+            'status' => 'paid',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('member_fee_bills')->insert([
+            'user_id' => $user->id,
+            'billing_month' => $unpaidMonth->toDateString(),
+            'due_date' => $unpaidMonth->copy()->endOfMonth(),
+            'amount' => 20,
+            'paid_amount' => 0,
+            'status' => 'unpaid',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)->get(route('payments.create'))
+            ->assertOk()
+            ->assertSee('Bayaran Tahun Semasa ('.now()->year.')')
+            ->assertSee($paidMonth->format('F Y'))
+            ->assertSee('Selesai')
+            ->assertSee($unpaidMonth->format('F Y'))
+            ->assertSee('Belum dibayar');
     }
 
     public function test_payment_form_has_specific_field_validation_errors(): void

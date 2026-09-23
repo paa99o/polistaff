@@ -102,11 +102,12 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('activities', ActivityController::class)
         ->except(['index', 'show'])
         ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:member');
+    Route::get('/activities/status/{status}', [ActivityController::class, 'statusList'])->name('activities.status-list');
     Route::patch('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('role:admin')->name('activities.approve');
     Route::patch('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('role:admin')->name('activities.reject');
     Route::patch('/activities/{activity}/verify', [ActivityController::class, 'verify'])->middleware('role:treasurer,admin')->name('activities.verify');
-    Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:treasurer,admin')->name('activities.refresh-qr');
-    Route::post('/activities/{activity}/report-photo', [ActivityController::class, 'uploadReportPhoto'])->name('activities.report-photo');
+    Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:treasurer')->name('activities.refresh-qr');
+    Route::post('/activities/{activity}/evidence-photos', [ActivityController::class, 'uploadEvidencePhotos'])->name('activities.evidence-photos');
     Route::get('/activities/{activity}/attendance-status', [ActivityController::class, 'attendanceStatus'])->middleware('role:admin,treasurer')->name('activities.attendance-status');
     Route::post('/activities/{activity}/register', [ActivityRegistrationController::class, 'store'])->name('activities.register');
     Route::delete('/activities/{activity}/register', [ActivityRegistrationController::class, 'destroy'])->name('activities.unregister');
@@ -119,10 +120,10 @@ Route::middleware('auth')->group(function (): void {
         ->middleware('role:treasurer,admin')
         ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:treasurer,admin');
     Route::get('/transactions/{transaction}/receipt.pdf', [TransactionController::class, 'receiptPdf'])->middleware('role:treasurer,admin')->name('transactions.receipt.pdf');
-    Route::get('/reports/overview', [ReportController::class, 'overview'])->middleware('role:treasurer,admin')->name('reports.overview');
     Route::get('/reports/financial', [ReportController::class, 'financial'])->middleware('role:treasurer,admin')->name('reports.financial');
     Route::get('/reports/financial.pdf', [ReportController::class, 'financialPdf'])->middleware('role:treasurer,admin')->name('reports.financial.pdf');
     Route::get('/reports/financial.csv', [ReportController::class, 'financialCsv'])->middleware('role:treasurer,admin')->name('reports.financial.csv');
+    Route::get('/reports/attendance.pdf', [ReportController::class, 'attendancePdf'])->middleware('role:treasurer,admin')->name('reports.attendance.pdf');
     Route::get('/reports/attendance.csv', [ReportController::class, 'attendanceCsv'])->middleware('role:treasurer,admin')->name('reports.attendance.csv');
     Route::get('/reports/activities/{activity}/attendance.csv', [ReportController::class, 'activityAttendanceCsv'])->name('reports.activities.attendance.csv');
     Route::get('/reports/activities/{activity}/report.pdf', [ReportController::class, 'activityReportPdf'])->name('reports.activities.pdf');

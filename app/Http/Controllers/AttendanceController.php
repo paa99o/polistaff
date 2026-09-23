@@ -77,8 +77,8 @@ class AttendanceController extends Controller
         abort_unless($request->user()->hasRole('admin', 'treasurer'), 403);
         abort_unless((int) $registration->activity_id === (int) $activity->id, 404);
 
-        if ($activity->status !== 'approved') {
-            return back()->withErrors(['attendance' => 'Kehadiran hanya boleh direkodkan untuk aktiviti yang telah diluluskan.']);
+        if (! $activity->attendanceIsOpen()) {
+            return back()->withErrors(['attendance' => 'Kehadiran hanya boleh direkodkan semasa aktiviti berlangsung dan QR telah dijana.']);
         }
 
         if ($registration->status !== 'registered') {

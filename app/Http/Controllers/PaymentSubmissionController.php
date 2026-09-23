@@ -81,17 +81,25 @@ class PaymentSubmissionController extends Controller
 
     public function create(Request $request, MonthlyFeeService $monthlyFeeService): View
     {
-        $monthlyFeeService->ensureThrough($request->user());
-        $bills = MemberFeeBill::where('user_id', $request->user()->id)
+        $user = $request->user();
+        $monthlyFeeService->ensureThrough($user);
+
+        $bills = MemberFeeBill::where('user_id', $user->id)
             ->whereIn('status', ['unpaid', 'partial', 'overdue'])
             ->orderBy('billing_month')
             ->get();
-        $pendingAmount = PaymentSubmission::where('user_id', $request->user()->id)
+        $paidCurrentYearBills = MemberFeeBill::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->whereYear('billing_month', now()->year)
+            ->orderBy('billing_month')
+            ->get();
+        $pendingAmount = PaymentSubmission::where('user_id', $user->id)
             ->where('status', 'pending')
             ->sum('amount');
 
         return view('payments.create', [
             'bills' => $bills,
+            'paidCurrentYearBills' => $paidCurrentYearBills,
             'outstanding' => max(0, (float) $bills->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount()) - (float) $pendingAmount),
             'pendingAmount' => (float) $pendingAmount,
         ]);

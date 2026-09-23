@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Transaction;
-use App\Models\User;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Illuminate\Http\Request;
@@ -17,76 +16,6 @@ use Illuminate\View\View;
 
 class ReportController extends Controller
 {
-    public function overview(Request $request): View
-    {
-        abort_unless($request->user()->hasRole('admin', 'treasurer'), 403);
-
-        $year = (int) $request->input('year', now()->year);
-        $month = $request->filled('month') ? (int) $request->month : now()->month;
-
-        $transactions = Transaction::with('user')
-            ->whereYear('transaction_date', $year)
-            ->whereMonth('transaction_date', $month)
-            ->where('status', 'active')
-            ->orderByDesc('transaction_date')
-            ->get();
-
-        $income = $transactions->where('type', 'income')->sum('amount');
-        $expenses = $transactions->where('type', 'expense')->sum('amount');
-        $activities = Activity::withCount(['activeRegistrations', 'attendances'])
-            ->whereYear('date_time', $year)
-            ->whereMonth('date_time', $month)
-            ->orderByDesc('date_time')
-            ->get();
-
-        $registeredTotal = $activities->sum('active_registrations_count');
-        $attendanceTotal = $activities->sum('attendances_count');
-        $attendanceRate = $registeredTotal > 0 ? round(($attendanceTotal / $registeredTotal) * 100) : 0;
-
-        $monthlyTrend = collect(range(5, 0))->map(function (int $monthsBack) use ($year, $month) {
-            $date = now()->setDate($year, $month, 1)->subMonths($monthsBack);
-            $rows = Transaction::where('status', 'active')
-                ->whereYear('transaction_date', $date->year)
-                ->whereMonth('transaction_date', $date->month)
-                ->get();
-
-            return [
-                'label' => $date->format('M'),
-                'income' => (float) $rows->where('type', 'income')->sum('amount'),
-                'expenses' => (float) $rows->where('type', 'expense')->sum('amount'),
-            ];
-        });
-
-        $highestTrendValue = max(1, $monthlyTrend->max(fn (array $item) => max($item['income'], $item['expenses'])));
-
-        $departmentBreakdown = User::query()
-            ->selectRaw('COALESCE(department, ?) as department, COUNT(*) as total', ['Tidak dinyatakan'])
-            ->where('membership_status', 'active')
-            ->groupBy('department')
-            ->orderByDesc('total')
-            ->limit(6)
-            ->get();
-
-        return view('reports.overview', [
-            'year' => $year,
-            'month' => $month,
-            'income' => $income,
-            'expenses' => $expenses,
-            'balance' => $income - $expenses,
-            'activeMembers' => User::where('membership_status', 'active')->count(),
-            'outstandingFees' => User::where('membership_status', 'active')->sum('fee_balance'),
-            'activities' => $activities,
-            'activityCount' => $activities->count(),
-            'attendanceTotal' => $attendanceTotal,
-            'registeredTotal' => $registeredTotal,
-            'attendanceRate' => $attendanceRate,
-            'recentTransactions' => $transactions->take(8),
-            'monthlyTrend' => $monthlyTrend,
-            'highestTrendValue' => $highestTrendValue,
-            'departmentBreakdown' => $departmentBreakdown,
-        ]);
-    }
-
     public function financial(Request $request): View
     {
         Gate::authorize('view-financial-reports');
@@ -94,11 +23,25 @@ class ReportController extends Controller
         return view('reports.financial', $this->financialReportData($request));
     }
 
-    public function financialPdf(Request $request): Response
+    public function financialPdf(Request $request): Response|View
     {
         Gate::authorize('view-financial-reports');
 
         $data = $this->financialReportData($request);
+
+        if (! $request->boolean('download') && ! $request->boolean('render')) {
+            $query = $request->except(['download', 'render']);
+
+            return view('reports.download-preview', [
+                'title' => 'Laporan Kewangan',
+                'format' => 'pdf',
+                'backUrl' => route('reports.financial', $query),
+                'downloadUrl' => route('reports.financial.pdf', [...$query, 'download' => 1]),
+                'inlineUrl' => route('reports.financial.pdf', [...$query, 'render' => 1]),
+                'headers' => [],
+                'rows' => [],
+            ]);
+        }
 
         $pdf = new Dompdf;
         $pdf->loadHtml(view('reports.financial_pdf', $data)->render());
@@ -107,15 +50,38 @@ class ReportController extends Controller
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="laporan-kewangan.pdf"',
+            'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="laporan-kewangan.pdf"',
         ]);
     }
 
-    public function financialCsv(Request $request): Response
+    public function financialCsv(Request $request): Response|View
     {
         Gate::authorize('view-financial-reports');
 
         $data = $this->financialReportData($request);
+        $headers = ['Tarikh', 'Jenis', 'Kategori', 'Keterangan', 'Jumlah'];
+        $rows = $data['transactions']->map(fn (Transaction $row) => [
+            $row->transaction_date->format('d/m/Y'),
+            $row->type,
+            $row->category,
+            $row->description,
+            'RM '.number_format((float) $row->amount, 2),
+        ])->values();
+
+        if (! $request->boolean('download')) {
+            $query = $request->except(['download']);
+
+            return view('reports.download-preview', [
+                'title' => 'Laporan Kewangan CSV',
+                'format' => 'csv',
+                'backUrl' => route('reports.financial', $query),
+                'downloadUrl' => route('reports.financial.csv', [...$query, 'download' => 1]),
+                'inlineUrl' => null,
+                'headers' => $headers,
+                'rows' => $rows,
+            ]);
+        }
+
         $handle = fopen('php://temp', 'r+');
         fputcsv($handle, ['date', 'type', 'category', 'description', 'amount']);
 
@@ -136,19 +102,69 @@ class ReportController extends Controller
         return response($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="financial-report.csv"']);
     }
 
-    public function attendanceCsv(): Response
+    public function attendancePdf(Request $request): Response|View
     {
         Gate::authorize('view-financial-reports');
 
+        $attendances = $this->attendanceReportRows($request);
+        $query = $request->except(['download', 'render']);
+
+        if (! $request->boolean('download') && ! $request->boolean('render')) {
+            return view('reports.download-preview', [
+                'title' => 'Laporan Kehadiran',
+                'format' => 'pdf',
+                'backUrl' => route('attendance.index', $query),
+                'downloadUrl' => route('reports.attendance.pdf', [...$query, 'download' => 1]),
+                'inlineUrl' => route('reports.attendance.pdf', [...$query, 'render' => 1]),
+                'headers' => [],
+                'rows' => [],
+            ]);
+        }
+
+        $pdf = new Dompdf;
+        $pdf->loadHtml(view('reports.attendance_pdf', compact('attendances'))->render());
+        $pdf->setPaper('A4');
+        $pdf->render();
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="laporan-kehadiran.pdf"',
+        ]);
+    }
+
+    public function attendanceCsv(Request $request): Response|View
+    {
+        Gate::authorize('view-financial-reports');
+
+        $attendances = $this->attendanceReportRows($request);
+
+        if (! $request->boolean('download')) {
+            $query = $request->except(['download']);
+
+            return view('reports.download-preview', [
+                'title' => 'Laporan Kehadiran',
+                'format' => 'csv',
+                'backUrl' => route('attendance.index', $query),
+                'downloadUrl' => route('reports.attendance.csv', [...$query, 'download' => 1]),
+                'inlineUrl' => null,
+                'headers' => ['Ahli', 'Aktiviti', 'Masa'],
+                'rows' => $attendances->map(fn (Attendance $row) => [
+                    $row->user->name,
+                    $row->activity->title,
+                    $row->scanned_at->format('d/m/Y h:i A'),
+                ])->values(),
+            ]);
+        }
+
         $csv = "member,activity,scanned_at\n";
-        foreach (Attendance::with('user', 'activity')->latest('scanned_at')->get() as $row) {
+        foreach ($attendances as $row) {
             $csv .= sprintf("%s,%s,%s\n", str_replace(',', ' ', $row->user->name), str_replace(',', ' ', $row->activity->title), $row->scanned_at->format('Y-m-d H:i:s'));
         }
 
         return response($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="attendance-report.csv"']);
     }
 
-    public function activityAttendanceCsv(Activity $activity): Response
+    public function activityAttendanceCsv(Request $request, Activity $activity): Response|View
     {
         abort_unless(auth()->user()->hasRole('admin', 'treasurer') || $activity->created_by === auth()->id(), 403);
         abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Report hanya boleh dijana selepas aktiviti tamat.');
@@ -157,6 +173,24 @@ class ReportController extends Controller
             ->where('activity_id', $activity->id)
             ->orderBy('scanned_at')
             ->get();
+
+        if (! $request->boolean('download')) {
+            return view('reports.download-preview', [
+                'title' => 'Kehadiran '.$activity->title,
+                'format' => 'csv',
+                'backUrl' => route('activities.show', $activity),
+                'downloadUrl' => route('reports.activities.attendance.csv', ['activity' => $activity, 'download' => 1]),
+                'inlineUrl' => null,
+                'headers' => ['Ahli', 'E-mel', 'Jabatan', 'Aktiviti', 'Masa'],
+                'rows' => $rows->map(fn (Attendance $row) => [
+                    $row->user->name,
+                    $row->user->email,
+                    $row->user->department ?? '-',
+                    $activity->title,
+                    $row->scanned_at->format('d/m/Y h:i A'),
+                ])->values(),
+            ]);
+        }
 
         $handle = fopen('php://temp', 'r+');
         fputcsv($handle, ['member', 'email', 'department', 'activity', 'scanned_at']);
@@ -180,10 +214,22 @@ class ReportController extends Controller
         return response($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="'.$filename.'"']);
     }
 
-    public function activityReportPdf(Activity $activity): Response
+    public function activityReportPdf(Request $request, Activity $activity): Response|View
     {
         abort_unless(auth()->user()->hasRole('member', 'treasurer', 'admin'), 403);
         abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Report hanya boleh dijana selepas aktiviti tamat.');
+
+        if (! $request->boolean('download') && ! $request->boolean('render')) {
+            return view('reports.download-preview', [
+                'title' => 'Laporan Aktiviti '.$activity->title,
+                'format' => 'pdf',
+                'backUrl' => route('activities.show', $activity),
+                'downloadUrl' => route('reports.activities.pdf', ['activity' => $activity, 'download' => 1]),
+                'inlineUrl' => route('reports.activities.pdf', ['activity' => $activity, 'render' => 1]),
+                'headers' => [],
+                'rows' => [],
+            ]);
+        }
 
         $activity->loadCount(['activeRegistrations', 'attendances']);
         $attendances = Attendance::with('user')->where('activity_id', $activity->id)->orderBy('scanned_at')->get();
@@ -201,7 +247,7 @@ class ReportController extends Controller
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="activity-report-'.Str::slug($activity->title).'.pdf"',
+            'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="activity-report-'.Str::slug($activity->title).'.pdf"',
         ]);
     }
 
@@ -248,6 +294,16 @@ class ReportController extends Controller
             'incomeCategories' => $this->categoryTotals($transactions, 'income'),
             'expenseCategories' => $this->categoryTotals($transactions, 'expense'),
         ];
+    }
+
+    private function attendanceReportRows(Request $request)
+    {
+        return Attendance::with('user', 'activity')
+            ->when($request->filled('member'), fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$request->member.'%')))
+            ->when($request->filled('activity'), fn ($query) => $query->whereHas('activity', fn ($activityQuery) => $activityQuery->where('title', 'like', '%'.$request->activity.'%')))
+            ->when($request->filled('date'), fn ($query) => $query->whereDate('scanned_at', $request->date))
+            ->latest('scanned_at')
+            ->get();
     }
 
     private function financialChartItems($transactions, string $mode, int $year, int $month, Carbon $from, Carbon $to)

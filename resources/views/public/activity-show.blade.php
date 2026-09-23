@@ -9,11 +9,14 @@
 </section>
 <section class="public-container public-detail-section">
     <article class="public-detail-card">
-        @if($activity->evidence_photo_path)
-            <img src="{{ Storage::disk('public')->url($activity->evidence_photo_path) }}" alt="Foto {{ $activity->title }}">
-        @endif
         <h2>Butiran aktiviti</h2>
-        <p>{{ $activity->description ?: 'Tiada penerangan tambahan.' }}</p>
+        @if($activity->evidencePhotos->isNotEmpty())
+            <div class="row g-2 mb-3">
+                @foreach($activity->evidencePhotos as $photo)
+                    <div class="col-6"><img class="img-fluid rounded" src="{{ Storage::disk('public')->url($photo->path) }}" alt="Bukti {{ $activity->title }}"></div>
+                @endforeach
+            </div>
+        @endif
         <div class="public-detail-facts"><div><strong>Status</strong><span>{{ $activity->date_time->isPast() ? 'Telah dijalankan' : 'Akan datang' }}</span></div><div><strong>Lokasi</strong><span>{{ $activity->location }}</span></div></div>
     </article>
     @if($activity->date_time->isFuture() && $activity->registrationIsOpen())

@@ -143,7 +143,7 @@
                         <a class="btn btn-outline-danger" href="{{ route('activities.create') }}"><i class="bi bi-calendar-plus me-2" aria-hidden="true"></i>Tambah Aktiviti</a>
                         <a class="btn btn-outline-danger" href="{{ route('payments.index', ['status' => 'pending']) }}"><i class="bi bi-receipt me-2" aria-hidden="true"></i>Semak Bayaran</a>
                         <a class="btn btn-outline-danger" href="{{ route('notifications.create') }}"><i class="bi bi-bell me-2" aria-hidden="true"></i>Hantar Notifikasi</a>
-                        <a class="btn btn-outline-danger" href="{{ route('reports.overview') }}"><i class="bi bi-bar-chart me-2" aria-hidden="true"></i>Laporan</a>
+                        <a class="btn btn-outline-danger" href="{{ route('reports.financial') }}"><i class="bi bi-bar-chart me-2" aria-hidden="true"></i>Laporan Kewangan</a>
                     </div>
                 </div>
             </article>

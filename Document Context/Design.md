@@ -63,3 +63,97 @@ must not communicate meaning.
 
 The official logo will replace the temporary monogram without changing the
 navigation dimensions.
+
+## Activity Experience
+
+### Status cards and lists
+
+- Status cards are navigation controls: selecting one opens a dedicated list
+  page and never expands a filtered list beneath the calendar.
+- The calendar landing page contains the cards and calendar only.
+- The approved list exposes **Lihat Butiran** and, after the activity ends,
+  **Muat Turun Kertas Kerja**.
+- Rejected, pending-review, and treasurer-verified lists are read-only tables
+  with no row action buttons.
+
+### Submission form
+
+The activity form asks only for information needed before approval:
+
+- activity name;
+- date, start time, and end time;
+- location; and
+- optional registration opening and closing times.
+
+Do not show description, attendance-window, QR, or evidence-upload controls in
+the submission form. Evidence belongs to the post-activity state.
+
+### Time-based states
+
+The activity detail screen must make the current state understandable without
+depending on color alone:
+
+| State | Primary UI |
+| --- | --- |
+| Before approval | Approval status and edit action for eligible owner |
+| Approved, before start | Registration state; QR generation unavailable |
+| In progress | QR card beside activity details; generation control for treasurer only |
+| Finished | Evidence gallery and upload control for registered members |
+
+### QR panel
+
+- Display the generate button only while the approved activity is in progress.
+- Display the QR card beside the activity-detail card to every user who may view
+  the approved activity.
+- Before generation, show a neutral message explaining that the QR is available
+  only during the activity and is waiting for the treasurer.
+- Do not expose a standalone **Imbas Kehadiran** navigation or dashboard action.
+- Never render an empty token or empty attendance link.
+- After generation, display the QR, its active-until message, and operational
+  attendance information together.
+
+### Evidence gallery
+
+- Use a responsive grid: two columns on small screens and three where space
+  allows.
+- Preserve image aspect ratio and use descriptive alternative text.
+- The upload control accepts multiple images and explains that it becomes
+  available only after the activity is complete.
+- Validation errors must appear beside the upload control.
+
+## Report Preview Experience
+
+- Each report toolbar uses one **Eksport Laporan** dropdown to avoid multiple
+  competing download buttons.
+- PDF, CSV, and **Cetak / Simpan PDF** are format choices inside that dropdown.
+- Choosing a file format opens its preview; it does not immediately download.
+- The preview header explains that the file has not been downloaded yet.
+- Primary actions appear together: **Kembali**, **Buka / Cetak** for PDF, and
+  **Muat Turun PDF/CSV**.
+- PDF reports use a large embedded viewer so pagination and layout can be
+  inspected before download.
+- CSV reports use a responsive table with the final report headings and rows.
+- Empty reports show an explicit empty state instead of a blank viewer.
+- The final download action uses the primary button style; preview and back
+  actions use secondary styles.
+- Do not show a **Ringkasan** action in the financial report toolbar. The
+  financial report already contains the required totals, trend, category, and
+  transaction information.
+
+## Fee Payment Summary Cards
+
+- Fee summary cards reuse the same visual structure as activity summary cards:
+  icon tile, large value, label, and muted supporting text.
+- Each card is a full-card button that opens its related detail modal.
+- Text elements must remain separate blocks so amounts, labels, and month counts
+  never run together.
+- Keyboard focus must be visible on every clickable summary card.
+
+## Fee Payment Selection
+
+- Show outstanding months in the selectable table, with the oldest outstanding
+  month marked as the first month to pay.
+- Below it, show a clearly labelled **Bayaran Tahun Semasa** table containing
+  completed months, amount paid, and a textual **Selesai** status.
+- Completed-month rows are informational only and must have no checkbox or
+  other payment action.

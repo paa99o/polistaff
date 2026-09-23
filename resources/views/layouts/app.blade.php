@@ -45,14 +45,11 @@
                 </a>
 
                 <nav class="mega-nav" aria-label="Navigasi utama">
-                    <div class="mega-nav-item {{ request()->routeIs('activities.*') || request()->routeIs('attendance.scan') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('activities.*') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Aktiviti</button>
                         <div class="mega-menu">
                             <a class="mega-menu-link {{ request()->routeIs('activities.*') ? 'active' : '' }}" href="{{ route('activities.index') }}">
                                 <i class="bi bi-calendar3" aria-hidden="true"></i><span>Aktiviti</span>
-                            </a>
-                            <a class="mega-menu-link {{ request()->routeIs('attendance.scan') ? 'active' : '' }}" href="{{ route('attendance.scan') }}">
-                                <i class="bi bi-qr-code-scan" aria-hidden="true"></i><span>Imbas Kehadiran</span>
                             </a>
                         </div>
                     </div>
@@ -91,7 +88,7 @@
                         </a>
                     </div>
 
-                    <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('reports.overview') || request()->routeIs('attendance.index') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('attendance.index') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Pengurusan</button>
                         <div class="mega-menu mega-menu-wide">
                             <a class="mega-menu-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.show') }}">
@@ -101,9 +98,6 @@
                                 <i class="bi bi-bell" aria-hidden="true"></i><span>Notifikasi</span>
                             </a>
                             @if(auth()->user()->hasRole('treasurer','admin'))
-                                <a class="mega-menu-link {{ request()->routeIs('reports.overview') ? 'active' : '' }}" href="{{ route('reports.overview') }}">
-                                    <i class="bi bi-bar-chart" aria-hidden="true"></i><span>Laporan Ringkasan</span>
-                                </a>
                                 <a class="mega-menu-link {{ request()->routeIs('attendance.index') ? 'active' : '' }}" href="{{ route('attendance.index') }}">
                                     <i class="bi bi-clipboard-data" aria-hidden="true"></i><span>Laporan Kehadiran</span>
                                 </a>

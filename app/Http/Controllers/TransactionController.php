@@ -68,9 +68,21 @@ class TransactionController extends Controller
         return view('transactions.receipt', compact('transaction'));
     }
 
-    public function receiptPdf(Transaction $transaction): Response
+    public function receiptPdf(Request $request, Transaction $transaction): Response|View
     {
         Gate::authorize('view-financial-reports');
+
+        if (! $request->boolean('download') && ! $request->boolean('render')) {
+            return view('reports.download-preview', [
+                'title' => 'Resit '.$transaction->receipt_number,
+                'format' => 'pdf',
+                'backUrl' => route('transactions.show', $transaction),
+                'downloadUrl' => route('transactions.receipt.pdf', ['transaction' => $transaction, 'download' => 1]),
+                'inlineUrl' => route('transactions.receipt.pdf', ['transaction' => $transaction, 'render' => 1]),
+                'headers' => [],
+                'rows' => [],
+            ]);
+        }
 
         $pdf = new Dompdf;
         $pdf->loadHtml(view('transactions.receipt_pdf', compact('transaction'))->render());
@@ -79,7 +91,7 @@ class TransactionController extends Controller
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$transaction->receipt_number.'.pdf"',
+            'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="'.$transaction->receipt_number.'.pdf"',
         ]);
     }
 

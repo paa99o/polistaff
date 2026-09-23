@@ -7,6 +7,27 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+# PoliStaff
+
+PoliStaff is the staff-club management portal for activities, membership,
+finance, attendance, notifications, and PoliMart.
+
+## Project documentation
+
+- [Product requirements](Document%20Context/PRD.md)
+- [Business rules](Document%20Context/Rules.md)
+- [Architecture](Document%20Context/Architecture.md)
+- [Database schema](Document%20Context/Schema.md)
+- [Design system](Document%20Context/Design.md)
+- [Engineering handoff](Document%20Context/Handoff.md)
+
+After pulling database changes, start MySQL and run:
+
+```bash
+php artisan migrate
+php artisan storage:link
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

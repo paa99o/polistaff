@@ -24,10 +24,11 @@
             <h1 class="mb-0">Laporan Kewangan</h1>
         </div>
         <div class="report-actions">
-            <a class="btn btn-outline-danger" href="{{ route('reports.overview', ['year' => $year, 'month' => $month]) }}">Ringkasan</a>
-            <a class="btn btn-outline-danger" href="{{ route('reports.financial.pdf', $query) }}">PDF</a>
-            <a class="btn btn-outline-danger" href="{{ route('reports.financial.csv', $query) }}">CSV</a>
-            <button onclick="print()" class="btn btn-outline-secondary">Cetak</button>
+            @include('reports._export-menu', ['options' => [
+                ['label' => 'PDF', 'url' => route('reports.financial.pdf', $query), 'icon' => 'bi-file-earmark-pdf'],
+                ['label' => 'CSV', 'url' => route('reports.financial.csv', $query), 'icon' => 'bi-filetype-csv'],
+                ['label' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'bi-printer'],
+            ]])
         </div>
     </div>
 
