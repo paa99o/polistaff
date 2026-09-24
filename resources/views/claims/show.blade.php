@@ -16,7 +16,7 @@
                     <dt class="col-sm-4">Tarikh Tuntutan</dt><dd class="col-sm-8">{{ $claim->claim_date->format('d/m/Y') }}</dd>
                     <dt class="col-sm-4">Disahkan Bendahari</dt><dd class="col-sm-8">{{ $claim->treasurerVerifier->name ?? '-' }} @if($claim->treasurer_verified_at)({{ $claim->treasurer_verified_at->format('d/m/Y H:i') }})@endif</dd>
                     <dt class="col-sm-4">Catatan Bendahari</dt><dd class="col-sm-8">{{ $claim->treasurer_notes ?? '-' }}</dd>
-                    <dt class="col-sm-4">Resit</dt><dd class="col-sm-8"><a href="{{ route('claims.receipt', $claim) }}" target="_blank">Lihat Resit</a></dd>
+                    <dt class="col-sm-4">Dokumen</dt><dd class="col-sm-8"><a href="{{ route('claims.receipt', $claim) }}" target="_blank">Lihat Dokumen</a></dd>
                     <dt class="col-sm-4">Transaksi</dt><dd class="col-sm-8">@if($claim->transaction)<a href="{{ route('transactions.show', $claim->transaction) }}">{{ $claim->transaction->receipt_number }}</a>@else - @endif</dd>
                 </dl>
                 @if(auth()->id() === $claim->user_id && $claim->status === 'pending')

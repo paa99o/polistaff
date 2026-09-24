@@ -14,20 +14,28 @@
                             <div class="small">RM {{ number_format($pendingAmount, 2) }} sedang menunggu semakan dan tidak boleh dihantar semula.</div>
                         @endif
                     </div>
-                    <div class="table-responsive mb-3">
-                        <table class="table table-sm align-middle mb-0 fee-selection-table">
-                            <caption class="visually-hidden">Bil tertunggak dan belum dibayar yang boleh dipilih untuk bayaran</caption>
-                            <thead><tr><th><input class="form-check-input" type="checkbox" id="select-all-fees" aria-label="Pilih semua bulan"></th><th>Bulan</th><th>Baki</th><th>Status</th></tr></thead>
-                            <tbody>
+                    <div class="mb-3">
+                        <label class="form-label" for="bill-selection">Bulan yang hendak dibayar</label>
+                        <select class="form-select @error('bill_ids') is-invalid @enderror" id="bill-selection" required>
+                            <option value="">-- Pilih bilangan bulan --</option>
                             @foreach($bills as $bill)
-                                <tr>
-                                    <td><input class="form-check-input js-bill-checkbox" type="checkbox" name="bill_ids[]" value="{{ $bill->id }}" data-amount="{{ number_format($bill->remainingAmount(), 2, '.', '') }}" @checked((string) request('bill_id') === (string) $bill->id || in_array($bill->id, (array) old('bill_ids', [])))></td>
-                                    <td>{{ $bill->billing_month->format('F Y') }} @if($loop->first)<span class="badge bg-danger">Bayar dahulu</span>@endif</td>
-                                    <td>RM {{ number_format($bill->remainingAmount(), 2) }}</td>
-                                    <td>{{ $bill->status === 'partial' ? 'Sebahagian' : 'Belum dibayar' }}</td>
-                                </tr>
+                                <option value="count:{{ $loop->iteration }}">Bayar {{ $loop->iteration }} bulan</option>
                             @endforeach
-                            </tbody>
+                            @if($overdueBills->isNotEmpty())
+                                <option value="overdue">Tunggakan ({{ $overdueBills->count() }} bulan)</option>
+                            @endif
+                        </select>
+                        <div class="form-text">Bulan paling lama akan dipilih dahulu. Pilihan tunggakan hanya memaparkan bil yang telah melepasi tarikh akhir.</div>
+                        @include('partials.errors', ['name' => 'bill_ids'])
+                    </div>
+                    <div id="selected-bills-summary" class="alert alert-info d-none mb-3" aria-live="polite"></div>
+                    <div id="selected-bills-inputs"></div>
+                    <div class="small text-muted mb-3" id="bill-selection-empty">Sila pilih bilangan bulan atau tunggakan untuk melihat pecahan bayaran.</div>
+                    <div class="table-responsive d-none mb-3" id="selected-bills-table-wrapper">
+                        <table class="table table-sm align-middle mb-0 fee-selection-table">
+                            <caption class="visually-hidden">Bulan yang dipilih untuk bayaran</caption>
+                            <thead><tr><th>Bulan</th><th>Baki</th><th>Status</th></tr></thead>
+                            <tbody id="selected-bills-table"></tbody>
                         </table>
                     </div>
                 @else
@@ -55,14 +63,14 @@
                         </table>
                     </div>
                 </section>
-                <form method="post" action="{{ route('payments.store') }}" enctype="multipart/form-data">
+                <form id="payment-submission-form" method="post" action="{{ route('payments.store') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="amount">Jumlah Bayaran</label>
                             <input class="form-control @error('amount') is-invalid @enderror" id="amount" type="number" step="0.01" min="0.01" max="{{ number_format($outstanding, 2, '.', '') }}" name="amount" value="{{ old('amount', '') }}" readonly required>
                             @include('partials.errors', ['name' => 'amount'])
-                            <div class="form-text">Tandakan bulan yang ingin dibayar. Jumlah dikira secara automatik.</div>
+                            <div class="form-text">Jumlah dikira secara automatik berdasarkan pilihan bulan.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="payment_method">Kaedah Bayaran</label>
@@ -103,26 +111,53 @@
         </div>
     </div>
 </div>
+@php($billPayload = $bills->values()->map(fn ($bill) => [
+    'id' => $bill->id,
+    'month' => $bill->billing_month->translatedFormat('F Y'),
+    'amount' => $bill->remainingAmount(),
+    'status' => $bill->status === 'partial' ? 'Sebahagian' : 'Belum dibayar',
+    'overdue' => $overdueBills->contains('id', $bill->id),
+])->values())
 <script>
-const feeCheckboxes = [...document.querySelectorAll('.js-bill-checkbox')];
 const amountField = document.getElementById('amount');
-const selectAll = document.getElementById('select-all-fees');
-function updateFeeTotal() {
-    const total = feeCheckboxes.filter(input => input.checked).reduce((sum, input) => sum + Number(input.dataset.amount), 0);
-    amountField.value = total ? total.toFixed(2) : '';
-    if (selectAll) selectAll.checked = feeCheckboxes.length > 0 && feeCheckboxes.every(input => input.checked);
+const billSelection = document.getElementById('bill-selection');
+const selectedBillsSummary = document.getElementById('selected-bills-summary');
+const selectedBillsTableWrapper = document.getElementById('selected-bills-table-wrapper');
+const selectedBillsTable = document.getElementById('selected-bills-table');
+const selectedBillsInputs = document.getElementById('selected-bills-inputs');
+const billSelectionEmpty = document.getElementById('bill-selection-empty');
+const bills = @json($billPayload);
+const oldBillIds = @json(array_map('strval', (array) old('bill_ids', request('bill_id') ? [request('bill_id')] : [])));
+function selectedBillsFor(value) {
+    if (value === 'overdue') return bills.filter(bill => bill.overdue);
+    const count = Number(value.replace('count:', ''));
+    return Number.isInteger(count) ? bills.slice(0, count) : [];
 }
-feeCheckboxes.forEach(input => input.addEventListener('change', updateFeeTotal));
-if (selectAll) selectAll.addEventListener('change', () => { feeCheckboxes.forEach(input => input.checked = selectAll.checked); updateFeeTotal(); });
+function updateBillSelection() {
+    const selectedBills = selectedBillsFor(billSelection.value);
+    selectedBillsInputs.innerHTML = selectedBills.map(bill => `<input type="hidden" name="bill_ids[]" value="${bill.id}" form="payment-submission-form">`).join('');
+    selectedBillsTable.innerHTML = selectedBills.map(bill => `<tr><td>${bill.month}</td><td>RM ${Number(bill.amount).toFixed(2)}</td><td>${bill.status}</td></tr>`).join('');
+    const total = selectedBills.reduce((sum, bill) => sum + Number(bill.amount), 0);
+    amountField.value = total ? total.toFixed(2) : '';
+    selectedBillsSummary.textContent = selectedBills.length ? `${selectedBills.length} bulan dipilih · Jumlah: RM ${total.toFixed(2)}` : '';
+    selectedBillsSummary.classList.toggle('d-none', selectedBills.length === 0);
+    selectedBillsTableWrapper.classList.toggle('d-none', selectedBills.length === 0);
+    billSelectionEmpty.classList.toggle('d-none', selectedBills.length > 0);
+}
+billSelection?.addEventListener('change', updateBillSelection);
 const methodSelect = document.getElementById('payment_method');
 function updateMethodDetails() {
     document.querySelectorAll('.js-method-detail').forEach(detail => detail.classList.toggle('d-none', detail.dataset.method !== methodSelect.value));
 }
 methodSelect.addEventListener('change', updateMethodDetails);
 updateMethodDetails();
-updateFeeTotal();
+if (billSelection && oldBillIds.length) {
+    const oldCount = oldBillIds.length === 1 && bills.some(bill => String(bill.id) === oldBillIds[0]) ? `count:1` : `count:${oldBillIds.length}`;
+    billSelection.value = oldCount;
+}
+if (billSelection) updateBillSelection();
 document.querySelector('form').addEventListener('submit', function (event) {
-    if (!feeCheckboxes.some(input => input.checked)) { event.preventDefault(); alert('Sila pilih sekurang-kurangnya satu bulan untuk dibayar.'); }
+    if (billSelection && !selectedBillsInputs.querySelector('input')) { event.preventDefault(); alert('Sila pilih bulan yang hendak dibayar.'); }
 });
 </script>
 @endsection

@@ -27,7 +27,6 @@ class SystemSettingController extends Controller
     {
         return view('settings.edit', ['settings' => [
             'club_name' => SystemSetting::getValue('club_name', 'PoliBest'),
-            'monthly_fee' => SystemSetting::getValue('monthly_fee', '20'),
             'receipt_prefix' => SystemSetting::getValue('receipt_prefix', 'PB'),
             'contact_email' => SystemSetting::getValue('contact_email', 'admin@polibest.test'),
             'opening_balance' => SystemSetting::getValue('opening_balance', '0'),
@@ -39,7 +38,7 @@ class SystemSettingController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $data = $request->validate(['club_name' => ['required', 'string', 'max:120'], 'monthly_fee' => ['required', 'numeric', 'min:0'], 'receipt_prefix' => ['required', 'string', 'max:10'], 'contact_email' => ['required', 'email'], 'opening_balance' => ['required', 'numeric']]);
+        $data = $request->validate(['club_name' => ['required', 'string', 'max:120'], 'receipt_prefix' => ['required', 'string', 'max:10'], 'contact_email' => ['required', 'email'], 'opening_balance' => ['required', 'numeric']]);
         foreach ($data as $key => $value) {
             SystemSetting::setValue($key, $value);
         }
@@ -71,6 +70,31 @@ class SystemSettingController extends Controller
             'outstandingMembers' => $activeMembers->where('outstanding_total', '>', 0)->count(),
             'outstandingTotal' => (float) $activeMembers->sum('outstanding_total'),
         ]);
+    }
+
+    public function updateMonthlyFee(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'monthly_fee' => ['required', 'numeric', 'min:0'],
+        ], [
+            'monthly_fee.required' => 'Sila masukkan kadar yuran bulanan.',
+            'monthly_fee.numeric' => 'Kadar yuran mesti berupa nombor.',
+            'monthly_fee.min' => 'Kadar yuran tidak boleh kurang daripada RM 0.00.',
+        ]);
+
+        $oldFee = SystemSetting::getValue('monthly_fee', '20');
+        SystemSetting::setValue('monthly_fee', $data['monthly_fee']);
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'updated',
+            'module' => 'Monthly Fee Setting',
+            'description' => 'Updated the monthly member fee.',
+            'changes' => ['monthly_fee' => ['old' => (float) $oldFee, 'new' => (float) $data['monthly_fee']]],
+            'ip_address' => $request->ip(),
+        ]);
+
+        return back()->with('status', 'Kadar yuran bulanan dikemas kini. Bil baharu akan menggunakan kadar ini.');
     }
 
     public function generateMonthlyFees(Request $request, MonthlyFeeService $monthlyFeeService): RedirectResponse

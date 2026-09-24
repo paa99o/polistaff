@@ -44,6 +44,7 @@ class PaymentSubmissionController extends Controller
         app(MonthlyFeeService::class)->ensureThrough($user);
         $bills = MemberFeeBill::where('user_id', $user->id)->orderBy('billing_month')->get();
         $currentYear = now()->year;
+        $currentMonth = now()->startOfMonth();
         $recentApprovedPayments = PaymentSubmission::where('user_id', $user->id)
             ->where('status', 'approved')
             ->latest('created_at')
@@ -61,7 +62,7 @@ class PaymentSubmissionController extends Controller
         return view('payments.index', [
             'payments' => $query->paginate(15)->withQueryString(),
             'overdueBills' => $bills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year < $currentYear && $bill->remainingAmount() > 0),
-            'currentUnpaidBills' => $bills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year === $currentYear && $bill->remainingAmount() > 0),
+            'currentUnpaidBills' => $bills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year === $currentYear && $bill->billing_month->lte($currentMonth) && $bill->remainingAmount() > 0),
             'recentApprovedPayments' => $recentApprovedPayments->filter(fn (PaymentSubmission $payment) => $payment->payment_date->year === $currentYear),
             'paidBills' => $paidBills,
         ]);
@@ -100,6 +101,7 @@ class PaymentSubmissionController extends Controller
         return view('payments.create', [
             'bills' => $bills,
             'paidCurrentYearBills' => $paidCurrentYearBills,
+            'overdueBills' => $bills->filter(fn (MemberFeeBill $bill): bool => $bill->due_date?->isPast() && ! $bill->due_date?->isToday()),
             'outstanding' => max(0, (float) $bills->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount()) - (float) $pendingAmount),
             'pendingAmount' => (float) $pendingAmount,
         ]);

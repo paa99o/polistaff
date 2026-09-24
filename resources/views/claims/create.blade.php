@@ -34,17 +34,12 @@
                     <input type="hidden" name="amount" value="100">
                     @include('partials.errors', ['name' => 'amount'])
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="claim_date">Tarikh</label>
-                    <input class="form-control @error('claim_date') is-invalid @enderror" id="claim_date" type="date" name="claim_date" value="{{ old('claim_date', $claim?->claim_date?->format('Y-m-d') ?? now()->toDateString()) }}" max="{{ now()->toDateString() }}" required>
-                    @include('partials.errors', ['name' => 'claim_date'])
-                </div>
                 <input type="hidden" name="title" value="{{ $selectedCategory }}">
                 <div class="col-md-6">
-                    <label class="form-label" for="receipt">Resit</label>
+                    <label class="form-label" for="receipt">Dokumen</label>
                     <input class="form-control @error('receipt') is-invalid @enderror" id="receipt" type="file" name="receipt" accept=".jpg,.jpeg,.png,.pdf" @required(! $isEditing || $isResubmitting)>
                     @include('partials.errors', ['name' => 'receipt'])
-                    <div class="form-text">Format: JPG, PNG atau PDF. Maksimum 4MB.</div>
+                    <div class="form-text">Format dokumen: JPG, PNG atau PDF. Maksimum 4MB.</div>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="description">Keterangan</label>

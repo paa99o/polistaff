@@ -27,6 +27,19 @@
             <span class="section-kicker">Kadar Semasa</span>
             <div class="display-6 fw-bold">RM {{ number_format($monthlyFee, 2) }}</div>
             <p class="text-muted mb-0">Yuran bagi setiap ahli aktif sebulan.</p>
+            @if($canManageFees)
+                <form class="mt-3" method="post" action="{{ route('finance.fees.monthly-fee.update') }}">
+                    @csrf
+                    @method('patch')
+                    <label class="form-label small" for="monthly_fee">Ubah kadar yuran</label>
+                    <div class="input-group">
+                        <span class="input-group-text">RM</span>
+                        <input class="form-control @error('monthly_fee') is-invalid @enderror" id="monthly_fee" type="number" name="monthly_fee" min="0" step="0.01" value="{{ old('monthly_fee', $monthlyFee) }}" required>
+                        <button class="btn btn-outline-danger" type="submit">Simpan</button>
+                    </div>
+                    @error('monthly_fee')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </form>
+            @endif
         </div></div>
     </div>
     <div class="col-lg-3 col-md-6">

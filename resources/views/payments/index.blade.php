@@ -39,7 +39,7 @@
         <button class="admin-stat-card payment-fee-stat-card w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#unpaidFeesModal">
             <span class="admin-stat-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
             <strong>RM {{ number_format((float) $currentUnpaidBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong>
-            <span>Belum Dibayar {{ now()->year }}</span>
+            <span>Belum Dibayar sehingga {{ now()->translatedFormat('F Y') }}</span>
             <small class="text-muted">{{ $currentUnpaidBills->count() }} bulan belum selesai</small>
         </button>
     </div>
@@ -114,7 +114,6 @@
                     <div class="alert alert-success mb-0">Tiada bayaran tertunggak.</div>
                 @endforelse
             </div>
-            <div class="modal-footer"><a class="btn btn-danger" href="{{ route('payments.create') }}" @if($overdueBills->isEmpty()) aria-disabled="true" tabindex="-1" @endif>Bayar yuran</a></div>
         </div>
     </div>
 </div>
@@ -134,7 +133,6 @@
                     <div class="alert alert-info mb-0">Belum ada bulan yuran yang selesai dibayar.</div>
                 @endforelse
             </div>
-            <div class="modal-footer"><a class="btn btn-danger" href="{{ route('payments.create') }}"><i class="bi bi-upload me-2" aria-hidden="true"></i>Upload bukti bayaran</a></div>
         </div>
     </div>
 </div>
@@ -151,7 +149,7 @@
                         <a class="btn btn-sm btn-outline-danger" href="{{ route('payments.create', ['bill_id' => $bill->id]) }}">Bayar</a>
                     </div>
                 @empty
-                    <div class="alert alert-success mb-0">Semua yuran tahun {{ now()->year }} telah diselesaikan.</div>
+                    <div class="alert alert-success mb-0">Tiada yuran belum dibayar sehingga bulan semasa.</div>
                 @endforelse
             </div>
             @if($currentUnpaidBills->isNotEmpty())

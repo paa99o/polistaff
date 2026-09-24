@@ -14,7 +14,7 @@
         <div class="card">
             <div class="card-body">
                 <span class="section-kicker">Konfigurasi Utama</span>
-                <h2 class="h4 soft-panel-title">Identiti &amp; Kewangan</h2>
+                <h2 class="h4 soft-panel-title">Identiti &amp; Sistem</h2>
                 <form method="post" action="{{ route('settings.update') }}" data-confirm="Simpan perubahan tetapan sistem?">
                     @csrf
                     @method('put')
@@ -23,11 +23,6 @@
                             <label class="form-label" for="club_name">Nama Kelab</label>
                             <input class="form-control @error('club_name') is-invalid @enderror" id="club_name" name="club_name" value="{{ old('club_name', $settings['club_name']) }}" required>
                             @error('club_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="monthly_fee">Yuran Bulanan</label>
-                            <input class="form-control @error('monthly_fee') is-invalid @enderror" id="monthly_fee" type="number" min="0" step="0.01" name="monthly_fee" value="{{ old('monthly_fee', $settings['monthly_fee']) }}" required>
-                            @error('monthly_fee')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="receipt_prefix">Awalan Nombor Resit</label>

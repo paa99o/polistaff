@@ -35,11 +35,6 @@ class ExpenseClaimController extends Controller
             $query->where('user_id', $request->user()->id);
         }
 
-        $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
-            ->when($request->filled('category'), fn ($query) => $query->where('category', 'like', '%'.$request->category.'%'))
-            ->when($request->filled('from'), fn ($query) => $query->whereDate('claim_date', '>=', $request->from))
-            ->when($request->filled('to'), fn ($query) => $query->whereDate('claim_date', '<=', $request->to));
-
         return view('claims.index', ['claims' => $query->paginate(15)->withQueryString()]);
     }
 
@@ -57,6 +52,7 @@ class ExpenseClaimController extends Controller
             'user_id' => $request->user()->id,
             'title' => $data['category'],
             'amount' => self::CLAIM_AMOUNT,
+            'claim_date' => now()->toDateString(),
             'receipt_path' => $request->file('receipt')->store('expense-claims', 'private'),
             'status' => 'pending',
         ]);
@@ -265,18 +261,15 @@ class ExpenseClaimController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'amount' => ['required', 'numeric', Rule::in([self::CLAIM_AMOUNT])],
             'category' => ['required', Rule::in(self::CLAIM_TYPES)],
-            'claim_date' => ['required', 'date', 'before_or_equal:today'],
             'receipt' => [$receiptRequired ? 'required' : 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
         ], [
             'title.required' => 'Sila isi tajuk tuntutan.',
             'amount.required' => 'Sila isi jumlah tuntutan.',
             'amount.min' => 'Jumlah tuntutan mesti sekurang-kurangnya RM 0.01.',
             'category.required' => 'Sila isi kategori tuntutan.',
-            'claim_date.required' => 'Sila pilih tarikh tuntutan.',
-            'claim_date.before_or_equal' => 'Tarikh tuntutan tidak boleh melebihi hari ini.',
-            'receipt.required' => 'Sila upload resit tuntutan.',
-            'receipt.mimes' => 'Resit tuntutan mesti dalam format JPG, PNG atau PDF.',
-            'receipt.max' => 'Resit tuntutan tidak boleh melebihi 4MB.',
+            'receipt.required' => 'Sila upload dokumen tuntutan.',
+            'receipt.mimes' => 'Dokumen tuntutan mesti dalam format JPG, PNG atau PDF.',
+            'receipt.max' => 'Dokumen tuntutan tidak boleh melebihi 4MB.',
         ]);
     }
 

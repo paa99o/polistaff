@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/admin/settings', [SystemSettingController::class, 'edit'])->middleware('role:admin')->name('settings.edit');
     Route::put('/admin/settings', [SystemSettingController::class, 'update'])->middleware('role:admin')->name('settings.update');
     Route::get('/finance/fees', [SystemSettingController::class, 'feeOperations'])->middleware('role:admin,treasurer')->name('finance.fees.index');
+    Route::patch('/finance/fees/monthly-fee', [SystemSettingController::class, 'updateMonthlyFee'])->middleware('role:admin,treasurer')->name('finance.fees.monthly-fee.update');
     Route::post('/finance/fees/generate', [SystemSettingController::class, 'generateMonthlyFees'])->middleware('role:admin,treasurer')->name('finance.fees.generate');
     Route::post('/finance/fees/reminders', [SystemSettingController::class, 'sendFeeReminders'])->middleware('role:admin,treasurer')->name('finance.fees.reminders');
     Route::post('/finance/fees/reminders/{user}', [SystemSettingController::class, 'sendFeeReminder'])->middleware('role:admin,treasurer')->name('finance.fees.reminder');

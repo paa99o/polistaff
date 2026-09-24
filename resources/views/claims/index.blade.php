@@ -29,37 +29,6 @@
     </form>
 </div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <form class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label" for="status">Status</label>
-                <select class="form-select" id="status" name="status">
-                    <option value="">Semua status</option>
-                    @foreach($statusLabels as $status => $label)
-                        <option value="{{ $status }}" @selected(request('status') === $status)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="category">Kategori</label>
-                <input class="form-control" id="category" name="category" value="{{ request('category') }}" placeholder="Contoh: Makanan">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label" for="from">Dari</label>
-                <input class="form-control" id="from" type="date" name="from" value="{{ request('from') }}">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label" for="to">Hingga</label>
-                <input class="form-control" id="to" type="date" name="to" value="{{ request('to') }}">
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-danger w-100">Tapis</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <div class="card">
     <div class="table-responsive">
         <table class="table mobile-records align-middle mb-0">
@@ -91,7 +60,7 @@
                         <td colspan="6">
                             <div class="dashboard-empty-state my-3">
                                 <span class="stat-icon"><i class="bi bi-receipt" aria-hidden="true"></i></span>
-                                <p class="text-muted mb-0">Tiada tuntutan untuk tapisan ini.</p>
+                                <p class="text-muted mb-0">Tiada tuntutan untuk dipaparkan.</p>
                             </div>
                         </td>
                     </tr>
