@@ -37,6 +37,7 @@ class ActivityController extends Controller
 
         $calendarActivities = Activity::query()
             ->when(! $user->hasRole('admin', 'treasurer'), fn ($query) => $query->where(function ($q) use ($user) { $q->where('status', 'approved')->orWhere('created_by', $user->id); }))
+            ->where('status', '!=', 'draft')
             ->whereBetween('date_time', [$calendarStart, $calendarEnd])
             ->orderBy('date_time')
             ->get()
@@ -61,6 +62,7 @@ class ActivityController extends Controller
             'rejected' => (clone $scope)->where('status', 'rejected')->count(),
             'pending' => (clone $scope)->where('status', 'pending_approval')->count(),
             'treasurer_verified' => (clone $scope)->where('status', 'treasurer_verified')->count(),
+            'draft' => $user->hasRole('member') ? Activity::where('created_by', $user->id)->where('status', 'draft')->count() : 0,
         ];
 
         return view('activities.index', compact('calendarMonth', 'calendarWeeks', 'stats'));
@@ -68,7 +70,8 @@ class ActivityController extends Controller
 
     public function statusList(Request $request, string $status): View
     {
-        abort_unless(in_array($status, ['approved', 'rejected', 'pending_approval', 'treasurer_verified'], true), 404);
+        abort_unless(in_array($status, ['approved', 'rejected', 'pending_approval', 'treasurer_verified', 'draft'], true), 404);
+        abort_unless($status !== 'draft' || $request->user()->hasRole('member'), 404);
 
         $user = $request->user();
         $scope = $user->hasRole('admin', 'treasurer')
@@ -114,17 +117,21 @@ class ActivityController extends Controller
         Gate::authorize('manage-activities');
 
         $data = $request->validated();
-        $data['status'] = 'pending_approval';
-        $data['created_by'] = $request->user()->id;
-        $data['end_time'] = Carbon::parse($data['date_time'])->setTimeFromTimeString($request->input('end_time'));
-        abort_if($data['end_time']->lessThanOrEqualTo(Carbon::parse($data['date_time'])), 422, 'Masa berakhir mesti selepas masa bermula.');
-        $activity = Activity::create([...$data, 'qr_code_token' => null]);
+        $isWizard = ($data['wizard'] ?? null) === '1';
+        $isDraft = $isWizard && ($data['intent'] ?? 'submit') === 'draft';
+        $activityData = $isWizard ? $this->wizardActivityData($data) : $data;
+        $activityData['status'] = $isDraft ? 'draft' : 'pending_approval';
+        $activityData['created_by'] = $request->user()->id;
+        $activityData['qr_code_token'] = null;
+        $activity = Activity::create($activityData);
 
-        User::where('role', 'treasurer')->where('membership_status', 'active')->get()->each(function (User $user) use ($activity): void {
-            PortalNotification::create(['user_id' => $user->id, 'title' => 'Permohonan aktiviti baharu', 'message' => $activity->title.' menunggu kelulusan bendahari.', 'type' => 'info', 'link' => route('activities.show', $activity)]);
-        });
+        if (! $isDraft) {
+            $this->notifyTreasurers($activity);
+        }
 
-        return redirect()->route('activities.show', $activity)->with('status', 'Aktiviti berjaya dicipta.');
+        return $isDraft
+            ? redirect()->route('activities.index')->with('status', 'Draf aktiviti disimpan. Anda boleh sambung semula kemudian.')
+            : redirect()->route('activities.show', $activity)->with('status', 'Aktiviti berjaya dihantar kepada bendahari.');
     }
 
     public function show(Activity $activity): View
@@ -156,7 +163,7 @@ class ActivityController extends Controller
     public function edit(Activity $activity): View
     {
         Gate::authorize('manage-activities');
-        abort_unless($activity->created_by === auth()->id() && $activity->status === 'pending_approval', 403);
+        abort_unless($activity->created_by === auth()->id() && in_array($activity->status, ['draft', 'pending_approval'], true), 403);
 
         return view('activities.edit', compact('activity'));
     }
@@ -164,11 +171,19 @@ class ActivityController extends Controller
     public function update(ActivityRequest $request, Activity $activity): RedirectResponse
     {
         Gate::authorize('manage-activities');
-        abort_unless($activity->created_by === auth()->id() && $activity->status === 'pending_approval', 403);
+        abort_unless($activity->created_by === auth()->id() && in_array($activity->status, ['draft', 'pending_approval'], true), 403);
 
         $beforeStatus = $activity->status;
         $data = $request->validated();
-        $activity->update($data);
+        $isWizard = ($data['wizard'] ?? null) === '1';
+        $isDraft = $isWizard && ($data['intent'] ?? 'submit') === 'draft';
+        $activityData = $isWizard ? $this->wizardActivityData($data, $activity) : $data;
+        $activityData['status'] = $isDraft && $beforeStatus === 'draft' ? 'draft' : 'pending_approval';
+        $activity->update($activityData);
+
+        if ($beforeStatus === 'draft' && $activity->status === 'pending_approval') {
+            $this->notifyTreasurers($activity);
+        }
 
         if ($beforeStatus !== 'cancelled' && $activity->status === 'cancelled') {
             foreach ($activity->registrations()->whereIn('status', ['registered', 'waitlisted'])->with('user')->get() as $registration) {
@@ -181,13 +196,15 @@ class ActivityController extends Controller
             }
         }
 
-        return redirect()->route('activities.show', $activity)->with('status', 'Aktiviti berjaya dikemas kini.');
+        return $activity->status === 'draft'
+            ? redirect()->route('activities.index')->with('status', 'Draf aktiviti dikemas kini.')
+            : redirect()->route('activities.show', $activity)->with('status', $beforeStatus === 'draft' ? 'Aktiviti berjaya dihantar kepada bendahari.' : 'Aktiviti berjaya dikemas kini.');
     }
 
     public function destroy(Activity $activity): RedirectResponse
     {
         Gate::authorize('manage-activities');
-        abort_unless($activity->created_by === auth()->id() && $activity->status === 'pending_approval', 403);
+        abort_unless($activity->created_by === auth()->id() && in_array($activity->status, ['draft', 'pending_approval'], true), 403);
         $activity->delete();
 
         return redirect()->route('activities.index')->with('status', 'Aktiviti dipadam.');
@@ -267,8 +284,12 @@ class ActivityController extends Controller
 
     public function reject(Request $request, Activity $activity): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('admin'), 403);
-        abort_unless($activity->status === 'treasurer_verified', 422);
+        $isTreasurerRequest = $request->user()->hasRole('treasurer');
+        abort_unless($isTreasurerRequest || $request->user()->hasRole('admin'), 403);
+        abort_unless(
+            $isTreasurerRequest ? $activity->status === 'pending_approval' : $activity->status === 'treasurer_verified',
+            422
+        );
         $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']]);
         $activity->update(['status' => 'rejected', 'reviewed_by' => $request->user()->id, 'reviewed_at' => now(), 'review_notes' => $data['review_notes']]);
         if ($activity->created_by) {
@@ -338,5 +359,59 @@ class ActivityController extends Controller
             ->where('record_id', $activity->id)
             ->oldest()
             ->get();
+    }
+
+    private function wizardActivityData(array $data, ?Activity $activity = null): array
+    {
+        $startAt = filled($data['start_date'] ?? null) && filled($data['start_time'] ?? null)
+            ? Carbon::parse($data['start_date'].' '.$data['start_time'])
+            : ($activity?->date_time ?? now());
+        $endAt = filled($data['end_date'] ?? null) && filled($data['end_time'] ?? null)
+            ? Carbon::parse($data['end_date'].' '.$data['end_time'])
+            : ($activity?->end_time ?? $startAt->copy()->addHour());
+
+        $proposalData = [];
+        foreach (['objectives', 'target_participants', 'tentative', 'committee', 'budget_items', 'funding_sources'] as $key) {
+            $values = $data[$key] ?? [];
+            $proposalData[$key] = collect($values)->filter(function ($value): bool {
+                if (is_array($value)) {
+                    return collect($value)->contains(fn ($item) => filled($item));
+                }
+
+                return filled($value);
+            })->values()->all();
+        }
+
+        return [
+            'title' => filled($data['title'] ?? null) ? $data['title'] : ($activity?->title ?? 'Draf aktiviti'),
+            'activity_type' => $data['activity_type'] ?? $activity?->activity_type,
+            'program_category' => $data['program_category'] ?? $activity?->program_category,
+            'organizing_unit' => $data['organizing_unit'] ?? $activity?->organizing_unit,
+            'person_in_charge' => $data['person_in_charge'] ?? $activity?->person_in_charge,
+            'description' => $data['description'] ?? $activity?->description,
+            'date_time' => $startAt,
+            'end_time' => $endAt,
+            'location' => filled($data['location'] ?? null) ? $data['location'] : ($activity?->location ?? 'Belum ditetapkan'),
+            'max_participants' => $data['expected_participants'] ?? $activity?->max_participants,
+            'expected_participants' => $data['expected_participants'] ?? $activity?->expected_participants,
+            'participant_criteria' => $data['participant_criteria'] ?? $activity?->participant_criteria,
+            'implementation_mode' => $data['implementation_mode'] ?? $activity?->implementation_mode,
+            'proposal_data' => $proposalData,
+            'registration_opens_at' => filled($data['registration_opens_at'] ?? null) ? $data['registration_opens_at'] : null,
+            'registration_closes_at' => filled($data['registration_closes_at'] ?? null) ? $data['registration_closes_at'] : null,
+        ];
+    }
+
+    private function notifyTreasurers(Activity $activity): void
+    {
+        User::where('role', 'treasurer')->where('membership_status', 'active')->get()->each(function (User $user) use ($activity): void {
+            PortalNotification::create([
+                'user_id' => $user->id,
+                'title' => 'Permohonan aktiviti baharu',
+                'message' => $activity->title.' menunggu kelulusan bendahari.',
+                'type' => 'info',
+                'link' => route('activities.show', $activity),
+            ]);
+        });
     }
 }

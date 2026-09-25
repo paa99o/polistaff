@@ -185,7 +185,7 @@ class ExpenseClaimController extends Controller
 
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'verified', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Treasurer verified expense claim '.$claim->title.'.', 'changes' => ['status' => 'treasurer_verified'], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan disahkan dan dihantar untuk kelulusan admin. Emel diproses mengikut tetapan ahli.');
+        return redirect()->route('claims.index')->with('status', 'Tuntutan disahkan dan dihantar untuk kelulusan admin. Emel diproses mengikut tetapan ahli.');
     }
 
     public function approve(Request $request, ExpenseClaim $claim): RedirectResponse
@@ -209,12 +209,12 @@ class ExpenseClaimController extends Controller
 
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'approved', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Approved expense claim and generated expense '.$transaction->receipt_number.'.', 'changes' => ['status' => 'approved', 'transaction_id' => $transaction->id], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan diluluskan dan transaksi perbelanjaan dijana. Emel diproses mengikut tetapan ahli.');
+        return redirect()->route('claims.index')->with('status', 'Tuntutan diluluskan dan transaksi perbelanjaan dijana. Emel diproses mengikut tetapan ahli.');
     }
 
     public function reject(Request $request, ExpenseClaim $claim): RedirectResponse
     {
-        Gate::authorize('approve-expenses');
+        abort_unless($request->user()->hasRole('treasurer', 'admin'), 403);
         abort_unless(in_array($claim->status, ['pending', 'treasurer_verified'], true), 422);
 
         $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']], [
@@ -232,7 +232,7 @@ class ExpenseClaimController extends Controller
 
         AuditLog::create(['user_id' => $request->user()->id, 'action' => 'rejected', 'module' => 'Expense Claim', 'record_type' => ExpenseClaim::class, 'record_id' => $claim->id, 'description' => 'Rejected expense claim '.$claim->title.'.', 'changes' => ['status' => 'rejected', 'reason' => $data['review_notes']], 'ip_address' => $request->ip()]);
 
-        return redirect()->route('claims.show', $claim)->with('status', 'Tuntutan ditolak. Emel diproses mengikut tetapan ahli.');
+        return redirect()->route('claims.index')->with('status', 'Tuntutan ditolak. Emel diproses mengikut tetapan ahli.');
     }
 
     public function receipt(ExpenseClaim $claim)

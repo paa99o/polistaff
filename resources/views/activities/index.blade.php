@@ -1,15 +1,27 @@
 @extends('layouts.app', ['title' => 'Aktiviti'])
 
 @section('content')
+@php
+    $user = auth()->user();
+    $showDraftCard = $user->hasRole('member');
+    $summaryColumn = $showDraftCard ? 'col-md-3' : 'col-md-4';
+    $pendingCardStatus = $user->hasRole('treasurer') ? 'pending_approval' : ($user->hasRole('admin') ? 'treasurer_verified' : 'pending_approval');
+    $pendingCardLabel = $user->hasRole('treasurer')
+        ? 'Jumlah Permohonan Aktiviti Baru'
+        : ($user->hasRole('admin') ? 'Menunggu Kelulusan Admin' : 'Menunggu Semakan');
+@endphp
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3">Aktiviti</h1>
     @can('manage-activities')<a class="btn btn-danger" href="{{ route('activities.create') }}"><i class="bi bi-plus-lg me-1"></i>Cipta Aktiviti</a>@endcan
 </div>
 
 <div class="row g-3 mb-4">
-    @foreach([['approved', 'Aktiviti Diluluskan', 'bi-check-circle'], ['rejected', 'Aktiviti Ditolak', 'bi-x-circle'], ['pending_approval', 'Menunggu Semakan', 'bi-hourglass-split'], ['treasurer_verified', 'Disahkan Bendahari', 'bi-person-check']] as [$key, $label, $icon])
-        <div class="col-md-3"><a class="admin-stat-card activity-summary-card" href="{{ route('activities.status-list', ['status' => $key]) }}"><span class="admin-stat-icon"><i class="bi {{ $icon }}"></i></span><strong>{{ $stats[$key === 'pending_approval' ? 'pending' : $key] }}</strong><span>{{ $label }}</span><small class="text-muted">Klik untuk lihat senarai</small></a></div>
+    @foreach([['approved', 'Aktiviti Diluluskan', 'bi-check-circle'], ['rejected', 'Aktiviti Ditolak', 'bi-x-circle'], [$pendingCardStatus, $pendingCardLabel, 'bi-hourglass-split']] as [$key, $label, $icon])
+        <div class="{{ $summaryColumn }}"><a class="admin-stat-card activity-summary-card" href="{{ route('activities.status-list', ['status' => $key]) }}"><span class="admin-stat-icon"><i class="bi {{ $icon }}"></i></span><strong>{{ $stats[$key === 'pending_approval' ? 'pending' : $key] }}</strong><span>{{ $label }}</span><small class="text-muted">Klik untuk lihat senarai</small></a></div>
     @endforeach
+    @if($showDraftCard)
+        <div class="{{ $summaryColumn }}"><a class="admin-stat-card activity-summary-card" href="{{ route('activities.status-list', ['status' => 'draft']) }}"><span class="admin-stat-icon"><i class="bi bi-pencil-square"></i></span><strong>{{ $stats['draft'] }}</strong><span>Draf Aktiviti</span><small class="text-muted">Sambung atau urus draf</small></a></div>
+    @endif
 </div>
 
 <section class="card activity-calendar-panel mb-4">

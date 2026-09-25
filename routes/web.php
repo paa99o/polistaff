@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ActivityPaperworkController;
 use App\Http\Controllers\ActivityRegistrationController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminMemberController;
@@ -104,8 +105,12 @@ Route::middleware('auth')->group(function (): void {
         ->except(['index', 'show'])
         ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:member');
     Route::get('/activities/status/{status}', [ActivityController::class, 'statusList'])->name('activities.status-list');
+    Route::post('/activities/{activity}/paperwork', [ActivityPaperworkController::class, 'generate'])->name('activities.paperwork.generate');
+    Route::get('/activities/{activity}/paperwork/{version}', [ActivityPaperworkController::class, 'preview'])->name('activities.paperwork.preview');
+    Route::put('/activities/{activity}/paperwork/{version}', [ActivityPaperworkController::class, 'save'])->name('activities.paperwork.save');
+    Route::get('/activities/{activity}/paperwork/{version}/pdf', [ActivityPaperworkController::class, 'download'])->name('activities.paperwork.pdf');
     Route::patch('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('role:admin')->name('activities.approve');
-    Route::patch('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('role:admin')->name('activities.reject');
+    Route::patch('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('role:treasurer,admin')->name('activities.reject');
     Route::patch('/activities/{activity}/verify', [ActivityController::class, 'verify'])->middleware('role:treasurer,admin')->name('activities.verify');
     Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:treasurer')->name('activities.refresh-qr');
     Route::post('/activities/{activity}/evidence-photos', [ActivityController::class, 'uploadEvidencePhotos'])->name('activities.evidence-photos');
@@ -131,6 +136,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('claims', ExpenseClaimController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
     Route::resource('donations', DonationController::class)->only(['index', 'create', 'store', 'show']);
+    Route::get('/donations/{donation}/paperwork', [DonationController::class, 'paperwork'])->name('donations.paperwork');
     Route::patch('/donations/{donation}/verify', [DonationController::class, 'verify'])->middleware('role:treasurer,admin')->name('donations.verify');
     Route::patch('/donations/{donation}/approve', [DonationController::class, 'approve'])->middleware('role:admin')->name('donations.approve');
     Route::patch('/donations/{donation}/reject', [DonationController::class, 'reject'])->middleware('role:admin')->name('donations.reject');

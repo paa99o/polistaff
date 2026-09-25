@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Donation extends Model
 {
-    protected $fillable = ['user_id', 'reviewed_by', 'treasurer_verified_by', 'transaction_id', 'category', 'description', 'request_date', 'limit_amount', 'amount', 'status', 'treasurer_notes', 'treasurer_verified_at', 'review_notes', 'reviewed_at'];
+    protected $fillable = ['user_id', 'reviewed_by', 'treasurer_verified_by', 'transaction_id', 'category', 'description', 'paperwork_path', 'request_date', 'limit_amount', 'amount', 'status', 'treasurer_notes', 'treasurer_verified_at', 'review_notes', 'reviewed_at'];
 
     protected function casts(): array
     {

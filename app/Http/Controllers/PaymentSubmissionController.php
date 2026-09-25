@@ -41,8 +41,13 @@ class PaymentSubmissionController extends Controller
             ->when($request->filled('to'), fn ($query) => $query->whereDate('payment_date', '<=', $request->to));
 
         $user = $request->user();
-        app(MonthlyFeeService::class)->ensureThrough($user);
-        $bills = MemberFeeBill::where('user_id', $user->id)->orderBy('billing_month')->get();
+        $isFinanceManager = $user->hasRole('treasurer', 'admin');
+        if (! $isFinanceManager) {
+            app(MonthlyFeeService::class)->ensureThrough($user);
+        }
+        $bills = $isFinanceManager
+            ? collect()
+            : MemberFeeBill::where('user_id', $user->id)->orderBy('billing_month')->get();
         $currentYear = now()->year;
         $currentMonth = now()->startOfMonth();
         $recentApprovedPayments = PaymentSubmission::where('user_id', $user->id)
@@ -61,6 +66,16 @@ class PaymentSubmissionController extends Controller
         });
         return view('payments.index', [
             'payments' => $query->paginate(15)->withQueryString(),
+            'isFinanceManager' => $isFinanceManager,
+            'pendingPaymentCount' => $isFinanceManager
+                ? PaymentSubmission::where('status', 'pending')->whereHas('user', fn ($query) => $query->where('role', 'member'))->count()
+                : 0,
+            'collectionThisMonth' => $isFinanceManager
+                ? Transaction::where('type', 'income')->where('status', 'active')->where('category', 'like', '%Yuran%')->whereYear('transaction_date', now()->year)->whereMonth('transaction_date', now()->month)->sum('amount')
+                : 0,
+            'outstandingTotal' => $isFinanceManager
+                ? User::where('role', 'member')->where('membership_status', 'active')->sum('fee_balance')
+                : 0,
             'overdueBills' => $bills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year < $currentYear && $bill->remainingAmount() > 0),
             'currentUnpaidBills' => $bills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year === $currentYear && $bill->billing_month->lte($currentMonth) && $bill->remainingAmount() > 0),
             'recentApprovedPayments' => $recentApprovedPayments->filter(fn (PaymentSubmission $payment) => $payment->payment_date->year === $currentYear),
@@ -82,6 +97,7 @@ class PaymentSubmissionController extends Controller
 
     public function create(Request $request, MonthlyFeeService $monthlyFeeService): View
     {
+        abort_unless($request->user()->hasRole('member'), 403);
         $user = $request->user();
         $monthlyFeeService->ensureThrough($user);
 
@@ -109,6 +125,7 @@ class PaymentSubmissionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('member'), 403);
         app(MonthlyFeeService::class)->ensureThrough($request->user());
         $outstanding = (float) MemberFeeBill::where('user_id', $request->user()->id)
             ->whereIn('status', ['unpaid', 'partial', 'overdue'])
@@ -378,7 +395,7 @@ class PaymentSubmissionController extends Controller
     private function authorizePaymentAccess(PaymentSubmission $payment): void
     {
         abort_unless(
-            auth()->user()->hasRole('treasurer', 'admin') || $payment->user_id === auth()->id(),
+            auth()->user()->hasRole('treasurer', 'admin', 'chairman') || $payment->user_id === auth()->id(),
             403
         );
     }

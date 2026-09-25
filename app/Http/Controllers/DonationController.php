@@ -11,38 +11,49 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class DonationController extends Controller
 {
-    private const TYPES = ['Sambutan Ahli Keluarga', 'Kelahiran Anak', 'Kecemasan Perubatan', 'Bencana atau Kemalangan', 'Pendidikan Anak'];
-
     public function index(Request $request): View
     {
         $query = Donation::with('user', 'treasurerVerifier', 'reviewer')->latest();
         if (! $request->user()->hasRole('treasurer', 'admin')) {
             $query->where('user_id', $request->user()->id);
         }
-        $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
-            ->when($request->filled('category'), fn ($query) => $query->where('category', $request->category));
-
-        return view('donations.index', ['donations' => $query->paginate(15)->withQueryString(), 'types' => self::TYPES]);
+        return view('donations.index', ['donations' => $query->paginate(15)->withQueryString()]);
     }
 
     public function create(): View
     {
-        return view('donations.create', ['types' => self::TYPES]);
+        return view('donations.create');
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'category' => ['required', 'in:'.implode(',', self::TYPES)],
+            'category' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'request_date' => ['required', 'date', 'before_or_equal:today'],
-        ], ['category.required' => 'Sila pilih jenis sumbangan.', 'request_date.required' => 'Sila pilih tarikh permohonan.']);
+            'approved_paperwork' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:10240'],
+        ], [
+            'category.required' => 'Sila nyatakan jenis sumbangan.',
+            'category.max' => 'Jenis sumbangan tidak boleh melebihi 150 aksara.',
+            'approved_paperwork.required' => 'Sila muat naik kertas kerja yang telah diluluskan.',
+            'approved_paperwork.mimes' => 'Kertas kerja mestilah dalam format PDF.',
+            'approved_paperwork.mimetypes' => 'Fail yang dimuat naik mestilah PDF yang sah.',
+            'approved_paperwork.max' => 'Saiz kertas kerja tidak boleh melebihi 10 MB.',
+        ]);
 
-        $donation = Donation::create([...$data, 'user_id' => $request->user()->id, 'status' => 'pending']);
+        $paperworkPath = $request->file('approved_paperwork')->store('donation-paperwork', 'private');
+        $donation = Donation::create([
+            'category' => $data['category'],
+            'description' => $data['description'] ?? null,
+            'paperwork_path' => $paperworkPath,
+            'request_date' => now()->toDateString(),
+            'user_id' => $request->user()->id,
+            'status' => 'pending',
+        ]);
         $this->audit($donation, 'submitted', 'Submitted donation request.', $request);
         User::where('role', 'treasurer')->where('membership_status', 'active')->get()->each(fn (User $treasurer) => PortalNotification::create([
             'user_id' => $treasurer->id, 'title' => 'Permohonan sumbangan baharu',
@@ -57,6 +68,14 @@ class DonationController extends Controller
     {
         $this->authorizeAccess($donation);
         return view('donations.show', ['donation' => $donation->load('user', 'treasurerVerifier', 'reviewer', 'transaction')]);
+    }
+
+    public function paperwork(Donation $donation)
+    {
+        $this->authorizeAccess($donation);
+        abort_unless($donation->paperwork_path && Storage::disk('private')->exists($donation->paperwork_path), 404);
+
+        return Storage::disk('private')->response($donation->paperwork_path, 'kertas-kerja-sumbangan-'.$donation->id.'.pdf', ['Content-Type' => 'application/pdf'], 'inline');
     }
 
     public function verify(Request $request, Donation $donation): RedirectResponse
@@ -93,7 +112,7 @@ class DonationController extends Controller
 
     public function reject(Request $request, Donation $donation): RedirectResponse
     {
-        Gate::authorize('approve-expenses');
+        abort_unless($request->user()->hasRole('treasurer', 'admin'), 403);
         abort_unless(in_array($donation->status, ['pending', 'treasurer_verified'], true), 422);
         $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']], ['review_notes.required' => 'Sila isi sebab penolakan.']);
         $donation->update(['status' => 'rejected', 'reviewed_by' => $request->user()->id, 'review_notes' => $data['review_notes'], 'reviewed_at' => now()]);

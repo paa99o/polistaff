@@ -2,6 +2,10 @@
 
 @section('content')
 @php
+    $user = auth()->user();
+    $isTreasurer = $user->hasRole('treasurer');
+    $isFinanceReviewer = $user->hasRole('treasurer', 'admin');
+    $canApproveClaims = $user->hasRole('admin');
     $statusLabels = [
         'pending' => 'Menunggu semakan',
         'treasurer_verified' => 'Disahkan bendahari',
@@ -39,7 +43,7 @@
                     <th>Jumlah</th>
                     <th>Status</th>
                     <th>Disahkan Oleh</th>
-                    <th></th>
+                    <th>Tindakan</th>
                 </tr>
             </thead>
             <tbody>
@@ -53,7 +57,20 @@
                         <td data-label="Jumlah">RM {{ number_format((float) $claim->amount, 2) }}</td>
                         <td data-label="Status"><span class="badge bg-secondary">{{ $statusLabels[$claim->status] ?? $claim->status }}</span></td>
                         <td data-label="Disahkan Oleh">{{ $claim->treasurerVerifier->name ?? '-' }}</td>
-                        <td data-label="Tindakan"><a class="btn btn-sm btn-outline-danger" href="{{ route('claims.show', $claim) }}">Semak</a></td>
+                        <td data-label="Tindakan">
+                            <div class="d-flex flex-wrap gap-2">
+                                @if($isTreasurer && $claim->status === 'pending')
+                                    <button class="btn btn-sm btn-outline-danger" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.verify', $claim) }}" data-kind="support">Sokong</button>
+                                @endif
+                                @if($canApproveClaims && $claim->status === 'treasurer_verified')
+                                    <button class="btn btn-sm btn-danger" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.approve', $claim) }}" data-kind="approve">Luluskan</button>
+                                @endif
+                                @if($isFinanceReviewer && in_array($claim->status, ['pending', 'treasurer_verified'], true))
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.reject', $claim) }}" data-kind="reject">Tolak</button>
+                                @endif
+                                <a class="btn btn-sm btn-outline-danger" href="{{ route('claims.show', $claim) }}">Keterangan</a>
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
@@ -70,4 +87,48 @@
     </div>
 </div>
 <div class="mt-3">{{ $claims->links() }}</div>
+
+@if($isFinanceReviewer)
+    <div class="modal fade" id="claimActionModal" tabindex="-1" aria-labelledby="claimActionTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="claimActionForm" method="post">
+                    @csrf
+                    @method('patch')
+                    <div class="modal-header"><h2 class="modal-title h5" id="claimActionTitle">Tindakan tuntutan</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button></div>
+                    <div class="modal-body">
+                        <p id="claimActionHelp" class="text-muted"></p>
+                        <div id="claimNotesField">
+                            <label class="form-label" id="claimNotesLabel" for="claimActionNotes">Catatan</label>
+                            <textarea class="form-control" id="claimActionNotes" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-danger" id="claimActionSubmit" type="submit">Teruskan</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @push('scripts')
+        <script>
+            document.querySelectorAll('[data-review-action][data-bs-target="#claimActionModal"]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const kind = button.dataset.kind;
+                    const form = document.getElementById('claimActionForm');
+                    const notes = document.getElementById('claimActionNotes');
+                    const title = { support: 'Sokong tuntutan', approve: 'Luluskan tuntutan', reject: 'Tolak tuntutan' }[kind];
+                    form.action = button.dataset.action;
+                    document.getElementById('claimActionTitle').textContent = title;
+                    document.getElementById('claimActionSubmit').textContent = title;
+                    document.getElementById('claimActionHelp').textContent = kind === 'support'
+                        ? 'Tuntutan ini akan dihantar kepada admin untuk kelulusan akhir.'
+                        : kind === 'approve' ? 'Tuntutan akan diluluskan dan transaksi perbelanjaan dijana.' : 'Nyatakan sebab penolakan tuntutan.';
+                    document.getElementById('claimNotesLabel').textContent = kind === 'reject' ? 'Sebab ditolak' : 'Catatan (pilihan)';
+                    notes.name = kind === 'support' ? 'treasurer_notes' : 'review_notes';
+                    notes.required = kind === 'reject';
+                    notes.value = '';
+                });
+            });
+        </script>
+    @endpush
+@endif
 @endsection

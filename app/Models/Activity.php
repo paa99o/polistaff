@@ -11,11 +11,11 @@ class Activity extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'date_time', 'end_time', 'location', 'max_participants', 'registration_opens_at', 'registration_closes_at', 'status', 'qr_code_token', 'evidence_photo_path', 'report_photo_path', 'created_by', 'reviewed_by', 'reviewed_at', 'review_notes', 'treasurer_verified_by', 'treasurer_verified_at', 'treasurer_notes'];
+    protected $fillable = ['title', 'activity_type', 'program_category', 'organizing_unit', 'person_in_charge', 'description', 'date_time', 'end_time', 'location', 'max_participants', 'expected_participants', 'participant_criteria', 'implementation_mode', 'proposal_data', 'registration_opens_at', 'registration_closes_at', 'status', 'qr_code_token', 'evidence_photo_path', 'report_photo_path', 'created_by', 'reviewed_by', 'reviewed_at', 'review_notes', 'treasurer_verified_by', 'treasurer_verified_at', 'treasurer_notes'];
 
     protected function casts(): array
     {
-        return ['date_time' => 'datetime', 'end_time' => 'datetime', 'registration_opens_at' => 'datetime', 'registration_closes_at' => 'datetime', 'reviewed_at' => 'datetime', 'treasurer_verified_at' => 'datetime'];
+        return ['date_time' => 'datetime', 'end_time' => 'datetime', 'registration_opens_at' => 'datetime', 'registration_closes_at' => 'datetime', 'reviewed_at' => 'datetime', 'treasurer_verified_at' => 'datetime', 'expected_participants' => 'integer', 'proposal_data' => 'array'];
     }
 
     public function attendances(): HasMany
@@ -31,6 +31,11 @@ class Activity extends Model
     public function registrations(): HasMany
     {
         return $this->hasMany(ActivityRegistration::class);
+    }
+
+    public function paperworkVersions(): HasMany
+    {
+        return $this->hasMany(ActivityPaperworkVersion::class)->orderByDesc('version');
     }
 
     public function activeRegistrations(): HasMany

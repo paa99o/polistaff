@@ -59,6 +59,7 @@ const revealSelectors = [
     '.public-hero > *',
     '.public-section-header',
     '.public-feature',
+    '.story-reveal',
 ];
 
 const revealItems = document.querySelectorAll(revealSelectors.join(','));

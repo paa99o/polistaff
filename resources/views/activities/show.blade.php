@@ -32,7 +32,7 @@
                             <form method="post" action="{{ route('activities.approve', $activity) }}" data-confirm="Luluskan aktiviti ini dan buka kepada ahli?">@csrf @method('patch')<button class="btn btn-sm btn-danger">Luluskan</button></form>
                             <form method="post" action="{{ route('activities.reject', $activity) }}" data-confirm="Tolak aktiviti ini?">@csrf @method('patch')<input type="hidden" name="review_notes" value="Tidak memenuhi keperluan kelulusan."><button class="btn btn-sm btn-outline-danger">Tolak</button></form>
                         @endif
-                        @if(auth()->id() === $activity->created_by && $activity->status === 'pending_approval')
+                        @if(auth()->id() === $activity->created_by && in_array($activity->status, ['draft', 'pending_approval'], true))
                             <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                         @endif
                         @if($activity->status === 'approved' && $activity->isFinished())
@@ -64,6 +64,33 @@
                     <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Berdaftar</div><strong id="activity-registered-count">{{ $registeredCount }} / {{ $capacity }}</strong></div></div>
                     <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Kehadiran</div><strong id="activity-attendance-count">{{ $activity->attendances_count }}</strong></div></div>
                 </div>
+                @if($activity->activity_type || $activity->program_category || $activity->organizing_unit || $activity->proposal_data)
+                    <hr>
+                    <h2 class="h5">Maklumat Proposal Program</h2>
+                    <dl class="row">
+                        <dt class="col-sm-4">Jenis / Kategori</dt><dd class="col-sm-8">{{ $activity->activity_type ?? '-' }} / {{ $activity->program_category ?? '-' }}</dd>
+                        <dt class="col-sm-4">Penganjur</dt><dd class="col-sm-8">{{ $activity->organizing_unit ?? '-' }}</dd>
+                        <dt class="col-sm-4">Pegawai Bertanggungjawab</dt><dd class="col-sm-8">{{ $activity->person_in_charge ?? '-' }}</dd>
+                        <dt class="col-sm-4">Mod Pelaksanaan</dt><dd class="col-sm-8">{{ $activity->implementation_mode ?? '-' }}</dd>
+                        <dt class="col-sm-4">Anggaran Peserta</dt><dd class="col-sm-8">{{ $activity->expected_participants ?? $activity->max_participants ?? '-' }}</dd>
+                        <dt class="col-sm-4">Sasaran Peserta</dt><dd class="col-sm-8">{{ implode(', ', $activity->proposal_data['target_participants'] ?? []) ?: '-' }}</dd>
+                        <dt class="col-sm-4">Kriteria Peserta</dt><dd class="col-sm-8">{{ $activity->participant_criteria ?: '-' }}</dd>
+                    </dl>
+                    @foreach(['objectives' => 'Objektif Program', 'tentative' => 'Tentatif', 'committee' => 'Jawatankuasa', 'budget_items' => 'Anggaran Bajet', 'funding_sources' => 'Sumber Dana'] as $proposalKey => $proposalTitle)
+                        @if(!empty($activity->proposal_data[$proposalKey] ?? []))
+                            <h3 class="h6 mt-3">{{ $proposalTitle }}</h3>
+                            @if(in_array($proposalKey, ['objectives', 'funding_sources'], true))
+                                <ul>@foreach($activity->proposal_data[$proposalKey] as $proposalItem)<li>{{ $proposalItem }}</li>@endforeach</ul>
+                            @else
+                                <div class="table-responsive"><table class="table table-sm"><tbody>
+                                    @foreach($activity->proposal_data[$proposalKey] as $proposalItem)
+                                        <tr><td>{{ implode(' · ', array_filter($proposalItem, fn ($value) => filled($value))) }}</td></tr>
+                                    @endforeach
+                                </tbody></table></div>
+                            @endif
+                        @endif
+                    @endforeach
+                @endif
                 @if($activity->treasurer_verified_at)
                     <div class="alert alert-info small">Disahkan bendahari pada {{ $activity->treasurer_verified_at->format('d/m/Y H:i') }}. {{ $activity->treasurer_notes }}</div>
                 @endif
