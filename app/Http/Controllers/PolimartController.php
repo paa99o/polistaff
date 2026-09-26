@@ -30,11 +30,7 @@ class PolimartController extends Controller
             ->when($mine, fn ($query) => $query->where('user_id', $request->user()->id))
             ->when($favorites, fn ($query) => $query->whereHas('favorites', fn ($query) => $query->where('user_id', $request->user()->id)))
             ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('description', 'like', '%'.$search.'%')
-                        ->orWhere('category', 'like', '%'.$search.'%');
-                });
+                $query->where('name', 'like', '%'.$search.'%');
             })
             ->when($category !== '', fn ($query) => $query->where('category', $category));
 
@@ -66,11 +62,7 @@ class PolimartController extends Controller
         $itemsQuery = PolimartItem::with('user')
             ->whereIn('status', ['active', 'sold'])
             ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('description', 'like', '%'.$search.'%')
-                        ->orWhere('category', 'like', '%'.$search.'%');
-                });
+                $query->where('name', 'like', '%'.$search.'%');
             })
             ->when($category !== '', fn ($query) => $query->where('category', $category));
 

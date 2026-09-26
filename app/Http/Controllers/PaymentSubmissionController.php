@@ -36,7 +36,10 @@ class PaymentSubmissionController extends Controller
             $query->where('user_id', $request->integer('user_id'));
         }
 
-        $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
+        $query->when(
+            in_array($request->query('status'), ['pending', 'approved', 'rejected', 'cancelled'], true),
+            fn ($query) => $query->where('status', $request->query('status')),
+        )
             ->when($request->filled('from'), fn ($query) => $query->whereDate('payment_date', '>=', $request->from))
             ->when($request->filled('to'), fn ($query) => $query->whereDate('payment_date', '<=', $request->to));
 

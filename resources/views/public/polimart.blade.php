@@ -9,7 +9,7 @@
 
 <section id="produk" class="public-container public-store-grid-section">
     <form class="public-store-filter" method="get" action="{{ route('polimart.index') }}">
-        <div class="public-search-field"><i class="bi bi-search" aria-hidden="true"></i><label class="visually-hidden" for="public-polimart-search">Cari produk</label><input id="public-polimart-search" name="q" type="search" value="{{ $search }}" placeholder="Cari barang, makanan atau servis..."></div>
+        <div class="public-search-field"><i class="bi bi-search" aria-hidden="true"></i><label class="visually-hidden" for="public-polimart-search">Cari produk</label><input id="public-polimart-search" name="q" type="search" value="{{ $search }}" placeholder="Cari nama produk..."></div>
         <select name="category" class="form-select" aria-label="Kategori"><option value="">Semua kategori</option>@foreach($categories as $itemCategory)<option value="{{ $itemCategory }}" @selected($category === $itemCategory)>{{ $itemCategory }}</option>@endforeach</select>
         <button class="btn btn-primary" type="submit">Cari</button>
     </form>

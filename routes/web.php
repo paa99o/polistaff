@@ -65,9 +65,9 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/profile/password', [PasswordController::class, 'update'])->name('profile.password.update');
     Route::get('/preferences', [UserPreferenceController::class, 'edit'])->name('preferences.edit');
     Route::put('/preferences', [UserPreferenceController::class, 'update'])->name('preferences.update');
-    Route::get('/polimart/create', [PolimartController::class, 'create'])->middleware('role:admin')->name('polimart.create');
+    Route::get('/polimart/create', [PolimartController::class, 'create'])->middleware('role:member,admin')->name('polimart.create');
     Route::get('/polimart/favorites', [PolimartController::class, 'favorites'])->name('polimart.favorites');
-    Route::post('/polimart', [PolimartController::class, 'store'])->middleware('role:admin')->name('polimart.store');
+    Route::post('/polimart', [PolimartController::class, 'store'])->middleware('role:member,admin')->name('polimart.store');
     Route::get('/polimart/seller/{user}', [PolimartController::class, 'seller'])->name('polimart.seller');
     Route::post('/polimart/{polimartItem}/report', [PolimartReportController::class, 'store'])->name('polimart.report');
     Route::post('/polimart/{polimartItem}/favorite', [PolimartController::class, 'toggleFavorite'])->name('polimart.favorite');
@@ -123,9 +123,11 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/activities/{activity}/attendance/{registration}', [AttendanceController::class, 'storeForRegistration'])->middleware('role:admin,treasurer')->name('activities.attendance.store');
 
     Route::resource('transactions', TransactionController::class)
+        ->except(['show'])
         ->middleware('role:treasurer,admin')
         ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:treasurer,admin');
-    Route::get('/transactions/{transaction}/receipt.pdf', [TransactionController::class, 'receiptPdf'])->middleware('role:treasurer,admin')->name('transactions.receipt.pdf');
+    Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
+    Route::get('/transactions/{transaction}/receipt.pdf', [TransactionController::class, 'receiptPdf'])->name('transactions.receipt.pdf');
     Route::get('/reports/financial', [ReportController::class, 'financial'])->middleware('role:treasurer,admin')->name('reports.financial');
     Route::get('/reports/financial.pdf', [ReportController::class, 'financialPdf'])->middleware('role:treasurer,admin')->name('reports.financial.pdf');
     Route::get('/reports/financial.csv', [ReportController::class, 'financialCsv'])->middleware('role:treasurer,admin')->name('reports.financial.csv');

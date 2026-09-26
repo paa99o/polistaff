@@ -117,7 +117,7 @@ class ActivityPaperworkController extends Controller
             'end_time' => $activity->end_time?->format('h:i A'),
             'location' => $activity->location,
             'implementation_mode' => $activity->implementation_mode,
-            'background' => $activity->description,
+            'background' => '',
             'objectives' => $proposal['objectives'] ?? [],
             'target_participants' => $proposal['target_participants'] ?? [],
             'expected_participants' => $activity->expected_participants ?? $activity->max_participants,
@@ -148,7 +148,6 @@ class ActivityPaperworkController extends Controller
         if (! $activity->participant_criteria) $missing[] = 'Kriteria peserta belum diisi.';
         if (! $activity->expected_participants) $missing[] = 'Bilangan peserta belum dinyatakan.';
         if (empty($proposal['target_participants'] ?? [])) $missing[] = 'Kumpulan sasaran belum dipilih.';
-        if (! $activity->description) $missing[] = 'Latar belakang program belum diisi.';
         if (! $activity->location) $missing[] = 'Tempat program belum dinyatakan.';
 
         return $missing;

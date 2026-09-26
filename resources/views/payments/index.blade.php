@@ -78,7 +78,7 @@
 <div class="card">
     <div class="card-body">
         <h2 class="h5 soft-panel-title">Senarai Bayaran</h2>
-        <form class="row g-2 mt-3">
+        <form class="row g-2 mt-3" method="get" action="{{ route('payments.index') }}">
             <div class="col-md-3">
                 <label class="form-label" for="payment-status">Status</label>
                 <select class="form-select" id="payment-status" name="status">

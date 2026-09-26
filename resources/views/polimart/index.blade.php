@@ -8,7 +8,7 @@
             <p class="polimart-start-kicker">POLIMART</p>
             <h2>Beli. Jual. Cari.</h2>
             <p>Barang menarik, semuanya di sini.</p>
-            @if(auth()->user()->hasRole('admin'))
+            @if(auth()->user()->hasRole('member', 'admin'))
                 <a class="btn btn-danger w-100" href="{{ route('polimart.create') }}">Mula Jual</a>
             @endif
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.index', ['mine' => 1]) }}">
@@ -33,11 +33,11 @@
 
     <section class="polimart-market">
         <div class="polimart-products">
-            <form class="polimart-filter" method="get" action="{{ route('polimart.index') }}">
+            <form class="polimart-filter" method="get" action="{{ route('polimart.index') }}" role="search">
                 <div class="polimart-search-field">
                     <i class="bi bi-search" aria-hidden="true"></i>
                     <label class="visually-hidden" for="polimart-search">Cari produk</label>
-                    <input id="polimart-search" name="q" type="search" value="{{ $search }}" placeholder="Cari barang, makanan atau servis...">
+                    <input id="polimart-search" name="q" type="search" value="{{ $search }}" placeholder="Cari nama produk...">
                 </div>
                     <label class="visually-hidden" for="polimart-category">Kategori</label>
                     <select id="polimart-category" name="category" class="form-select">

@@ -42,7 +42,6 @@
             <div class="col-md-6"><label class="form-label" for="program_category">Kategori Program</label><input class="form-control" id="program_category" name="program_category" value="{{ old('program_category', $activity->program_category ?? '') }}" data-required data-label="Kategori Program"><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="organizing_unit">Jabatan / Unit Penganjur</label><input class="form-control" id="organizing_unit" name="organizing_unit" value="{{ old('organizing_unit', $activity->organizing_unit ?? '') }}" data-required data-label="Jabatan / Unit Penganjur"><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="person_in_charge">Pegawai Bertanggungjawab</label><input class="form-control" id="person_in_charge" name="person_in_charge" value="{{ old('person_in_charge', $activity->person_in_charge ?? auth()->user()->name) }}" data-required data-label="Pegawai Bertanggungjawab"><div class="wizard-field-error"></div></div>
-            <div class="col-12"><label class="form-label" for="description">Penerangan / Latar Belakang Program</label><textarea class="form-control" id="description" name="description" rows="4" data-required data-label="Penerangan / Latar Belakang">{{ old('description', $activity->description ?? '') }}</textarea><div class="wizard-field-error"></div></div>
         </div>
     </section>
 
@@ -265,7 +264,7 @@
         const sections = [
             ['Maklumat Program', [
                 ['Nama', value('title')], ['Jenis', value('activity_type')], ['Kategori', value('program_category')],
-                ['Jabatan / Unit', value('organizing_unit')], ['Pegawai Bertanggungjawab', value('person_in_charge')], ['Penerangan', value('description')],
+                ['Jabatan / Unit', value('organizing_unit')], ['Pegawai Bertanggungjawab', value('person_in_charge')],
             ]],
             ['Objektif & Peserta', [
                 ['Objektif', list([...form.querySelectorAll('[name="objectives[]"]')].map((el) => el.value.trim()).filter(Boolean))],

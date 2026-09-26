@@ -38,7 +38,6 @@ class ActivityRequest extends FormRequest
                 'program_category' => [$required, 'string', 'max:150'],
                 'organizing_unit' => [$required, 'string', 'max:150'],
                 'person_in_charge' => [$required, 'string', 'max:150'],
-                'description' => [$required, 'string', 'max:10000'],
                 'objectives' => [$required, 'array', 'min:1'],
                 'objectives.*' => [$draft ? 'nullable' : 'required', 'string', 'max:1000'],
                 'target_participants' => [$required, 'array', 'min:1'],

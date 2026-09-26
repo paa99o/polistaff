@@ -388,7 +388,7 @@ class ActivityController extends Controller
             'program_category' => $data['program_category'] ?? $activity?->program_category,
             'organizing_unit' => $data['organizing_unit'] ?? $activity?->organizing_unit,
             'person_in_charge' => $data['person_in_charge'] ?? $activity?->person_in_charge,
-            'description' => $data['description'] ?? $activity?->description,
+            'description' => null,
             'date_time' => $startAt,
             'end_time' => $endAt,
             'location' => filled($data['location'] ?? null) ? $data['location'] : ($activity?->location ?? 'Belum ditetapkan'),

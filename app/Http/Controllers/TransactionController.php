@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TransactionRequest;
 use App\Models\AuditLog;
+use App\Models\PaymentSubmission;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
 use App\Models\User;
@@ -63,14 +64,14 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction): View
     {
-        Gate::authorize('view-financial-reports');
+        $this->authorizeReceiptAccess($transaction);
 
         return view('transactions.receipt', compact('transaction'));
     }
 
     public function receiptPdf(Request $request, Transaction $transaction): Response|View
     {
-        Gate::authorize('view-financial-reports');
+        $this->authorizeReceiptAccess($transaction);
 
         if (! $request->boolean('download') && ! $request->boolean('render')) {
             return view('reports.download-preview', [
@@ -147,6 +148,17 @@ class TransactionController extends Controller
         ]);
 
         return back()->with('status', 'Transaksi ditanda sebagai reversed.');
+    }
+
+    private function authorizeReceiptAccess(Transaction $transaction): void
+    {
+        $canViewFinancialReports = Gate::allows('view-financial-reports');
+        $ownsPayment = PaymentSubmission::query()
+            ->where('transaction_id', $transaction->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+
+        abort_unless($canViewFinancialReports || $ownsPayment, 403);
     }
 
     private function receiptNumber(): string
