@@ -16,7 +16,7 @@
         </div>
 
         <div class="polimart-detail-layout">
-            <main class="polimart-detail-main">
+            <div class="polimart-detail-main">
                 <div class="polimart-detail-heading">
                     <div>
                         <span class="polimart-category">{{ $item->category }}</span>
@@ -34,6 +34,18 @@
                     @endif
                     <span class="polimart-status polimart-status-{{ $item->status }}">{{ $item->stock > 0 ? $item->stock.' stok tinggal' : 'Habis stok' }}</span>
                 </div>
+
+                @if($item->status === 'active' && $item->stock > 0 && $item->user_id !== auth()->id())
+                    <form method="post" action="{{ route('polimart.cart.add', $item) }}" class="d-flex flex-wrap align-items-end gap-2 mb-4">
+                        @csrf
+                        <div>
+                            <label class="form-label" for="detail-quantity">Kuantiti</label>
+                            <input class="form-control" id="detail-quantity" type="number" name="quantity" value="1" min="1" max="{{ min(99, $item->stock) }}" required>
+                        </div>
+                        <button class="btn btn-primary" type="submit"><i class="bi bi-bag-plus me-2" aria-hidden="true"></i>Tambah ke Troli</button>
+                        <a class="btn btn-outline-secondary" href="{{ route('polimart.cart') }}"><i class="bi bi-cart3 me-2" aria-hidden="true"></i>Lihat Troli</a>
+                    </form>
+                @endif
 
                 <section class="polimart-detail-section">
                     <h2>Butiran</h2>
@@ -79,7 +91,7 @@
                         @endforeach
                     </section>
                 @endif
-            </main>
+            </div>
 
             <aside class="polimart-detail-sidebar">
                 <div class="polimart-seller-card">

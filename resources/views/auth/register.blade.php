@@ -16,7 +16,7 @@
                     <div class="auth-stripe mt-4" aria-hidden="true"><span></span><span></span><span></span></div>
                     <div class="mt-5 auth-brand-copy">
                         <h2 class="mb-3">Cipta akaun POLIBEST.</h2>
-                        <p class="mb-0">Daftar akaun asas dahulu. Permohonan menjadi ahli kelab staf boleh dibuat selepas log masuk.</p>
+                        <p class="mb-0">Selepas mendaftar, sahkan alamat emel anda melalui pautan yang dihantar. Pautan itu membawa anda ke dashboard; dari situ, hantar permohonan ahli kelab staf untuk semakan pentadbir.</p>
                     </div>
                 </div>
                 <a class="home-link" href="{{ url('/') }}">
@@ -31,7 +31,7 @@
                 <div>
                     <span class="badge mb-3"><i class="bi bi-person-plus" aria-hidden="true"></i> Akaun Baharu</span>
                     <h1>Daftar akaun</h1>
-                    <p>Lengkapkan maklumat asas untuk mula menggunakan portal.</p>
+                    <p>Langkah seterusnya: sahkan emel, buka dashboard dan hantar permohonan keahlian.</p>
 
                     <form method="post" action="{{ route('register') }}" enctype="multipart/form-data">
                         @csrf

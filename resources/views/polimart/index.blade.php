@@ -17,6 +17,9 @@
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.favorites') }}">
                 <i class="bi bi-heart me-2" aria-hidden="true"></i>Favorite Saya
             </a>
+            <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.cart') }}">
+                <i class="bi bi-cart3 me-2" aria-hidden="true"></i>Troli Beli-belah
+            </a>
         </aside>
 
         <section class="polimart-hero">

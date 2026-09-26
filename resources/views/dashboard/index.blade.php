@@ -10,7 +10,7 @@
     $pendingActionCount = ($profileIncomplete ? 1 : 0) + match ($role) {
         'admin' => $pendingMembers + $pendingPayments + $pendingActivities + $pendingClaims,
         'treasurer' => $pendingPayments + $pendingClaims,
-        'member' => ($user->fee_balance > 0 ? 1 : 0),
+        'member' => ($user->membership_status === 'inactive' || $user->fee_balance > 0 ? 1 : 0),
         default => 0,
     };
 
@@ -127,6 +127,26 @@
                                 <div class="list-item-meta">Baki semasa anda ialah RM {{ number_format((float) $user->fee_balance, 2) }}.</div>
                             </div>
                             <a class="btn btn-primary align-self-center" href="{{ route('payments.create') }}">Bayar Yuran</a>
+                        </div>
+                    @endif
+
+                    @if($role === 'member' && $user->membership_status === 'inactive')
+                        <div class="action-item">
+                            <span class="action-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
+                            <div>
+                                <div class="list-item-title">Permohonan ahli kelab staf belum dihantar</div>
+                                <div class="list-item-meta">Lengkapkan maklumat keahlian dan hantar untuk semakan pentadbir supaya akaun ahli anda boleh diaktifkan.</div>
+                            </div>
+                            <a class="btn btn-primary align-self-center" href="{{ route('membership.apply') }}">Mohon Keahlian</a>
+                        </div>
+                    @elseif($role === 'member' && $user->membership_status === 'pending')
+                        <div class="action-item">
+                            <span class="action-icon"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
+                            <div>
+                                <div class="list-item-title">Permohonan ahli sedang disemak</div>
+                                <div class="list-item-meta">Akses ahli kelab staf akan diaktifkan selepas pentadbir meluluskan permohonan anda.</div>
+                            </div>
+                            <a class="btn btn-outline-primary align-self-center" href="{{ route('membership.apply') }}">Lihat Status</a>
                         </div>
                     @endif
 
