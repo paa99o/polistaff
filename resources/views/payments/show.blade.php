@@ -42,7 +42,11 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label" for="resubmit-method">Kaedah</label>
-                                <input class="form-control" id="resubmit-method" name="payment_method" value="{{ old('payment_method', $payment->payment_method) }}" required>
+                                <select class="form-select" id="resubmit-method" name="payment_method" required>
+                                    @foreach($paymentOptions as $method => $label)
+                                        <option value="{{ $method }}" @selected(old('payment_method', array_key_exists($payment->payment_method, $paymentOptions) ? $payment->payment_method : array_key_first($paymentOptions)) === $method)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label" for="resubmit-date">Tarikh</label>

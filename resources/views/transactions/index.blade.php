@@ -85,7 +85,22 @@
                         <td data-label="Jumlah">RM {{ number_format((float) $transaction->amount, 2) }}</td>
                         <td data-label="Tarikh">{{ $transaction->transaction_date->format('d/m/Y') }}</td>
                         <td data-label="Status"><span class="badge bg-secondary">{{ $statusLabels[$transaction->status] ?? $transaction->status }}</span></td>
-                        <td data-label="Tindakan"><a class="btn btn-sm btn-outline-danger" href="{{ route('transactions.show', $transaction) }}">Lihat Resit</a></td>
+                        <td data-label="Tindakan">
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ route('transactions.show', $transaction) }}">Lihat Resit</a>
+                                @can('manage-finances')
+                                    @if($transaction->status === 'active')
+                                        <a class="btn btn-sm btn-outline-primary" href="{{ route('transactions.edit', $transaction) }}">Edit</a>
+                                        <form method="post" action="{{ route('transactions.destroy', $transaction) }}" data-confirm="Tandakan transaksi {{ $transaction->receipt_number }} sebagai reverse? Tindakan ini akan melaras baki yuran jika berkaitan.">
+                                            @csrf
+                                            @method('delete')
+                                            <input type="hidden" name="reversal_reason" value="Pembalikan manual oleh bendahari.">
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Reverse</button>
+                                        </form>
+                                    @endif
+                                @endcan
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>

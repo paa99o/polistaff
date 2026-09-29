@@ -25,6 +25,7 @@ use App\Notifications\VerifyEmailNotification;
 use App\Services\EmailAuditService;
 use App\Services\EmailDeliveryService;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -36,8 +37,19 @@ class NotificationController extends Controller
 
     public function index(Request $request): View
     {
+        $notifications = PortalNotification::where(fn ($query) => $query->where('user_id', $request->user()->id)->orWhereNull('user_id'))->latest()->paginate(15);
+        $broadcastIds = $notifications->getCollection()->whereNull('user_id')->pluck('id');
+        $readBroadcastIds = $broadcastIds->isEmpty()
+            ? collect()
+            : DB::table('portal_notification_reads')->where('user_id', $request->user()->id)->whereIn('notification_id', $broadcastIds)->pluck('notification_id');
+        $notifications->getCollection()->each(function (PortalNotification $notification) use ($readBroadcastIds): void {
+            if ($notification->user_id === null) {
+                $notification->is_read = $readBroadcastIds->contains($notification->id);
+            }
+        });
+
         return view('notifications.index', [
-            'notifications' => PortalNotification::where(fn ($query) => $query->where('user_id', $request->user()->id)->orWhereNull('user_id'))->latest()->paginate(15),
+            'notifications' => $notifications,
         ]);
     }
 
@@ -174,14 +186,30 @@ class NotificationController extends Controller
     public function markRead(PortalNotification $notification): RedirectResponse
     {
         abort_unless($notification->user_id === null || $notification->user_id === auth()->id(), 403);
-        $notification->update(['is_read' => true]);
+        if ($notification->user_id === null) {
+            DB::table('portal_notification_reads')->updateOrInsert(
+                ['notification_id' => $notification->id, 'user_id' => auth()->id()],
+                ['read_at' => now()],
+            );
+        } else {
+            $notification->update(['is_read' => true]);
+        }
 
         return back();
     }
 
     public function markAllRead(Request $request): RedirectResponse
     {
-        PortalNotification::where('user_id', $request->user()->id)->where('is_read', false)->update(['is_read' => true]);
+        $userId = $request->user()->id;
+        PortalNotification::where('user_id', $userId)->where('is_read', false)->update(['is_read' => true]);
+        $broadcastIds = PortalNotification::whereNull('user_id')->pluck('id');
+        foreach ($broadcastIds->chunk(500) as $chunk) {
+            DB::table('portal_notification_reads')->insertOrIgnore($chunk->map(fn ($id) => [
+                'notification_id' => $id,
+                'user_id' => $userId,
+                'read_at' => now(),
+            ])->all());
+        }
 
         return back()->with('status', 'Semua notifikasi ditanda sebagai dibaca.');
     }

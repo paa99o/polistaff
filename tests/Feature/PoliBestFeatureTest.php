@@ -12,6 +12,7 @@ use App\Mail\MembershipApprovedMail;
 use App\Mail\MembershipRejectedMail;
 use App\Mail\PaymentApprovedMail;
 use App\Mail\PaymentRejectedMail;
+use App\Mail\PolimartOrderStatusMail;
 use App\Mail\PortalNotificationMail;
 use App\Models\Activity;
 use App\Models\ActivityRegistration;
@@ -19,6 +20,8 @@ use App\Models\Attendance;
 use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
 use App\Models\PolimartItem;
+use App\Models\PolimartOrder;
+use App\Models\PolimartSellerPaymentProfile;
 use App\Models\PolimartReport;
 use App\Models\PolimartReview;
 use App\Models\SystemSetting;
@@ -1248,6 +1251,7 @@ class PoliBestFeatureTest extends TestCase
             'name' => 'Kuih Raya',
             'category' => 'Makanan',
             'price' => 25,
+            'stock' => 1,
             'contact' => '0123456789',
             'description' => 'Balang sederhana untuk pickup di pejabat.',
             'image' => UploadedFile::fake()->image('kuih-raya.jpg'),
@@ -1279,6 +1283,9 @@ class PoliBestFeatureTest extends TestCase
 
         $this->actingAs($buyer)->post(route('polimart.favorite', $item))->assertRedirect();
         $this->assertDatabaseHas('polimart_favorites', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id]);
+        $this->actingAs($buyer)->post(route('polimart.favorite', $item))->assertRedirect();
+        $this->assertDatabaseMissing('polimart_favorites', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id]);
+        $this->actingAs($buyer)->post(route('polimart.favorite', $item))->assertRedirect();
 
         $this->actingAs($buyer)->post(route('polimart.report', $item), ['reason' => 'misleading', 'details' => 'Maklumat harga tidak jelas.'])->assertRedirect();
         $this->assertDatabaseHas('polimart_reports', ['reporter_id' => $buyer->id, 'polimart_item_id' => $item->id, 'status' => 'pending']);
@@ -1321,11 +1328,25 @@ class PoliBestFeatureTest extends TestCase
         $this->assertDatabaseHas('polimart_reports', ['id' => $report->id, 'status' => 'removed', 'polimart_item_id' => null]);
     }
 
+    public function test_admin_removal_of_reported_listing_deletes_its_image(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin']);
+        $seller = User::factory()->create();
+        $imagePath = UploadedFile::fake()->image('reported.jpg')->store('polimart-items', 'public');
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Listing Scam', 'category' => 'Lain-lain', 'price' => 10, 'contact' => '0123456789', 'image_path' => $imagePath, 'status' => 'active']);
+        $report = PolimartReport::create(['polimart_item_id' => $item->id, 'reporter_id' => $admin->id, 'reason' => 'scam']);
+
+        $this->actingAs($admin)->patch(route('admin.polimart.reports.update', $report), ['status' => 'removed'])->assertRedirect();
+        Storage::disk('public')->assertMissing($imagePath);
+    }
+
     public function test_buyer_can_review_a_sold_polimart_listing(): void
     {
         $seller = User::factory()->create();
         $buyer = User::factory()->create();
         $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'contact' => '0123456789', 'status' => 'sold']);
+        $this->createPolimartOrder($item, $buyer, 'completed');
 
         $this->actingAs($buyer)->get(route('polimart.show', $item))
             ->assertOk()
@@ -1333,6 +1354,177 @@ class PoliBestFeatureTest extends TestCase
         $this->actingAs($buyer)->post(route('polimart.review', $item), ['rating' => 5, 'comment' => 'Urusan mudah.'])->assertRedirect();
         $this->assertDatabaseHas('polimart_reviews', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id, 'rating' => 5]);
         $this->assertInstanceOf(PolimartReview::class, $item->reviews()->first());
+    }
+
+    public function test_non_buyer_cannot_review_a_sold_polimart_listing(): void
+    {
+        $seller = User::factory()->create();
+        $member = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'contact' => '0123456789', 'status' => 'sold']);
+
+        $this->actingAs($member)->get(route('polimart.show', $item))->assertDontSee('Review barang');
+        $this->actingAs($member)->post(route('polimart.review', $item), ['rating' => 5])->assertForbidden();
+        $this->assertDatabaseCount('polimart_reviews', 0);
+    }
+
+    public function test_order_must_be_completed_before_buyer_can_review(): void
+    {
+        Mail::fake();
+        $admin = User::factory()->create(['role' => 'admin']);
+        $seller = User::factory()->create();
+        $buyer = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 2, 'contact' => '0123456789', 'status' => 'active']);
+        $order = $this->createPolimartOrder($item, $buyer, 'pending');
+        $order->update(['payment_status' => 'paid']);
+
+        $this->actingAs($buyer)->post(route('polimart.review', $item), ['rating' => 5])->assertForbidden();
+        $this->actingAs($admin)->patch(route('admin.polimart.orders.update', $order), ['status' => 'confirmed'])->assertRedirect();
+        $this->actingAs($admin)->patch(route('admin.polimart.orders.update', $order), ['status' => 'completed'])->assertRedirect();
+        $this->actingAs($buyer)->get(route('polimart.show', $item))->assertOk()->assertSee('Review barang');
+        $this->actingAs($buyer)->post(route('polimart.review', $item), ['rating' => 5])->assertRedirect();
+        $this->assertDatabaseHas('polimart_reviews', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id]);
+        Mail::assertSent(PolimartOrderStatusMail::class, 2);
+    }
+
+    public function test_polimart_order_cancellation_restores_stock_and_cannot_be_repeated(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $seller = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 0, 'contact' => '0123456789', 'status' => 'sold']);
+        $order = $this->createPolimartOrder($item, User::factory()->create(), 'pending', 2);
+
+        $this->actingAs($admin)->patch(route('admin.polimart.orders.update', $order), ['status' => 'cancelled'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_items', ['id' => $item->id, 'stock' => 2, 'status' => 'active']);
+        $this->assertDatabaseHas('polimart_orders', ['id' => $order->id, 'status' => 'cancelled']);
+        $this->actingAs($admin)->patch(route('admin.polimart.orders.update', $order), ['status' => 'cancelled'])->assertUnprocessable();
+        $this->assertDatabaseHas('polimart_items', ['id' => $item->id, 'stock' => 2]);
+    }
+
+    public function test_polimart_checkout_keeps_listing_active_until_stock_reaches_zero(): void
+    {
+        Mail::fake();
+        $seller = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 2, 'contact' => '0123456789', 'status' => 'active']);
+        PolimartSellerPaymentProfile::create(['user_id' => $seller->id, 'bank_name' => 'Bank Ujian', 'account_name' => 'Seller Ujian', 'account_number' => '1234567890']);
+        $checkout = [
+            'customer_name' => 'Pembeli Ujian', 'customer_email' => 'checkout@example.test',
+            'customer_phone' => '0123456789', 'address_line_1' => '1 Jalan Staf',
+            'city' => 'Kuala Lumpur', 'postcode' => '50000', 'state' => 'Kuala Lumpur',
+            'payment_method' => 'bank_transfer', 'terms' => '1',
+        ];
+
+        $this->post(route('polimart.cart.add', $item), ['quantity' => 1])->assertRedirect();
+        $this->post(route('polimart.checkout.store'), $checkout)->assertOk()->assertSee('Semak Status Pesanan');
+        $this->assertDatabaseHas('polimart_items', ['id' => $item->id, 'stock' => 1, 'status' => 'active']);
+        $this->assertDatabaseHas('polimart_orders', ['customer_email' => 'checkout@example.test', 'payment_method' => 'bank_transfer']);
+        $this->assertSame('Bank Ujian', PolimartOrder::where('customer_email', 'checkout@example.test')->firstOrFail()->payment_instructions['bank_name']);
+        Mail::assertSent(PolimartOrderStatusMail::class, fn (PolimartOrderStatusMail $mail): bool => $mail->hasTo('checkout@example.test'));
+
+        $this->post(route('polimart.cart.add', $item), ['quantity' => 1])->assertRedirect();
+        $this->post(route('polimart.checkout.store'), $checkout)->assertOk();
+        $this->assertDatabaseHas('polimart_items', ['id' => $item->id, 'stock' => 0, 'status' => 'sold']);
+    }
+
+    public function test_checkout_rejects_mixed_sellers_and_requires_saved_payment_details(): void
+    {
+        $sellerOne = User::factory()->create();
+        $sellerTwo = User::factory()->create();
+        $first = PolimartItem::create(['user_id' => $sellerOne->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 2, 'contact' => '0123456789', 'status' => 'active']);
+        $second = PolimartItem::create(['user_id' => $sellerTwo->id, 'name' => 'Beg', 'category' => 'Pre-loved', 'price' => 20, 'stock' => 2, 'contact' => '0191234567', 'status' => 'active']);
+
+        $this->post(route('polimart.cart.add', $first), ['quantity' => 1])->assertRedirect();
+        $this->from(route('polimart.show', $second))->post(route('polimart.cart.add', $second), ['quantity' => 1])->assertRedirect(route('polimart.show', $second));
+        $this->assertSame([$first->id], array_keys(session('polimart_cart')));
+        $this->get(route('polimart.checkout'))->assertOk()->assertSee('belum menyediakan');
+    }
+
+    public function test_seller_can_save_payment_qr_and_bank_details(): void
+    {
+        Storage::fake('public');
+        $seller = User::factory()->create();
+
+        $this->actingAs($seller)->put(route('polimart.payment-settings.update'), [
+            'qr_code' => UploadedFile::fake()->image('bayaran.png'),
+            'bank_name' => 'Bank Ujian',
+            'account_name' => 'Penjual Ujian',
+            'account_number' => '1234567890',
+        ])->assertRedirect();
+
+        $profile = PolimartSellerPaymentProfile::where('user_id', $seller->id)->firstOrFail();
+        $this->assertSame('Bank Ujian', $profile->bank_name);
+        $this->assertSame('Penjual Ujian', $profile->account_name);
+        Storage::disk('public')->assertExists($profile->qr_code_path);
+    }
+
+    public function test_guest_can_track_order_with_signed_link_but_not_unsigned_order_url(): void
+    {
+        $seller = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 1, 'contact' => '0123456789', 'status' => 'active']);
+        $order = $this->createPolimartOrder($item, User::factory()->create(), 'pending');
+        $signedUrl = URL::temporarySignedRoute('polimart.orders.track', now()->addDay(), ['polimartOrder' => $order->id]);
+
+        $this->get($signedUrl)->assertOk()->assertSee($order->order_number)->assertDontSee($order->customer_email)->assertDontSee($order->customer_phone);
+        $this->get(route('polimart.orders.track', $order))->assertForbidden();
+    }
+
+    public function test_only_listing_owner_or_admin_can_edit_or_delete_polimart_listing(): void
+    {
+        $seller = User::factory()->create();
+        $other = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'contact' => '0123456789', 'status' => 'active']);
+
+        $this->actingAs($other)->get(route('polimart.edit', $item))->assertForbidden();
+        $this->actingAs($other)->put(route('polimart.update', $item), [])->assertForbidden();
+        $this->actingAs($other)->delete(route('polimart.destroy', $item))->assertForbidden();
+        $this->actingAs($seller)->get(route('polimart.edit', $item))->assertOk();
+    }
+
+    public function test_hidden_polimart_listing_is_not_publicly_visible(): void
+    {
+        $seller = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Listing Tersembunyi', 'category' => 'Lain-lain', 'price' => 10, 'contact' => '0123456789', 'status' => 'hidden']);
+
+        $this->get(route('polimart.index'))->assertOk()->assertDontSee('Listing Tersembunyi');
+        $this->get(route('polimart.show', $item))->assertNotFound();
+    }
+
+    public function test_seller_can_replace_and_delete_polimart_listing_image(): void
+    {
+        Storage::fake('public');
+        $seller = User::factory()->create();
+        $oldPath = UploadedFile::fake()->image('old.jpg')->store('polimart-items', 'public');
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'contact' => '0123456789', 'image_path' => $oldPath, 'status' => 'active']);
+
+        $this->actingAs($seller)->put(route('polimart.update', $item), [
+            'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 1,
+            'contact' => '0123456789', 'image' => UploadedFile::fake()->image('new.jpg'),
+        ])->assertRedirect();
+        $item->refresh();
+        Storage::disk('public')->assertMissing($oldPath);
+        Storage::disk('public')->assertExists($item->image_path);
+
+        $newPath = $item->image_path;
+        $this->actingAs($seller)->delete(route('polimart.destroy', $item))->assertRedirect();
+        Storage::disk('public')->assertMissing($newPath);
+    }
+
+    private function createPolimartOrder(PolimartItem $item, User $buyer, string $status, int $quantity = 1): PolimartOrder
+    {
+        return PolimartOrder::create([
+            'order_number' => 'PM-'.strtoupper(Str::random(10)),
+            'customer_name' => $buyer->name,
+            'customer_email' => $buyer->email,
+            'customer_phone' => '0123456789',
+            'address_line_1' => '1 Jalan Staf',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'state' => 'Kuala Lumpur',
+            'items' => [['id' => $item->id, 'seller_id' => $item->user_id, 'name' => $item->name, 'quantity' => $quantity, 'price' => (float) $item->price, 'seller' => $item->user->name]],
+            'subtotal' => (float) $item->price * $quantity,
+            'shipping_fee' => 7,
+            'total' => ((float) $item->price * $quantity) + 7,
+            'status' => $status,
+        ]);
     }
 
     public function test_treasurer_can_approve_payment_and_generate_transaction(): void

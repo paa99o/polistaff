@@ -104,25 +104,25 @@ class PaymentSubmissionController extends Controller
         $user = $request->user();
         $monthlyFeeService->ensureThrough($user);
 
-        $bills = MemberFeeBill::where('user_id', $user->id)
-            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
-            ->orderBy('billing_month')
-            ->get();
+        [$bills, $pendingAmount, $outstanding] = $this->availableBillsForPayment($user);
         $paidCurrentYearBills = MemberFeeBill::where('user_id', $user->id)
             ->where('status', 'paid')
             ->whereYear('billing_month', now()->year)
             ->orderBy('billing_month')
             ->get();
-        $pendingAmount = PaymentSubmission::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->sum('amount');
-
         return view('payments.create', [
             'bills' => $bills,
             'paidCurrentYearBills' => $paidCurrentYearBills,
             'overdueBills' => $bills->filter(fn (MemberFeeBill $bill): bool => $bill->due_date?->isPast() && ! $bill->due_date?->isToday()),
-            'outstanding' => max(0, (float) $bills->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount()) - (float) $pendingAmount),
+            'outstanding' => $outstanding,
             'pendingAmount' => (float) $pendingAmount,
+            'paymentOptions' => $this->paymentOptions(),
+            'financePaymentQrPath' => SystemSetting::getValue('finance_payment_qr_path'),
+            'financeBankDetails' => [
+                'bank_name' => SystemSetting::getValue('finance_bank_name'),
+                'account_name' => SystemSetting::getValue('finance_account_name'),
+                'account_number' => SystemSetting::getValue('finance_account_number'),
+            ],
         ]);
     }
 
@@ -130,12 +130,7 @@ class PaymentSubmissionController extends Controller
     {
         abort_unless($request->user()->hasRole('member'), 403);
         app(MonthlyFeeService::class)->ensureThrough($request->user());
-        $outstanding = (float) MemberFeeBill::where('user_id', $request->user()->id)
-            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
-            ->get()->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount());
-        $pendingAmount = (float) PaymentSubmission::where('user_id', $request->user()->id)
-            ->where('status', 'pending')->sum('amount');
-        $available = max(0, $outstanding - $pendingAmount);
+        [$availableBills, , $available] = $this->availableBillsForPayment($request->user());
 
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
@@ -155,10 +150,12 @@ class PaymentSubmissionController extends Controller
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
 
-        $selectedBills = MemberFeeBill::where('user_id', $request->user()->id)
-            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
-            ->whereIn('id', $data['bill_ids'] ?? [])->get();
-        $selectedAmount = (float) $selectedBills->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount());
+        $requestedBillIds = array_values(array_unique(array_map('intval', $data['bill_ids'] ?? [])));
+        $selectedBills = $availableBills->whereIn('id', $requestedBillIds)->values();
+        if (count($requestedBillIds) !== $selectedBills->count()) {
+            return back()->withInput()->withErrors(['bill_ids' => 'Ada bil yang sudah diliputi bayaran menunggu semakan. Sila muat semula dan pilih semula.']);
+        }
+        $selectedAmount = (float) $selectedBills->sum(fn (MemberFeeBill $bill): float => (float) $bill->payment_available_amount);
         if ($selectedBills->isNotEmpty() && abs((float) $data['amount'] - $selectedAmount) > 0.005) {
             return back()->withInput()->withErrors(['amount' => 'Jumlah bayaran mesti sama dengan jumlah bulan yang dipilih.']);
         }
@@ -178,7 +175,7 @@ class PaymentSubmissionController extends Controller
             'payment_method' => $data['payment_method'],
             'payment_date' => $data['payment_date'],
             'proof_path' => $path,
-            'notes' => trim(($data['notes'] ?? '').($selectedBills->isNotEmpty() ? ' Bulan dipilih: '.$selectedBills->map(fn ($bill) => $bill->billing_month->format('m/Y'))->join(', ').'.' : '')),
+                'notes' => trim(($data['notes'] ?? '').($selectedBills->isNotEmpty() ? ' Bulan dipilih: '.$selectedBills->map(fn ($bill) => $bill->billing_month->format('m/Y'))->join(', ').'.' : '')),
             'bill_ids' => $selectedBills->pluck('id')->values()->all(),
             'status' => 'pending',
         ]);
@@ -217,6 +214,7 @@ class PaymentSubmissionController extends Controller
         return view('payments.show', [
             'payment' => $payment->load('user', 'reviewer', 'transaction'),
             'timelineLogs' => $this->timelineLogs($payment),
+            'paymentOptions' => $this->paymentOptions(),
         ]);
     }
 
@@ -440,6 +438,67 @@ class PaymentSubmissionController extends Controller
             });
 
         return $allocated;
+    }
+
+    /** @return array{0: \Illuminate\Support\Collection, 1: float, 2: float} */
+    private function availableBillsForPayment(User $user): array
+    {
+        $bills = MemberFeeBill::where('user_id', $user->id)
+            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
+            ->orderBy('billing_month')
+            ->get();
+        $pendingPayments = PaymentSubmission::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->orderBy('id')
+            ->get(['amount', 'bill_ids']);
+        $reserved = [];
+
+        foreach ($pendingPayments as $payment) {
+            $remaining = (float) $payment->amount;
+            $selectedIds = collect($payment->bill_ids ?? [])->map(fn ($id) => (int) $id)->all();
+            $targets = $selectedIds
+                ? $bills->whereIn('id', $selectedIds)->sortBy('billing_month')
+                : $bills;
+
+            foreach ([$targets, $bills] as $allocationTarget) {
+                foreach ($allocationTarget as $bill) {
+                    if ($remaining <= 0.005) {
+                        break;
+                    }
+                    $billId = (int) $bill->id;
+                    $freeAmount = max(0, (float) $bill->remainingAmount() - ($reserved[$billId] ?? 0));
+                    $allocation = min($remaining, $freeAmount);
+                    $reserved[$billId] = ($reserved[$billId] ?? 0) + $allocation;
+                    $remaining -= $allocation;
+                }
+                if ($remaining <= 0.005) {
+                    break;
+                }
+            }
+        }
+
+        $availableTotal = 0.0;
+        $availableBills = $bills->filter(function (MemberFeeBill $bill) use (&$reserved, &$availableTotal): bool {
+            $available = round(max(0, (float) $bill->remainingAmount() - ($reserved[(int) $bill->id] ?? 0)), 2);
+            $bill->setAttribute('payment_available_amount', $available);
+            $availableTotal += $available;
+            return $available > 0;
+        })->values();
+
+        return [$availableBills, (float) $pendingPayments->sum('amount'), round($availableTotal, 2)];
+    }
+
+    private function paymentOptions(): array
+    {
+        $options = ['Cash' => 'Tunai kepada bendahari'];
+        if (SystemSetting::getValue('finance_payment_qr_path')) {
+            $options['DuitNow QR'] = 'QR bayaran kelab';
+        }
+        if (SystemSetting::getValue('finance_bank_name') && SystemSetting::getValue('finance_account_name') && SystemSetting::getValue('finance_account_number')) {
+            $options['Transfer'] = 'Pindahan bank';
+        }
+
+        return $options;
     }
 
     private function timelineLogs(PaymentSubmission $payment)

@@ -50,7 +50,14 @@ class Activity extends Model
 
     public function hasCapacity(): bool
     {
-        return $this->max_participants === null || $this->activeRegistrations()->count() < $this->max_participants;
+        if ($this->max_participants === null) {
+            return true;
+        }
+
+        $registeredMembers = $this->activeRegistrations()->count();
+        $registeredGuests = $this->guestRegistrations()->where('status', 'registered')->count();
+
+        return $registeredMembers + $registeredGuests < $this->max_participants;
     }
 
     public function registrationIsOpen(): bool

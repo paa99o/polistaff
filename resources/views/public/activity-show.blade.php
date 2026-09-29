@@ -13,7 +13,7 @@
         @if($activity->evidencePhotos->isNotEmpty())
             <div class="row g-2 mb-3">
                 @foreach($activity->evidencePhotos as $photo)
-                    <div class="col-6"><img class="img-fluid rounded" src="{{ Storage::disk('public')->url($photo->path) }}" alt="Bukti {{ $activity->title }}"></div>
+                    <div class="col-6"><img class="img-fluid rounded" src="{{ asset('storage/'.$photo->path) }}" alt="Bukti {{ $activity->title }}"></div>
                 @endforeach
             </div>
         @endif

@@ -39,3 +39,59 @@
 2. Restore file selection for payment proof, claim receipt, donation paperwork, PoliMart image, and backup inspection; these flows require an actual disposable file to continue.
 3. Resume the blocked approval flows, then complete the activity paperwork, registration/capacity, attendance, claims, donations, finance, notifications, and administration steps.
 4. Verify production-domain notification links against a staging deployment that has a non-local staging hostname; this local staging host uses `127.0.0.1` by design.
+
+## PoliMart implementation follow-up — 2026-09-30
+
+- Added save/remove favorite controls directly to active product cards. Feature
+  tests now cover toggling favorites and opening the saved-items page.
+- Added image upload, replacement, and deletion coverage. Removing a listing
+  through moderation now also deletes its stored image. Browser file-picker
+  interaction still needs staging retest; automated upload coverage does not
+  prove the browser picker works.
+- Added owner/admin access coverage and confirmed hidden listings stay out of
+  public browse and detail pages.
+- Reviews now require a completed order containing the product and matching
+  the signed-in user's email. Admin order actions support pending → confirmed →
+  completed, or cancellation from pending/confirmed. Cancellation restores
+  stock once.
+- Checkout now limits each cart to one seller. Sellers can save a QR image and
+  bank-transfer details; buyers select one saved method at checkout. Orders
+  snapshot the selected instructions, send a confirmation/status email, and
+  expose a signed 90-day tracking page without buyer delivery details.
+- A clearly labelled demo QR and fake bank account are present only in the
+  disposable SQLite staging database for UI review; they are not real payment
+  details and must not be copied into production.
+- Focused PoliMart feature tests passed (13 tests), and
+  Blade templates compiled. Full-suite test execution still reports unrelated
+  existing failures; see the current test output before treating the full app
+  as release-ready.
+- The implementation has not yet been retested in the staging browser.
+
+## Whole-system audit follow-up — 2026-09-30
+
+- Restricted seller order queries by seller ID snapshots and retained the
+  current-listing fallback for historical orders; open orders prevent listing
+  deletion so buyers and sellers can finish the order.
+- Fee-payment selection now reserves pending submissions against their bills,
+  and the server rejects stale bill selections. QR and bank methods are only
+  available after an admin configures official club details; the external
+  placeholder QR and fake bank instructions were removed.
+- Broadcast notification read state is stored per user instead of changing a
+  shared notification row.
+- PoliMart proof review now supports a reasoned resubmission request. Unpaid
+  orders expire after 24 hours and restore stock; cancelling a paid order
+  records that a manual refund is required.
+- Finance transaction rows now expose edit and reverse actions to authorized
+  finance roles.
+- The code changes are present in the workspace, but the active local MySQL
+  database still has 20 pending migrations. Checkout currently returns HTTP 500
+  because `polimart_seller_payment_profiles` has not been created. Only the
+  activity evidence-photo migration was applied to restore the local demo; the
+  production database was not changed.
+- Browser checks passed for guest pages and protected-route redirects. Earlier
+  browser checks covered Admin and Treasurer; Member, Pending, and Inactive
+  browser login checks remain incomplete because the QA email was not retained
+  in the login field.
+- The focused role/PoliMart regression set passed (21 tests). The full suite
+  reports 80 passed, 24 failed, and 5 errors, so the system is not yet verified
+  for release.

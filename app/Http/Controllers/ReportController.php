@@ -216,7 +216,10 @@ class ReportController extends Controller
 
     public function activityReportPdf(Request $request, Activity $activity): Response|View
     {
-        abort_unless(auth()->user()->hasRole('member', 'treasurer', 'admin'), 403);
+        abort_unless(
+            auth()->user()->hasRole('treasurer', 'admin') || $activity->created_by === auth()->id(),
+            403,
+        );
         abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Report hanya boleh dijana selepas aktiviti tamat.');
 
         if (! $request->boolean('download') && ! $request->boolean('render')) {

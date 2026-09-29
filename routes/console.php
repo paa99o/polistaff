@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('activity:remind')->hourly();
+Schedule::command('polimart:expire-orders')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('fees:monthly-cycle')->monthlyOn(1, '08:00');
 Schedule::command('backup:cleanup')->dailyAt('02:30')->withoutOverlapping();
 

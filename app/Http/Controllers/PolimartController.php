@@ -6,15 +6,21 @@ use App\Models\AuditLog;
 use App\Models\PolimartItem;
 use App\Models\PolimartFavorite;
 use App\Models\PolimartOrder;
+use App\Models\PolimartSellerPaymentProfile;
 use App\Models\PolimartReview;
 use App\Models\User;
+use App\Mail\PolimartOrderStatusMail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class PolimartController extends Controller
 {
@@ -95,6 +101,10 @@ class PolimartController extends Controller
         abort_unless($polimartItem->status === 'active' && $polimartItem->stock > 0, 422, 'Produk ini sudah habis stok.');
         $data = $request->validate(['quantity' => ['nullable', 'integer', 'min:1', 'max:99']]);
         $cart = $request->session()->get('polimart_cart', []);
+        $existingSellerIds = PolimartItem::whereIn('id', array_keys($cart))->where('status', 'active')->pluck('user_id')->unique();
+        if ($existingSellerIds->isNotEmpty() && ! $existingSellerIds->contains($polimartItem->user_id)) {
+            return back()->with('status', 'Setiap pesanan PoliMart hanya boleh mengandungi produk daripada seorang penjual. Selesaikan atau kosongkan troli dahulu.');
+        }
         $quantity = (int) ($data['quantity'] ?? 1);
         $requestedQuantity = (int) ($cart[$polimartItem->id] ?? 0) + $quantity;
         if ($requestedQuantity > $polimartItem->stock) {
@@ -125,6 +135,10 @@ class PolimartController extends Controller
         if ($removeId > 0) {
             unset($cart[$removeId]);
         }
+        $sellerIds = $availableItems->only(array_keys($cart))->pluck('user_id')->unique();
+        if ($sellerIds->count() > 1) {
+            return back()->with('status', 'Troli hanya boleh mengandungi produk daripada seorang penjual. Troli asal dikekalkan.');
+        }
         $request->session()->put('polimart_cart', $cart);
 
         return back()->with('status', 'Troli berjaya dikemas kini.');
@@ -146,7 +160,10 @@ class PolimartController extends Controller
             return redirect()->route('polimart.index')->with('status', 'Troli anda masih kosong.');
         }
 
-        return view('public.polimart-checkout', $cart);
+        $sellerId = $cart['items']->first()['item']->user_id;
+        $paymentProfile = PolimartSellerPaymentProfile::where('user_id', $sellerId)->first();
+
+        return view('public.polimart-checkout', [...$cart, 'paymentProfile' => $paymentProfile]);
     }
 
     public function placeOrder(Request $request): View|RedirectResponse
@@ -161,12 +178,19 @@ class PolimartController extends Controller
             'postcode' => ['required', 'string', 'max:20'],
             'state' => ['required', 'string', 'max:120'],
             'note' => ['nullable', 'string', 'max:1000'],
+            'payment_method' => ['required', 'in:qr,bank_transfer'],
             'terms' => ['accepted'],
         ]);
         $cart = $this->cartData($request);
         abort_if($cart['items']->isEmpty(), 422, 'Troli anda masih kosong.');
+        abort_if($cart['items']->pluck('item.user_id')->unique()->count() > 1, 422, 'Setiap pesanan PoliMart hanya boleh mengandungi produk daripada seorang penjual.');
+        $sellerId = $cart['items']->first()['item']->user_id;
+        $paymentProfile = PolimartSellerPaymentProfile::where('user_id', $sellerId)->first();
+        if (! $this->sellerHasPaymentMethod($paymentProfile, $data['payment_method'])) {
+            throw ValidationException::withMessages(['payment_method' => 'Penjual belum menyediakan maklumat bagi kaedah bayaran yang dipilih.']);
+        }
 
-        $order = DB::transaction(function () use ($request, $data, $cart): PolimartOrder {
+        $order = DB::transaction(function () use ($request, $data, $cart, $paymentProfile): PolimartOrder {
             $itemIds = $cart['items']->pluck('item.id')->all();
             $lockedItems = PolimartItem::with('user')
                 ->whereIn('id', $itemIds)
@@ -185,10 +209,12 @@ class PolimartController extends Controller
 
                 $orderItems[] = [
                     'id' => $item->id,
+                    'seller_id' => $item->user_id,
                     'name' => $item->name,
                     'quantity' => $line['quantity'],
                     'price' => (float) $item->price,
                     'seller' => $item->user->name,
+                    'seller_contact' => $item->contact,
                 ];
                 $subtotal += (float) $item->price * $line['quantity'];
                 $item->stock -= $line['quantity'];
@@ -206,16 +232,199 @@ class PolimartController extends Controller
                 'shipping_fee' => $shippingFee,
                 'total' => $subtotal + $shippingFee,
                 'status' => 'pending',
+                'payment_method' => $data['payment_method'],
+                'payment_instructions' => $this->paymentInstructions($paymentProfile, $data['payment_method']),
+                'payment_status' => 'awaiting_payment',
+                'payment_expires_at' => now()->addHours(24),
             ]);
         });
         $request->session()->forget('polimart_cart');
+        $trackingUrl = $this->orderTrackingUrl($order);
+        $trackingEmailSent = $this->sendOrderEmail($order, $trackingUrl);
+        $sellerContacts = $this->sellerContactLinks($order);
 
-        return view('public.polimart-order-success', compact('order'));
+        return view('public.polimart-order-success', compact('order', 'trackingUrl', 'trackingEmailSent', 'sellerContacts'));
     }
 
-    public function orders(): View
+    public function trackOrder(PolimartOrder $polimartOrder): View
     {
-        return view('admin.polimart-orders', ['orders' => PolimartOrder::latest()->paginate(20)]);
+        return view('public.polimart-order-tracking', [
+            'order' => $polimartOrder,
+            'sellerContacts' => $this->sellerContactLinks($polimartOrder),
+            'proofSubmitUrl' => URL::temporarySignedRoute('polimart.orders.payment-proof.submit', now()->addDays(90), ['polimartOrder' => $polimartOrder->id]),
+        ]);
+    }
+
+    public function submitOrderPaymentProof(Request $request, PolimartOrder $polimartOrder): RedirectResponse
+    {
+        abort_unless(in_array($polimartOrder->payment_status, ['awaiting_payment', 'rejected'], true), 422, 'Bukti bayaran tidak boleh dihantar untuk status ini.');
+        abort_unless($polimartOrder->status === 'pending' && (! $polimartOrder->payment_expires_at || $polimartOrder->payment_expires_at->isFuture()), 422, 'Tempoh pembayaran pesanan ini telah tamat.');
+        $data = $request->validate([
+            'payment_proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'payment_reference' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        if ($polimartOrder->payment_proof_path) {
+            Storage::disk('private')->delete($polimartOrder->payment_proof_path);
+        }
+        $path = $request->file('payment_proof')->store('polimart-payment-proofs', 'private');
+        $polimartOrder->update(['payment_proof_path' => $path, 'payment_reference' => $data['payment_reference'] ?? null, 'payment_review_note' => null, 'payment_status' => 'proof_submitted', 'payment_expires_at' => now()->addHours(24)]);
+
+        return back()->with('status', 'Bukti bayaran diterima. Penjual perlu menyemak transaksi sebenar sebelum mengesahkan bayaran.');
+    }
+
+    public function confirmOrderPayment(Request $request, PolimartOrder $polimartOrder): RedirectResponse
+    {
+        abort_unless($this->userCanManageOrder($request->user(), $polimartOrder), 403);
+        abort_unless($polimartOrder->payment_status === 'proof_submitted', 422, 'Pesanan ini belum mempunyai bukti bayaran untuk disemak.');
+        $polimartOrder->update(['payment_status' => 'paid', 'payment_paid_at' => now(), 'payment_review_note' => null]);
+        $polimartOrder->refresh();
+        $this->sendOrderEmail($polimartOrder, $this->orderTrackingUrl($polimartOrder));
+
+        return back()->with('status', 'Bayaran ditandakan diterima selepas semakan transaksi.');
+    }
+
+    public function rejectOrderPaymentProof(Request $request, PolimartOrder $polimartOrder): RedirectResponse
+    {
+        abort_unless($this->userCanManageOrder($request->user(), $polimartOrder), 403);
+        abort_unless($polimartOrder->payment_status === 'proof_submitted', 422, 'Tiada bukti menunggu semakan.');
+        $data = $request->validate(['payment_review_note' => ['required', 'string', 'max:1000']]);
+        $polimartOrder->update(['payment_status' => 'rejected', 'payment_review_note' => $data['payment_review_note']]);
+        $polimartOrder->refresh();
+        $this->sendOrderEmail($polimartOrder, $this->orderTrackingUrl($polimartOrder));
+
+        return back()->with('status', 'Bukti ditolak. Pembeli boleh hantar bukti baharu melalui pautan semakan pesanan.');
+    }
+
+    public function confirmOrderRefund(Request $request, PolimartOrder $polimartOrder): RedirectResponse
+    {
+        abort_unless($this->userCanManageOrder($request->user(), $polimartOrder), 403);
+        abort_unless($polimartOrder->payment_status === 'refund_required', 422, 'Pesanan ini tidak menunggu pemulangan bayaran.');
+        $polimartOrder->update(['payment_status' => 'refunded']);
+        $polimartOrder->refresh();
+        $this->sendOrderEmail($polimartOrder, $this->orderTrackingUrl($polimartOrder));
+
+        return back()->with('status', 'Pemulangan wang ditandakan selesai. Pastikan pindahan balik telah dibuat di luar PoliMart.');
+    }
+
+    public function orderPaymentProof(Request $request, PolimartOrder $polimartOrder)
+    {
+        abort_unless($this->userCanManageOrder($request->user(), $polimartOrder), 403);
+        abort_unless($polimartOrder->payment_proof_path, 404);
+
+        return Storage::disk('private')->response($polimartOrder->payment_proof_path);
+    }
+
+    public function paymentSettings(Request $request): View
+    {
+        return view('polimart.payment-settings', [
+            'paymentProfile' => $request->user()->polimartSellerPaymentProfile,
+        ]);
+    }
+
+    public function updatePaymentSettings(Request $request): RedirectResponse
+    {
+        $profile = $request->user()->polimartSellerPaymentProfile;
+        $data = $request->validate([
+            'qr_code' => ['nullable', 'image', 'max:4096'],
+            'bank_name' => ['nullable', 'string', 'max:120', 'required_with:account_name,account_number'],
+            'account_name' => ['nullable', 'string', 'max:120', 'required_with:bank_name,account_number'],
+            'account_number' => ['nullable', 'string', 'max:80', 'required_with:bank_name,account_name'],
+        ]);
+
+        abort_if(
+            ! $request->hasFile('qr_code')
+                && ! $profile?->qr_code_path
+                && blank($data['bank_name'] ?? null),
+            422,
+            'Sediakan QR atau butiran akaun bank sebelum menyimpan.',
+        );
+
+        if ($request->hasFile('qr_code')) {
+            if ($profile?->qr_code_path) {
+                Storage::disk('public')->delete($profile->qr_code_path);
+            }
+            $data['qr_code_path'] = $request->file('qr_code')->store('polimart-payment-qr', 'public');
+        }
+        unset($data['qr_code']);
+
+        PolimartSellerPaymentProfile::updateOrCreate(
+            ['user_id' => $request->user()->id],
+            $data,
+        );
+
+        return back()->with('status', 'Maklumat bayaran PoliMart berjaya disimpan.');
+    }
+
+    public function orders(Request $request): View
+    {
+        $orders = PolimartOrder::latest();
+        if (! $request->user()->hasRole('admin')) {
+            $sellerItemIds = PolimartItem::where('user_id', $request->user()->id)->pluck('id')->all();
+            $orders->where(function ($query) use ($sellerItemIds, $request): void {
+                $query->whereJsonContains('items', ['seller_id' => $request->user()->id]);
+                foreach ($sellerItemIds as $id) {
+                    $query->orWhereJsonContains('items', ['id' => $id]);
+                }
+            });
+        }
+
+        return view('admin.polimart-orders', ['orders' => $orders->paginate(20)]);
+    }
+
+    public function updateOrderStatus(Request $request, PolimartOrder $polimartOrder): RedirectResponse
+    {
+        abort_unless($this->userCanManageOrder($request->user(), $polimartOrder), 403);
+        $data = $request->validate(['status' => ['required', 'in:confirmed,completed,cancelled']]);
+
+        DB::transaction(function () use ($polimartOrder, $data): void {
+            $order = PolimartOrder::query()->lockForUpdate()->findOrFail($polimartOrder->id);
+            $nextStatus = $data['status'];
+            $allowedTransitions = [
+                'pending' => ['confirmed', 'cancelled'],
+                'confirmed' => ['completed', 'cancelled'],
+                'completed' => [],
+                'cancelled' => [],
+            ];
+
+            abort_unless(in_array($nextStatus, $allowedTransitions[$order->status] ?? [], true), 422, 'Perubahan status pesanan ini tidak dibenarkan.');
+            if ($nextStatus === 'confirmed') {
+                abort_unless($order->payment_status === 'paid', 422, 'Sahkan bayaran terlebih dahulu sebelum memproses pesanan.');
+            }
+            if ($nextStatus === 'cancelled') {
+                abort_unless($order->payment_status !== 'proof_submitted', 422, 'Semak bukti dan bayaran terlebih dahulu sebelum membatalkan pesanan.');
+            }
+
+            if ($nextStatus === 'cancelled') {
+                $orderItems = collect($order->items);
+                $items = PolimartItem::whereIn('id', $orderItems->pluck('id'))->lockForUpdate()->get()->keyBy('id');
+
+                foreach ($orderItems as $orderItem) {
+                    $item = $items->get((int) ($orderItem['id'] ?? 0));
+                    if (! $item) {
+                        continue;
+                    }
+
+                    $item->stock += (int) $orderItem['quantity'];
+                    if ($item->status === 'sold') {
+                        $item->status = 'active';
+                    }
+                    $item->save();
+                }
+            }
+
+            $order->update([
+                'status' => $nextStatus,
+                ...($nextStatus === 'cancelled' ? [
+                    'payment_status' => $order->payment_status === 'paid' ? 'refund_required' : 'cancelled',
+                ] : []),
+            ]);
+        });
+
+        $polimartOrder->refresh();
+        $this->sendOrderEmail($polimartOrder, $this->orderTrackingUrl($polimartOrder));
+
+        return back()->with('status', 'Status pesanan PoliMart dikemas kini.');
     }
 
     public function favorites(Request $request): View
@@ -242,6 +451,7 @@ class PolimartController extends Controller
         return view('polimart.show', [
             'item' => $polimartItem->load(['user', 'reviews.user']),
             'isFavorited' => PolimartFavorite::where('user_id', auth()->id())->where('polimart_item_id', $polimartItem->id)->exists(),
+            'canReview' => $this->buyerCanReview(auth()->user(), $polimartItem),
         ]);
     }
 
@@ -261,7 +471,7 @@ class PolimartController extends Controller
 
     public function review(Request $request, PolimartItem $polimartItem): RedirectResponse
     {
-        abort_unless($polimartItem->status === 'sold' && $polimartItem->user_id !== $request->user()->id, 403);
+        abort_unless($this->buyerCanReview($request->user(), $polimartItem), 403);
         $data = $request->validate([
             'rating' => ['required', 'integer', 'between:1,5'],
             'comment' => ['nullable', 'string', 'max:1000'],
@@ -365,6 +575,13 @@ class PolimartController extends Controller
     public function destroy(PolimartItem $polimartItem): RedirectResponse
     {
         $this->authorizeListing($polimartItem);
+        abort_if(
+            PolimartOrder::whereIn('status', ['pending', 'confirmed'])
+                ->whereJsonContains('items', ['id' => $polimartItem->id])
+                ->exists(),
+            422,
+            'Listing tidak boleh dipadam selagi ada pesanan yang belum selesai.',
+        );
 
         if ($polimartItem->image_path) {
             Storage::disk('public')->delete($polimartItem->image_path);
@@ -389,6 +606,111 @@ class PolimartController extends Controller
     private function authorizeListing(PolimartItem $polimartItem): void
     {
         abort_unless($polimartItem->user_id === auth()->id() || auth()->user()->hasRole('admin'), 403);
+    }
+
+    private function buyerCanReview(User $user, PolimartItem $item): bool
+    {
+        return PolimartOrder::query()
+            ->where('customer_email', $user->email)
+            ->where('status', 'completed')
+            ->get()
+            ->contains(fn (PolimartOrder $order): bool => collect($order->items)->contains(
+                fn (array $orderItem): bool => (int) ($orderItem['id'] ?? 0) === $item->id,
+            ));
+    }
+
+    private function orderTrackingUrl(PolimartOrder $order): string
+    {
+        return URL::temporarySignedRoute(
+            'polimart.orders.track',
+            now()->addDays(90),
+            ['polimartOrder' => $order->id],
+        );
+    }
+
+    private function userCanManageOrder(?\App\Models\User $user, PolimartOrder $order): bool
+    {
+        if (! $user) {
+            return false;
+        }
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        if (! $user->hasRole('member')) {
+            return false;
+        }
+        $items = collect($order->items);
+        if ($items->contains(fn (array $item): bool => (int) ($item['seller_id'] ?? 0) === $user->id)) {
+            return true;
+        }
+        $itemIds = $items->pluck('id')->map(fn ($id) => (int) $id);
+        return PolimartItem::where('user_id', $user->id)->whereIn('id', $itemIds)->exists();
+    }
+
+    private function sellerContactLinks(PolimartOrder $order): array
+    {
+        return collect($order->items)
+            ->pluck('seller_contact')
+            ->filter()
+            ->unique()
+            ->map(function (string $contact) use ($order): array {
+                $number = preg_replace('/\D+/', '', $contact);
+                if (str_starts_with($number, '0')) {
+                    $number = '60'.substr($number, 1);
+                }
+
+                return [
+                    'contact' => $contact,
+                    'url' => strlen($number) >= 9
+                        ? 'https://wa.me/'.$number.'?text='.rawurlencode('Salam, saya ingin membuat bayaran QR/transfer untuk pesanan '.$order->order_number.'. Boleh kongsikan butiran bayaran?')
+                        : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function sellerHasPaymentMethod(?PolimartSellerPaymentProfile $profile, string $method): bool
+    {
+        if (! $profile) {
+            return false;
+        }
+
+        return $method === 'qr'
+            ? filled($profile->qr_code_path)
+            : filled($profile->bank_name) && filled($profile->account_name) && filled($profile->account_number);
+    }
+
+    private function paymentInstructions(PolimartSellerPaymentProfile $profile, string $method): array
+    {
+        if ($method === 'qr') {
+            return [
+                'method' => 'qr',
+                'qr_code_path' => $profile->qr_code_path,
+                'account_name' => $profile->account_name,
+            ];
+        }
+
+        return [
+            'method' => 'bank_transfer',
+            'bank_name' => $profile->bank_name,
+            'account_name' => $profile->account_name,
+            'account_number' => $profile->account_number,
+        ];
+    }
+
+    private function sendOrderEmail(PolimartOrder $order, string $trackingUrl): bool
+    {
+        try {
+            Mail::to($order->customer_email)->send(new PolimartOrderStatusMail($order, $trackingUrl));
+            return true;
+        } catch (Throwable $exception) {
+            Log::warning('Unable to send PoliMart order email.', [
+                'order_id' => $order->id,
+                'exception' => $exception->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     private function cartData(Request $request): array

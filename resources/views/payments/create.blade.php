@@ -39,7 +39,11 @@
                         </table>
                     </div>
                 @else
-                    <div class="alert alert-success">Tiada tunggakan yuran untuk dibayar.</div>
+                    @if($pendingAmount > 0)
+                        <div class="alert alert-info">Semua baki yuran yang dipilih kini diliputi bayaran menunggu semakan. Anda boleh menghantar bayaran baharu selepas semakan selesai.</div>
+                    @else
+                        <div class="alert alert-success">Tiada tunggakan yuran untuk dibayar.</div>
+                    @endif
                 @endif
 
                 <section class="mb-4" aria-labelledby="paid-current-year-fees-title">
@@ -75,17 +79,17 @@
                         <div class="col-md-4">
                             <label class="form-label" for="payment_method">Kaedah Bayaran</label>
                             <select class="form-select @error('payment_method') is-invalid @enderror" id="payment_method" name="payment_method" required>
-                                @foreach(['DuitNow QR', 'Transfer', 'Cash'] as $method)
-                                    <option value="{{ $method }}" @selected(old('payment_method', 'DuitNow QR') === $method)>{{ $method }}</option>
+                                @foreach($paymentOptions as $method => $label)
+                                    <option value="{{ $method }}" @selected(old('payment_method', array_key_first($paymentOptions)) === $method)>{{ $label }}</option>
                                 @endforeach
                             </select>
                             @include('partials.errors', ['name' => 'payment_method'])
                         </div>
                         <div class="col-12">
-                            <div id="payment-method-details" class="payment-method-details" data-qr="{{ 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='.urlencode('POLIBEST Kelab Staf - DuitNow') }}">
-                                <div class="method-detail js-method-detail" data-method="DuitNow QR"><img class="payment-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode('POLIBEST Kelab Staf - DuitNow') }}" alt="QR DuitNow Kelab Staf"><span>Imbas QR DuitNow Kelab Staf untuk membuat bayaran.</span></div>
-                                <div class="method-detail js-method-detail d-none" data-method="Transfer"><strong>Maklumat akaun Kelab Staf</strong><span>Bank: tetapkan nama bank kelab<br>No. Akaun: tetapkan nombor akaun kelab</span><small>Sila gunakan nama penuh sebagai rujukan transaksi.</small></div>
-                                <div class="method-detail js-method-detail d-none" data-method="Cash"><strong>Bayaran tunai</strong><span>Sila serahkan bayaran tunai kepada bendahari Kelab Staf.</span></div>
+                            <div id="payment-method-details" class="payment-method-details">
+                                @if($financePaymentQrPath)<div class="method-detail js-method-detail" data-method="DuitNow QR"><img class="payment-qr" src="{{ asset('storage/'.$financePaymentQrPath) }}" alt="QR bayaran yuran POLIBEST"><span>Selepas membayar, muat naik bukti transaksi untuk semakan bendahari.</span></div>@endif
+                                @if($financeBankDetails['bank_name'] && $financeBankDetails['account_name'] && $financeBankDetails['account_number'])<div class="method-detail js-method-detail d-none" data-method="Transfer"><strong>Maklumat akaun Kelab Staf</strong><span>{{ $financeBankDetails['bank_name'] }}<br>{{ $financeBankDetails['account_name'] }}<br>No. Akaun: {{ $financeBankDetails['account_number'] }}</span><small>Sila gunakan nama penuh sebagai rujukan transaksi dan lampirkan bukti.</small></div>@endif
+                                <div class="method-detail js-method-detail d-none" data-method="Cash"><strong>Bayaran tunai</strong><span>Sila serahkan bayaran kepada bendahari dan minta resit. Bukti bayaran akan disemak sebelum rekod yuran dikemas kini.</span></div>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -114,7 +118,7 @@
 @php($billPayload = $bills->values()->map(fn ($bill) => [
     'id' => $bill->id,
     'month' => $bill->billing_month->translatedFormat('F Y'),
-    'amount' => $bill->remainingAmount(),
+    'amount' => $bill->payment_available_amount,
     'status' => $bill->status === 'partial' ? 'Sebahagian' : 'Belum dibayar',
     'overdue' => $overdueBills->contains('id', $bill->id),
 ])->values())

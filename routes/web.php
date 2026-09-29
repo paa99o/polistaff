@@ -67,6 +67,8 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/preferences', [UserPreferenceController::class, 'update'])->name('preferences.update');
     Route::get('/polimart/create', [PolimartController::class, 'create'])->middleware('role:member,admin')->name('polimart.create');
     Route::get('/polimart/favorites', [PolimartController::class, 'favorites'])->name('polimart.favorites');
+    Route::get('/polimart/payment-settings', [PolimartController::class, 'paymentSettings'])->middleware('role:member,admin')->name('polimart.payment-settings');
+    Route::put('/polimart/payment-settings', [PolimartController::class, 'updatePaymentSettings'])->middleware('role:member,admin')->name('polimart.payment-settings.update');
     Route::post('/polimart', [PolimartController::class, 'store'])->middleware('role:member,admin')->name('polimart.store');
     Route::get('/polimart/seller/{user}', [PolimartController::class, 'seller'])->name('polimart.seller');
     Route::post('/polimart/{polimartItem}/report', [PolimartReportController::class, 'store'])->name('polimart.report');
@@ -85,7 +87,12 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/admin/queue/retry-failed', [AdminController::class, 'retryFailedJobs'])->middleware('role:admin')->name('admin.queue.retry-failed');
     Route::get('/admin/audit', [AdminController::class, 'audit'])->middleware('role:admin')->name('admin.audit');
     Route::get('/admin/polimart/reports', [PolimartReportController::class, 'index'])->middleware('role:admin')->name('admin.polimart.reports');
-    Route::get('/admin/polimart/orders', [PolimartController::class, 'orders'])->middleware('role:admin')->name('admin.polimart.orders');
+    Route::get('/admin/polimart/orders', [PolimartController::class, 'orders'])->middleware('role:admin,member')->name('admin.polimart.orders');
+    Route::patch('/admin/polimart/orders/{polimartOrder}', [PolimartController::class, 'updateOrderStatus'])->middleware('role:admin,member')->name('admin.polimart.orders.update');
+    Route::patch('/admin/polimart/orders/{polimartOrder}/payment-confirm', [PolimartController::class, 'confirmOrderPayment'])->middleware('role:admin,member')->name('admin.polimart.orders.payment-confirm');
+    Route::patch('/admin/polimart/orders/{polimartOrder}/payment-reject', [PolimartController::class, 'rejectOrderPaymentProof'])->middleware('role:admin,member')->name('admin.polimart.orders.payment-reject');
+    Route::patch('/admin/polimart/orders/{polimartOrder}/refund-confirm', [PolimartController::class, 'confirmOrderRefund'])->middleware('role:admin,member')->name('admin.polimart.orders.refund-confirm');
+    Route::get('/admin/polimart/orders/{polimartOrder}/payment-proof', [PolimartController::class, 'orderPaymentProof'])->middleware('role:admin,member')->name('admin.polimart.orders.payment-proof');
     Route::patch('/admin/polimart/reports/{polimartReport}', [PolimartReportController::class, 'update'])->middleware('role:admin')->name('admin.polimart.reports.update');
     Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->middleware('role:admin')->name('admin.users.update');
     Route::get('/admin/settings', [SystemSettingController::class, 'edit'])->middleware('role:admin')->name('settings.edit');
@@ -180,6 +187,8 @@ Route::post('/polimart/cart/add/{polimartItem}', [PolimartController::class, 'ad
 Route::delete('/polimart/cart/{polimartItem}', [PolimartController::class, 'removeFromCart'])->name('polimart.cart.remove');
 Route::get('/polimart/checkout', [PolimartController::class, 'checkout'])->name('polimart.checkout');
 Route::post('/polimart/checkout', [PolimartController::class, 'placeOrder'])->name('polimart.checkout.store');
+Route::get('/polimart/order/{polimartOrder}', [PolimartController::class, 'trackOrder'])->middleware('signed')->name('polimart.orders.track');
+Route::post('/polimart/order/{polimartOrder}/payment-proof', [PolimartController::class, 'submitOrderPaymentProof'])->middleware(['signed', 'throttle:6,1'])->name('polimart.orders.payment-proof.submit');
 Route::get('/polimart/{polimartItem}', [PolimartController::class, 'publicShow'])->name('polimart.show');
 Route::get('/activities', function (\Illuminate\Http\Request $request) {
     return $request->user()

@@ -7,6 +7,7 @@ use App\Models\PolimartItem;
 use App\Models\PolimartReport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class PolimartReportController extends Controller
@@ -56,6 +57,7 @@ class PolimartReportController extends Controller
     public function update(Request $request, PolimartReport $polimartReport): RedirectResponse
     {
         $data = $request->validate(['status' => ['required', 'in:dismissed,hidden,removed']]);
+        abort_unless($polimartReport->status === 'pending', 422, 'Laporan ini telah disemak.');
         $polimartReport->update([...$data, 'reviewed_by' => $request->user()->id]);
 
         if ($data['status'] === 'hidden') {
@@ -63,7 +65,11 @@ class PolimartReportController extends Controller
         }
 
         if ($data['status'] === 'removed') {
+            $imagePath = $polimartReport->item?->image_path;
             $polimartReport->item()->delete();
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
         }
 
         AuditLog::create([

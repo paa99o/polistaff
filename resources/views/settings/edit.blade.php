@@ -15,7 +15,7 @@
             <div class="card-body">
                 <span class="section-kicker">Konfigurasi Utama</span>
                 <h2 class="h4 soft-panel-title">Identiti &amp; Sistem</h2>
-                <form method="post" action="{{ route('settings.update') }}" data-confirm="Simpan perubahan tetapan sistem?">
+                <form method="post" action="{{ route('settings.update') }}" enctype="multipart/form-data" data-confirm="Simpan perubahan tetapan sistem?">
                     @csrf
                     @method('put')
                     <div class="row g-3">
@@ -38,6 +38,32 @@
                             <label class="form-label" for="opening_balance">Baki Permulaan</label>
                             <input class="form-control @error('opening_balance') is-invalid @enderror" id="opening_balance" type="number" step="0.01" name="opening_balance" value="{{ old('opening_balance', $settings['opening_balance']) }}" required>
                             @error('opening_balance')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <span class="section-kicker">Kaedah bayaran yuran</span>
+                    <p class="small text-muted">Masukkan butiran rasmi. Kaedah QR dan pindahan tidak akan ditunjukkan kepada ahli sehingga disediakan.</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="finance_qr_code">QR bayaran kelab</label>
+                            <input class="form-control" id="finance_qr_code" type="file" name="finance_qr_code" accept="image/*">
+                            @if($settings['finance_payment_qr_path'])<img class="mt-2" src="{{ asset('storage/'.$settings['finance_payment_qr_path']) }}" alt="QR bayaran kelab semasa" style="max-width:160px;max-height:160px">@endif
+                            @error('finance_qr_code')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="finance_bank_name">Nama bank</label>
+                            <input class="form-control" id="finance_bank_name" name="finance_bank_name" value="{{ old('finance_bank_name', $settings['finance_bank_name']) }}" maxlength="120">
+                            @error('finance_bank_name')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="finance_account_name">Nama pemegang akaun</label>
+                            <input class="form-control" id="finance_account_name" name="finance_account_name" value="{{ old('finance_account_name', $settings['finance_account_name']) }}" maxlength="120">
+                            @error('finance_account_name')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="finance_account_number">Nombor akaun</label>
+                            <input class="form-control" id="finance_account_number" name="finance_account_number" value="{{ old('finance_account_number', $settings['finance_account_number']) }}" maxlength="80">
+                            @error('finance_account_number')<div class="text-danger small">{{ $message }}</div>@enderror
                         </div>
                     </div>
                     <button class="btn btn-danger mt-3"><i class="bi bi-floppy me-1" aria-hidden="true"></i> Simpan Tetapan</button>

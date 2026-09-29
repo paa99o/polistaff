@@ -105,3 +105,32 @@ authorization control.
   read-only completion record.
 - A bill with `status = paid` cannot be selected or included in a new payment
   submission.
+
+## PoliMart orders and reviews
+
+- Guest checkout creates a `pending` order and reserves the ordered quantity by
+  deducting it from listing stock immediately.
+- The listing owner or an admin can manage an order containing that seller's
+  item. A member must never see another seller's orders or buyer details.
+- An order can move from `pending` to `confirmed` only after manual payment
+  verification. Pending, unpaid orders expire after 24 hours and release stock.
+- A proof reviewer can ask for a new proof with a reason. Cancelling after a
+  verified payment marks a manual refund as required; a seller/admin records it
+  as refunded only after the transfer is actually returned.
+- Cancelling a pending or confirmed order restores its quantities exactly once.
+  A completed or cancelled order is terminal.
+- A signed-in user may review an item only when a completed order contains that
+  item and the order email matches the user's account email.
+- Removing a reported listing also removes its stored product image. Report
+  history remains available after removal.
+- One cart and checkout may contain items from one seller only. The buyer must
+  place separate orders for products from other sellers.
+- Sellers maintain a public PoliMart payment profile with a QR image, bank
+  details, or both. Checkout requires the buyer to select one available method
+  and snapshots its instructions into the order.
+- QR and bank-transfer payments happen outside the application. Buyers submit
+  evidence; a seller manually checks their bank account before marking it paid.
+  Evidence upload alone never verifies a transfer.
+- The order confirmation email and signed 90-day tracking link show the chosen
+  payment instructions and order status. The tracking page does not expose the
+  buyer's delivery address or phone number.

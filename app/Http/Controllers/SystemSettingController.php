@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Throwable;
 
@@ -30,6 +31,10 @@ class SystemSettingController extends Controller
             'receipt_prefix' => SystemSetting::getValue('receipt_prefix', 'PB'),
             'contact_email' => SystemSetting::getValue('contact_email', 'admin@polibest.test'),
             'opening_balance' => SystemSetting::getValue('opening_balance', '0'),
+            'finance_payment_qr_path' => SystemSetting::getValue('finance_payment_qr_path'),
+            'finance_bank_name' => SystemSetting::getValue('finance_bank_name', ''),
+            'finance_account_name' => SystemSetting::getValue('finance_account_name', ''),
+            'finance_account_number' => SystemSetting::getValue('finance_account_number', ''),
             'maintenance_enabled' => SystemSetting::getValue('maintenance_enabled', '0') === '1',
             'maintenance_message' => SystemSetting::getValue('maintenance_message', 'Sistem sedang diselenggara bagi memastikan perkhidmatan kekal stabil.'),
             'maintenance_estimated_end' => SystemSetting::getValue('maintenance_estimated_end'),
@@ -38,7 +43,26 @@ class SystemSettingController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $data = $request->validate(['club_name' => ['required', 'string', 'max:120'], 'receipt_prefix' => ['required', 'string', 'max:10'], 'contact_email' => ['required', 'email'], 'opening_balance' => ['required', 'numeric']]);
+        $data = $request->validate([
+            'club_name' => ['required', 'string', 'max:120'],
+            'receipt_prefix' => ['required', 'string', 'max:10'],
+            'contact_email' => ['required', 'email'],
+            'opening_balance' => ['required', 'numeric'],
+            'finance_qr_code' => ['nullable', 'image', 'max:4096'],
+            'finance_bank_name' => ['nullable', 'string', 'max:120', 'required_with:finance_account_name,finance_account_number'],
+            'finance_account_name' => ['nullable', 'string', 'max:120', 'required_with:finance_bank_name,finance_account_number'],
+            'finance_account_number' => ['nullable', 'string', 'max:80', 'required_with:finance_bank_name,finance_account_name'],
+        ]);
+        $qrUpload = $request->file('finance_qr_code');
+        unset($data['finance_qr_code']);
+        if ($qrUpload) {
+            $oldQrPath = SystemSetting::getValue('finance_payment_qr_path');
+            $newQrPath = $qrUpload->store('finance-payment-qr', 'public');
+            SystemSetting::setValue('finance_payment_qr_path', $newQrPath);
+            if ($oldQrPath) {
+                Storage::disk('public')->delete($oldQrPath);
+            }
+        }
         foreach ($data as $key => $value) {
             SystemSetting::setValue($key, $value);
         }

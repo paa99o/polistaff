@@ -17,6 +17,14 @@
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.favorites') }}">
                 <i class="bi bi-heart me-2" aria-hidden="true"></i>Favorite Saya
             </a>
+            @if(auth()->user()->hasRole('member', 'admin'))
+                <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.payment-settings') }}">
+                    <i class="bi bi-credit-card me-2" aria-hidden="true"></i>Maklumat Bayaran Saya
+                </a>
+                <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('admin.polimart.orders') }}">
+                    <i class="bi bi-bag-check me-2" aria-hidden="true"></i>Urus Pesanan Saya
+                </a>
+            @endif
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.cart') }}">
                 <i class="bi bi-cart3 me-2" aria-hidden="true"></i>Troli Beli-belah
             </a>
@@ -84,6 +92,15 @@
                             </div>
                             @if(in_array($item->id, $favoriteIds, true))
                                 <span class="polimart-favorite-label"><i class="bi bi-heart-fill me-1" aria-hidden="true"></i>Disimpan</span>
+                            @endif
+                            @if($item->status === 'active' && $item->user_id !== auth()->id())
+                                <form method="post" action="{{ route('polimart.favorite', $item) }}" class="mt-2">
+                                    @csrf
+                                    <button class="btn btn-sm {{ in_array($item->id, $favoriteIds, true) ? 'btn-outline-danger' : 'btn-outline-secondary' }}" type="submit" aria-label="{{ in_array($item->id, $favoriteIds, true) ? 'Buang '.$item->name.' daripada kegemaran' : 'Simpan '.$item->name.' sebagai kegemaran' }}">
+                                        <i class="bi {{ in_array($item->id, $favoriteIds, true) ? 'bi-heart-fill' : 'bi-heart' }} me-1" aria-hidden="true"></i>
+                                        {{ in_array($item->id, $favoriteIds, true) ? 'Buang kegemaran' : 'Simpan kegemaran' }}
+                                    </button>
+                                </form>
                             @endif
                             @if($mine)
                                 <span class="polimart-status polimart-status-{{ $item->status }} align-self-start">{{ ucfirst($item->status) }}</span>

@@ -63,7 +63,7 @@
                     <p class="polimart-detail-description">{{ $item->description ?: 'Tiada penerangan tambahan.' }}</p>
                 </section>
 
-                @if($item->status === 'sold' && $item->user_id !== auth()->id())
+                @if($canReview)
                     <section class="polimart-review-box">
                         <h2>Review barang</h2>
                         <form method="post" action="{{ route('polimart.review', $item) }}">
