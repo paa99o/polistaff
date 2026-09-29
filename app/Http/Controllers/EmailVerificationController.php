@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Throwable;
 
 class EmailVerificationController extends Controller
 {
@@ -47,8 +48,16 @@ class EmailVerificationController extends Controller
             return to_route('dashboard');
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        try {
+            $request->user()->sendEmailVerificationNotification();
+        } catch (Throwable $exception) {
+            report($exception);
 
-        return back()->with('status', 'Pautan pengesahan baharu telah dihantar.');
+            return back()->with('status', 'Emel pengesahan gagal dihantar. Sila cuba semula sebentar lagi atau hubungi admin.')
+                ->with('email_error', true);
+        }
+
+        return back()->with('status', 'Pautan pengesahan baharu telah dihantar.')
+            ->with('email_error', false);
     }
 }

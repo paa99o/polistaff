@@ -33,9 +33,8 @@ class EnsureActiveMembership
             ], 403);
         }
 
-        return to_route('membership.apply')->with(
-            'status',
-            'Sila lengkapkan atau tunggu kelulusan permohonan keahlian sebelum menggunakan fungsi ini.'
-        );
+        return to_route('membership.apply')->with('status', $user->membership_status === 'pending'
+            ? 'Permohonan keahlian anda sedang menunggu semakan admin.'
+            : 'Sila lengkapkan permohonan keahlian sebelum menggunakan fungsi ini.');
     }
 }

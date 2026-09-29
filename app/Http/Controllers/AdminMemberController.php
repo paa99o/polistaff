@@ -26,6 +26,7 @@ class AdminMemberController extends Controller
     public function approve(User $user): RedirectResponse
     {
         abort_unless($user->membership_status === 'pending', 422, 'Permohonan ini sudah disemak.');
+        abort_if(! $user->hasVerifiedEmail(), 422, 'Pemohon perlu mengesahkan alamat emel sebelum permohonan boleh diluluskan.');
 
         $user->update([
             'membership_status' => 'active',

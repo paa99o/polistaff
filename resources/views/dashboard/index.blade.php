@@ -37,12 +37,9 @@
 @endphp
 
 <section class="page-intro dashboard-hero">
-    <div>
-        <div class="auth-stripe mb-3" aria-hidden="true"><span></span><span></span><span></span></div>
-        <p class="dashboard-kicker">Selamat datang, {{ $firstName }}</p>
-        <h1 class="brand-hero-title dashboard-brand-title" aria-label="POLIBEST">
-            <span>POLI</span><span>STAFF</span>
-        </h1>
+    <div class="dashboard-welcome-copy">
+        <p class="dashboard-kicker">Dashboard POLIBEST</p>
+        <h1>Selamat datang, {{ $firstName }}</h1>
         <p>
             @if($pendingActionCount > 0)
                 Anda mempunyai {{ $pendingActionCount }} tindakan yang memerlukan perhatian.
@@ -51,27 +48,7 @@
             @endif
         </p>
     </div>
-</section>
-
-<section class="dashboard-polimart mb-5" aria-label="PoliMart">
-    <article class="card dashboard-polimart-card">
-        <div class="dashboard-polimart-copy">
-            <span class="stat-icon" aria-hidden="true"><i class="bi bi-bag-heart"></i></span>
-            <p class="dashboard-polimart-kicker">PoliMart</p>
-            <h2>Beli. Jual. Cari.</h2>
-            <p>Barang menarik, semuanya di sini.</p>
-        </div>
-        <div class="dashboard-polimart-actions">
-            <a class="btn btn-light" href="{{ route('polimart.index') }}">
-                <i class="bi bi-shop me-2" aria-hidden="true"></i>Lihat PoliMart
-            </a>
-            @if($role === 'admin')
-                <a class="btn btn-outline-light" href="{{ route('polimart.create') }}">
-                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Jual Barang
-                </a>
-            @endif
-        </div>
-    </article>
+    <span class="dashboard-welcome-icon" aria-hidden="true"><i class="bi bi-grid-1x2"></i></span>
 </section>
 
 <section aria-label="Ringkasan utama" class="dashboard-summary mb-5">
@@ -277,5 +254,28 @@
             </article>
         </div>
     </div>
+</section>
+
+<section class="dashboard-polimart mb-5" aria-label="PoliMart">
+    <article class="card dashboard-polimart-card">
+        <div class="dashboard-polimart-copy">
+            <span class="stat-icon" aria-hidden="true"><i class="bi bi-bag-heart"></i></span>
+            <div class="dashboard-polimart-text">
+                <p class="dashboard-polimart-kicker">Ruang jual beli komuniti</p>
+                <h2>Kenali PoliMart.</h2>
+                <p>Temui barangan pilihan kelab dan sokong aktiviti komuniti.</p>
+            </div>
+        </div>
+        <div class="dashboard-polimart-actions">
+            <a class="btn btn-light" href="{{ route('polimart.index') }}">
+                <i class="bi bi-shop me-2" aria-hidden="true"></i>Lihat PoliMart
+            </a>
+            @if($role === 'admin')
+                <a class="btn btn-outline-light" href="{{ route('polimart.create') }}">
+                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Jual Barang
+                </a>
+            @endif
+        </div>
+    </article>
 </section>
 @endsection

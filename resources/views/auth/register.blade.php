@@ -16,7 +16,7 @@
                     <div class="auth-stripe mt-4" aria-hidden="true"><span></span><span></span><span></span></div>
                     <div class="mt-5 auth-brand-copy">
                         <h2 class="mb-3">Cipta akaun POLIBEST.</h2>
-                        <p class="mb-0">Selepas mendaftar, sahkan alamat emel anda melalui pautan yang dihantar. Pautan itu membawa anda ke dashboard; dari situ, hantar permohonan ahli kelab staf untuk semakan pentadbir.</p>
+                        <p class="mb-0">Hantar satu permohonan untuk membuka akaun dan memohon keahlian. Admin akan menyemak maklumat staf anda.</p>
                     </div>
                 </div>
                 <a class="home-link" href="{{ url('/') }}">
@@ -29,9 +29,9 @@
         <div class="col-md-8">
             <section class="auth-form-panel">
                 <div>
-                    <span class="badge mb-3"><i class="bi bi-person-plus" aria-hidden="true"></i> Akaun Baharu</span>
-                    <h1>Daftar akaun</h1>
-                    <p>Langkah seterusnya: sahkan emel, buka dashboard dan hantar permohonan keahlian.</p>
+                    <span class="badge mb-3"><i class="bi bi-person-plus" aria-hidden="true"></i> Permohonan Ahli</span>
+                    <h1>Daftar dan mohon keahlian</h1>
+                    <p>Satu borang sahaja. Sahkan emel anda; admin akan menyemak permohonan sebelum akses ahli dibuka.</p>
 
                     <form method="post" action="{{ route('register') }}" enctype="multipart/form-data">
                         @csrf
@@ -47,9 +47,24 @@
                                 @include('partials.errors', ['name' => 'email'])
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label" for="ic_number">Nombor kad pengenalan</label>
+                                <input class="form-control" id="ic_number" name="ic_number" value="{{ old('ic_number') }}" autocomplete="off" required>
+                                @include('partials.errors', ['name' => 'ic_number'])
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="department">Jabatan</label>
+                                <input class="form-control" id="department" name="department" value="{{ old('department') }}" required>
+                                @include('partials.errors', ['name' => 'department'])
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label" for="phone">Nombor telefon</label>
-                                <input class="form-control" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel">
+                                <input class="form-control" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel" required>
                                 @include('partials.errors', ['name' => 'phone'])
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="address">Alamat</label>
+                                <textarea class="form-control" id="address" name="address" rows="3" required>{{ old('address') }}</textarea>
+                                @include('partials.errors', ['name' => 'address'])
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="profile_photo">Gambar profil</label>
@@ -68,7 +83,7 @@
                             </div>
                         </div>
 
-                        <button class="btn btn-primary mt-4" type="submit">Hantar Pendaftaran</button>
+                        <button class="btn btn-primary mt-4" type="submit">Hantar Permohonan</button>
                         <a class="btn btn-outline-primary mt-4 ms-2" href="{{ route('login') }}">Sudah ada akaun</a>
                     </form>
                 </div>

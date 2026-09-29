@@ -3,8 +3,9 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Ahli Menunggu Kelulusan</h1>
-    <a class="btn btn-outline-danger" href="{{ route('admin.index') }}">Pentadbiran</a>
+    <a class="btn btn-outline-primary" href="{{ route('admin.index') }}">Pentadbiran</a>
 </div>
+<p class="text-muted">Permohonan baharu muncul di sini selepas dihantar. Pemohon perlu mengesahkan emel sebelum anda boleh meluluskan keahlian.</p>
 
 <div class="card">
     <div class="table-responsive">
@@ -12,7 +13,7 @@
             <thead>
                 <tr>
                     <th>Nama</th>
-                    <th>Emel</th>
+                    <th>Emel / Pengesahan</th>
                     <th>Jabatan</th>
                     <th>Maklumat</th>
                     <th>Tindakan</th>
@@ -22,7 +23,10 @@
                 @forelse($members as $member)
                     <tr>
                         <td data-label="Nama">{{ $member->name }}</td>
-                        <td data-label="Emel">{{ $member->email }}</td>
+                        <td data-label="Emel / Pengesahan">
+                            {{ $member->email }}
+                            <span class="badge d-block mt-1 {{ $member->hasVerifiedEmail() ? 'text-bg-success' : 'text-bg-warning' }}">{{ $member->hasVerifiedEmail() ? 'Emel disahkan' : 'Belum sahkan emel' }}</span>
+                        </td>
                         <td data-label="Jabatan">{{ $member->department }}</td>
                         <td data-label="Maklumat">
                             <div class="small">IC: {{ $member->ic_number ?: '-' }}</div>
@@ -34,7 +38,7 @@
                                 <form method="post" action="{{ route('admin.members.approve', $member) }}" data-confirm="Luluskan permohonan {{ $member->name }}?">
                                     @csrf
                                     @method('patch')
-                                    <button class="btn btn-sm btn-danger">Luluskan</button>
+                                    <button class="btn btn-sm btn-primary" @disabled(! $member->hasVerifiedEmail())>Luluskan</button>
                                 </form>
                                 <form method="post" action="{{ route('admin.members.reject', $member) }}" data-confirm="Tolak permohonan {{ $member->name }}? Emel akan dihantar kepada pemohon.">
                                     @csrf

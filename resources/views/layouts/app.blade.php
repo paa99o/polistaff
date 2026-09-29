@@ -11,7 +11,7 @@
     <title>{{ $title ?? 'POLIBEST' }} &middot; POLIBEST</title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/favicon.ico" sizes="any">
-    <meta name="theme-color" content="#1557D8">
+    <meta name="theme-color" content="#4F8074">
     @include('partials.theme-loader')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -109,7 +109,7 @@
                         <div class="mega-nav-item {{ request()->routeIs('admin.*') || request()->routeIs('settings.*') ? 'active' : '' }}">
                             <button class="mega-nav-title" type="button">Pentadbiran</button>
                             <div class="mega-menu mega-menu-wide">
-                                <a class="mega-menu-link {{ request()->routeIs('admin.index') ? 'active' : '' }}" href="{{ route('admin.index') }}">
+                                <a class="mega-menu-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">
                                     <i class="bi bi-people" aria-hidden="true"></i><span>Pengguna</span>
                                 </a>
                                 <a class="mega-menu-link {{ request()->routeIs('admin.members.*') ? 'active' : '' }}" href="{{ route('admin.members.pending') }}">

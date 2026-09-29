@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MembershipApplicationRequest;
 use App\Models\AuditLog;
+use App\Models\PortalNotification;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,13 +16,17 @@ class MembershipApplicationController extends Controller
     {
         abort_if($request->user()->membership_status === 'active', 403);
 
+        if ($request->user()->membership_status === 'pending') {
+            return view('membership.status', ['user' => $request->user()]);
+        }
+
         return view('membership.apply', ['user' => $request->user()]);
     }
 
     public function store(MembershipApplicationRequest $request): RedirectResponse
     {
         $user = $request->user();
-        abort_if($user->membership_status === 'active', 403);
+        abort_unless($user->membership_status === 'inactive', 403, 'Permohonan anda sedang menunggu semakan.');
 
         $before = $user->only(['name', 'ic_number', 'department', 'phone', 'address', 'membership_status']);
 
@@ -42,6 +47,14 @@ class MembershipApplicationController extends Controller
             'changes' => ['before' => $before, 'after' => $user->fresh()->only(['name', 'ic_number', 'department', 'phone', 'address', 'membership_status'])],
             'ip_address' => $request->ip(),
         ]);
+
+        User::where('role', 'admin')->get()->each(fn (User $admin) => PortalNotification::create([
+            'user_id' => $admin->id,
+            'title' => 'Permohonan ahli dihantar semula',
+            'message' => $user->name.' telah menghantar semula permohonan keahlian untuk semakan.',
+            'type' => 'info',
+            'link' => route('admin.members.pending'),
+        ]));
 
         return redirect()->route('dashboard')->with('status', 'Permohonan ahli kelab staf berjaya dihantar dan menunggu semakan admin.');
     }

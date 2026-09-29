@@ -1,10 +1,10 @@
 @extends('layouts.app', ['title' => 'Log Masuk'])
 
 @section('content')
-<div class="card auth-card">
+<div class="card auth-card login-auth-card">
     <div class="row g-0">
         <div class="col-md-6">
-            <section class="auth-brand-panel">
+            <section class="auth-brand-panel login-brand-panel">
                 <div>
                     <a class="d-inline-flex align-items-center gap-3 text-dark" href="{{ url('/') }}">
                         @include('partials.brand-mark')
@@ -35,7 +35,7 @@
         </div>
 
         <div class="col-md-6">
-            <section class="auth-form-panel">
+            <section class="auth-form-panel login-form-panel">
                 <div>
                     <span class="badge mb-3"><i class="bi bi-shield-check" aria-hidden="true"></i> Portal Ahli</span>
                     <h1>Selamat kembali</h1>

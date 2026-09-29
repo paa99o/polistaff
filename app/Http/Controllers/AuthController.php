@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterRequest;
 use App\Models\AuditLog;
+use App\Models\PortalNotification;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Throwable;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -33,14 +35,33 @@ class AuthController extends Controller
             ...$data,
             'password' => Hash::make($data['password']),
             'role' => 'member',
-            'membership_status' => 'inactive',
+            'membership_status' => 'pending',
+            'fee_balance' => 10,
         ]);
 
-        Auth::login($user);
-        $user->sendEmailVerificationNotification();
-        AuditLog::create(['user_id' => $user->id, 'action' => 'registered', 'module' => 'Authentication', 'record_type' => User::class, 'record_id' => $user->id, 'description' => 'New account registered and logged in.', 'changes' => ['email' => $user->email, 'membership_status' => $user->membership_status], 'ip_address' => $request->ip()]);
+        User::where('role', 'admin')->get()->each(fn (User $admin) => PortalNotification::create([
+            'user_id' => $admin->id,
+            'title' => 'Permohonan ahli baharu',
+            'message' => $user->name.' telah menghantar permohonan keahlian dan menunggu semakan.',
+            'type' => 'info',
+            'link' => route('admin.members.pending'),
+        ]));
 
-        return redirect()->route('verification.notice')->with('status', 'Pendaftaran berjaya. Sila sahkan alamat emel anda.');
+        Auth::login($user);
+        $verificationSent = true;
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (Throwable $exception) {
+            report($exception);
+            $verificationSent = false;
+        }
+        AuditLog::create(['user_id' => $user->id, 'action' => 'submitted', 'module' => 'Membership', 'record_type' => User::class, 'record_id' => $user->id, 'description' => 'New account and membership application submitted.', 'changes' => ['email' => $user->email, 'membership_status' => $user->membership_status], 'ip_address' => $request->ip()]);
+
+        return redirect()->route('verification.notice')
+            ->with('status', $verificationSent
+                ? 'Permohonan berjaya dihantar. Sahkan emel anda sementara admin menyemak permohonan.'
+                : 'Permohonan sudah direkodkan tetapi emel pengesahan gagal dihantar. Sila cuba hantar semula atau hubungi admin.')
+            ->with('email_error', ! $verificationSent);
     }
 
     public function showLogin(): View

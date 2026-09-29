@@ -12,6 +12,7 @@ use App\Models\PortalNotification;
 use App\Models\EmailDelivery;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -80,7 +81,10 @@ class AppServiceProvider extends ServiceProvider
                 ->latest()
                 ->first();
 
-            $delivery?->update(['status' => 'failed', 'error' => $event->exception->getMessage()]);
+            $exception = $event->data['exception'] ?? null;
+            $error = $exception instanceof Throwable ? $exception->getMessage() : 'Email delivery failed.';
+
+            $delivery?->update(['status' => 'failed', 'error' => $error]);
         });
     }
 }

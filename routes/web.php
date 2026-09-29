@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/admin/members/{user}/approve', [AdminMemberController::class, 'approve'])->middleware('role:admin')->name('admin.members.approve');
     Route::patch('/admin/members/{user}/reject', [AdminMemberController::class, 'reject'])->middleware('role:admin')->name('admin.members.reject');
     Route::get('/admin', [AdminController::class, 'index'])->middleware('role:admin')->name('admin.index');
+    Route::get('/admin/users', [AdminController::class, 'users'])->middleware('role:admin')->name('admin.users');
     Route::post('/admin/queue/retry-failed', [AdminController::class, 'retryFailedJobs'])->middleware('role:admin')->name('admin.queue.retry-failed');
     Route::get('/admin/audit', [AdminController::class, 'audit'])->middleware('role:admin')->name('admin.audit');
     Route::get('/admin/polimart/reports', [PolimartReportController::class, 'index'])->middleware('role:admin')->name('admin.polimart.reports');

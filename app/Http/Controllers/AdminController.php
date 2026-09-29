@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
-use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
 use App\Models\PolimartReport;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +16,26 @@ use Illuminate\View\View;
 
 class AdminController extends Controller
 {
-    public function index(Request $request): View
+    public function index(): View
+    {
+        return view('admin.index', [
+            'totalUsers' => User::count(),
+            'pendingUsers' => User::where('membership_status', 'pending')->count(),
+            'activeUsers' => User::where('membership_status', 'active')->count(),
+            'pendingPayments' => PaymentSubmission::where('status', 'pending')->count(),
+            'pendingClaims' => ExpenseClaim::whereIn('status', ['pending', 'treasurer_verified'])->count(),
+            'pendingActivities' => Activity::whereIn('status', ['pending_approval', 'treasurer_verified'])->count(),
+            'incompleteProfiles' => User::profileIncomplete()->count(),
+            'outstandingFees' => User::where('membership_status', 'active')->sum('fee_balance'),
+            'upcomingActivities' => Activity::where('status', 'approved')->where('date_time', '>=', now())->orderBy('date_time')->limit(4)->get(),
+            'recentAuditLogs' => AuditLog::with('user')->latest()->limit(5)->get(),
+            'queuedJobs' => DB::table('jobs')->count(),
+            'failedJobs' => DB::table('failed_jobs')->count(),
+            'pendingPolimartReports' => PolimartReport::where('status', 'pending')->count(),
+        ]);
+    }
+
+    public function users(Request $request): View
     {
         $users = User::query()
             ->when($request->filled('search'), function ($query) use ($request): void {
@@ -36,26 +53,7 @@ class AdminController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('admin.index', [
-            'users' => $users,
-            'totalUsers' => User::count(),
-            'pendingUsers' => User::where('membership_status', 'pending')->count(),
-            'activeUsers' => User::where('membership_status', 'active')->count(),
-            'totalActivities' => Activity::count(),
-            'totalAttendances' => Attendance::count(),
-            'pendingPayments' => PaymentSubmission::where('status', 'pending')->count(),
-            'pendingClaims' => ExpenseClaim::whereIn('status', ['pending', 'treasurer_verified'])->count(),
-            'pendingActivities' => Activity::whereIn('status', ['pending_approval', 'treasurer_verified'])->count(),
-            'incompleteProfiles' => User::profileIncomplete()->count(),
-            'outstandingFees' => User::where('membership_status', 'active')->sum('fee_balance'),
-            'upcomingActivities' => Activity::where('status', 'approved')->where('date_time', '>=', now())->orderBy('date_time')->limit(4)->get(),
-            'recentAuditLogs' => AuditLog::with('user')->latest()->limit(6)->get(),
-            'netBalance' => Transaction::where('status', 'active')->where('type', 'income')->sum('amount')
-                - Transaction::where('status', 'active')->where('type', 'expense')->sum('amount'),
-            'queuedJobs' => DB::table('jobs')->count(),
-            'failedJobs' => DB::table('failed_jobs')->count(),
-            'pendingPolimartReports' => PolimartReport::where('status', 'pending')->count(),
-        ]);
+        return view('admin.users', ['users' => $users]);
     }
 
     public function retryFailedJobs(Request $request): RedirectResponse

@@ -27,7 +27,7 @@
             </header>
 
             @if(session('status'))
-                <div class="alert alert-success auto-dismiss-alert" role="status">
+                <div class="alert {{ session('email_error') ? 'alert-danger' : 'alert-success' }} auto-dismiss-alert" role="status">
                     <i class="bi bi-check-circle me-2" aria-hidden="true"></i>{{ session('status') }}
                 </div>
             @endif
@@ -37,7 +37,7 @@
             <h1>Semak peti masuk anda</h1>
             <p>Kami telah menghantar pautan pengesahan ke:</p>
             <strong class="verification-email">{{ auth()->user()->email }}</strong>
-            <p class="verification-note">Klik pautan dalam emel untuk membuka akses penuh ke portal. Pautan sah selama 60 minit.</p>
+            <p class="verification-note">Permohonan keahlian anda sudah dihantar untuk semakan. Klik pautan pengesahan emel; akses ahli hanya dibuka selepas permohonan diluluskan. Pautan sah selama 60 minit.</p>
 
             <div class="verification-actions">
                 <form method="post" action="{{ route('verification.send') }}">
