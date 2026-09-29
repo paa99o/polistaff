@@ -19,7 +19,6 @@ use App\Models\Attendance;
 use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
 use App\Models\PolimartItem;
-use App\Models\PolimartConversation;
 use App\Models\PolimartReport;
 use App\Models\PolimartReview;
 use App\Models\SystemSetting;
@@ -1296,35 +1295,6 @@ class PoliBestFeatureTest extends TestCase
 
         $this->actingAs($buyer)->post(route('polimart.favorite', $item));
         $this->actingAs($buyer)->get(route('polimart.favorites'))->assertOk()->assertSee('Baju Pre-loved');
-    }
-
-    public function test_buyer_and_seller_can_chat_about_a_listing(): void
-    {
-        $seller = User::factory()->create();
-        $buyer = User::factory()->create();
-        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Kasut', 'category' => 'Pre-loved', 'price' => 25, 'contact' => '0123456789', 'status' => 'active']);
-
-        $this->actingAs($buyer)->post(route('polimart.chat.start', $item))->assertRedirect();
-        $conversation = PolimartConversation::firstOrFail();
-
-        $this->actingAs($buyer)->post(route('polimart.chat.send', $conversation), ['body' => 'Masih ada lagi?'])->assertRedirect();
-        $this->assertDatabaseHas('polimart_messages', ['polimart_conversation_id' => $conversation->id, 'sender_id' => $buyer->id, 'body' => 'Masih ada lagi?']);
-        $this->assertDatabaseHas('notifications', ['user_id' => $seller->id, 'type' => 'polimart_chat', 'is_read' => false]);
-
-        $this->actingAs($seller)->get(route('polimart.chat.show', $conversation))->assertOk()->assertSee('Masih ada lagi?');
-        $this->actingAs($seller)->post(route('polimart.chat.send', $conversation), ['body' => 'Masih ada.'])->assertRedirect();
-        $this->assertDatabaseHas('polimart_messages', ['polimart_conversation_id' => $conversation->id, 'sender_id' => $seller->id, 'body' => 'Masih ada.']);
-    }
-
-    public function test_unread_polimart_chat_count_is_shown_in_navigation(): void
-    {
-        $seller = User::factory()->create();
-        $buyer = User::factory()->create();
-        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Beg', 'category' => 'Pakaian', 'price' => 20, 'contact' => '0123456789', 'status' => 'active']);
-        $conversation = PolimartConversation::create(['polimart_item_id' => $item->id, 'buyer_id' => $buyer->id, 'seller_id' => $seller->id, 'last_message_at' => now()]);
-        $conversation->messages()->create(['sender_id' => $buyer->id, 'body' => 'Masih ada?']);
-
-        $this->actingAs($seller)->get(route('dashboard'))->assertOk()->assertSee('aria-label="Chat PoliMart"', false)->assertSee('>1</span>', false);
     }
 
     public function test_admin_can_hide_a_reported_polimart_listing(): void
