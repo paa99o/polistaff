@@ -95,3 +95,91 @@
 - The focused role/PoliMart regression set passed (21 tests). The full suite
   reports 80 passed, 24 failed, and 5 errors, so the system is not yet verified
   for release.
+
+## Open QA items — 2026-09-30
+
+**Current status: NOT READY for release.** These checks were made against the
+local app at `http://127.0.0.1:8012` and local MySQL database `polistaff_db`.
+Production was not changed. Current code commit: `58cd362`.
+
+### 1. Database migration drift — blocks checkout and other flows
+
+- 20 migrations are still pending in `polistaff_db`. The activity evidence
+  photo migration `2026_09_24_000001_create_activity_evidence_photos_table`
+  was applied separately to restore the local past-activity image demo.
+- The checkout route returns HTTP 500 because the table
+  `polimart_seller_payment_profiles` is missing. That table is created by the
+  pending `2026_09_30_000001_create_polimart_seller_payment_profiles_table`.
+- Remaining pending migrations:
+  - `2026_09_20_000001_add_activity_submission_workflow`
+  - `2026_09_20_000002_add_activity_report_photo`
+  - `2026_09_21_000001_add_bill_ids_to_payment_submissions`
+  - `2026_09_21_000002_make_payment_proof_optional`
+  - `2026_09_21_000003_remove_documents_and_feedback_tables`
+  - `2026_09_21_000004_create_donations_table`
+  - `2026_09_21_000005_add_activity_treasurer_review`
+  - `2026_09_21_000006_remove_chairman_role`
+  - `2026_09_24_000002_make_activity_qr_token_nullable`
+  - `2026_09_24_000003_remove_activity_attendance_window_fields`
+  - `2026_09_26_000001_add_activity_proposal_fields`
+  - `2026_09_26_000002_create_activity_paperwork_versions_table`
+  - `2026_09_26_000003_add_paperwork_to_donations_table`
+  - `2026_09_29_000001_remove_polimart_chat_tables`
+  - `2026_09_30_000001_create_polimart_seller_payment_profiles_table`
+  - `2026_09_30_000002_add_manual_payment_review_to_polimart_orders`
+  - `2026_09_30_000003_complete_polimart_payment_lifecycle`
+  - `2026_09_30_000004_create_portal_notification_reads_table`
+  - `2026_09_30_000005_backfill_polimart_order_expirations`
+  - `2026_09_30_000006_index_portal_notification_reads_by_user`
+- Before running the remaining migrations, take a database backup and review
+  the migrations that remove legacy tables or the Chairman role. Then retest
+  checkout, payment-profile setup, proof review, order completion/cancellation,
+  expiry/restock, and signed order tracking.
+
+### 2. Browser coverage by role
+
+- **Guest:** homepage, activities, past activities, PoliMart, and cart loaded.
+  Guest requests to `/dashboard`, `/transactions`, and `/admin` redirected to
+  login. Checkout is the exception and currently returns 500 as noted above.
+- **Admin and Treasurer:** earlier browser checks confirmed the expected
+  admin/finance access split. Repeat these checks after the pending migrations.
+- **Member, Pending, Inactive:** browser login was not completed in the latest
+  pass because the browser did not retain the synthetic QA email in the login
+  field. No login was submitted for those roles. Use automated coverage as
+  interim evidence, then repeat the browser matrix with a clean QA session.
+- The focused automated role/PoliMart set passed 21 tests. It includes
+  membership restrictions, owner/admin listing controls, hidden-listing
+  privacy, moderation, stock restoration, mixed-seller checkout rules, review
+  eligibility, signed order tracking, and Treasurer payment decisions.
+
+### 3. Full-suite failures
+
+- Latest full run: **109 tests — 80 passed, 24 failed, 5 errors**.
+- Failures include stale tests expecting Chairman approval routes, a calendar
+  assertion whose activity falls in the next month, and the example root-route
+  test using a database without the `activities` table. Some registration,
+  payment, claim, and attendance tests error before completing assertions.
+- Reconcile obsolete expectations and fixtures with current roles/workflows;
+  rerun the full suite after fixing the schema/test setup.
+
+### 4. Demo activities restored locally
+
+- Homepage demo rows: IDs 4–6, three clearly labelled upcoming examples.
+- Past activity rows: IDs 7–8, with `demo-hari-sukan.svg` and
+  `demo-jamuan.svg`; both detail pages returned successfully and both images
+  loaded in the browser.
+- These rows are local MySQL demo data, not Git files and not published-site
+  content. Homepage shows upcoming activities; past examples are under
+  `/activities?view=past`.
+
+### 5. Flows still needing end-to-end retest
+
+- Complete checkout after migrations: QR/bank selection, buyer proof upload,
+  seller approval or resubmission, completion, cancellation/refund, and stock
+  expiry/restoration.
+- Repeat Member/Pending/Inactive access tests and direct-URL authorization.
+- Retest activity review/publication, evidence and paperwork uploads,
+  registrations/capacity, QR attendance, claims, donations, payment uploads,
+  finance reports, notification read/delivery, and admin backup/restore.
+- File picker interactions were not confirmed in the previous browser run;
+  automated file-upload tests do not prove the browser picker works.
