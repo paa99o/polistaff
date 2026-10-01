@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class ActivityPaperworkController extends Controller
 {
-    private const TEMPLATE_VERSION = '1.0';
+    private const TEMPLATE_VERSION = '2.0';
 
     public function generate(Request $request, Activity $activity): RedirectResponse
     {
@@ -44,13 +44,16 @@ class ActivityPaperworkController extends Controller
         $this->authorizeActivity($activity, $request->user());
         abort_unless($version->activity_id === $activity->id, 404);
         $data = $request->validate([
-            'background' => ['required', 'string', 'max:10000'],
+            'summary' => ['required', 'string', 'max:10000'],
+            'impact' => ['required', 'string', 'max:10000'],
             'closing' => ['required', 'string', 'max:4000'],
             'objectives_text' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $content = $version->content;
-        $content['background'] = $data['background'];
+        $content['background'] = $data['summary'];
+        $content['summary'] = $data['summary'];
+        $content['impact'] = $data['impact'];
         $content['closing'] = $data['closing'];
         $content['objectives'] = collect(preg_split('/\r\n|\r|\n/', $data['objectives_text'] ?? ''))
             ->map(fn (string $item) => trim($item))
@@ -111,22 +114,32 @@ class ActivityPaperworkController extends Controller
             'activity_type' => $activity->activity_type,
             'program_category' => $activity->program_category,
             'organizing_unit' => $activity->organizing_unit,
+            'person_in_charge' => $activity->person_in_charge,
+            'program_level' => $proposal['program_level'] ?? '',
+            'purposes' => $proposal['purposes'] ?? [],
+            'course_categories' => $proposal['course_categories'] ?? [],
+            'summary' => $proposal['summary'] ?? '',
+            'impact' => $proposal['impact'] ?? '',
+            'session' => $proposal['session'] ?? '',
             'start_date' => $activity->date_time?->format('d/m/Y'),
             'end_date' => ($activity->end_time ?? $activity->date_time)?->format('d/m/Y'),
             'start_time' => $activity->date_time?->format('h:i A'),
             'end_time' => $activity->end_time?->format('h:i A'),
             'location' => $activity->location,
             'implementation_mode' => $activity->implementation_mode,
-            'background' => '',
+            'background' => $proposal['summary'] ?? '',
             'objectives' => $proposal['objectives'] ?? [],
             'target_participants' => $proposal['target_participants'] ?? [],
             'expected_participants' => $activity->expected_participants ?? $activity->max_participants,
             'participant_criteria' => $activity->participant_criteria,
             'tentative' => $proposal['tentative'] ?? [],
             'committee' => $proposal['committee'] ?? [],
+            'speakers' => $proposal['speakers'] ?? [],
             'budget_items' => $proposal['budget_items'] ?? [],
             'funding_sources' => $proposal['funding_sources'] ?? [],
-            'closing' => 'Adalah diharapkan pelaksanaan program ini dapat mencapai objektif yang telah ditetapkan serta memberi manfaat kepada semua peserta. Kerjasama dan sokongan semua pihak amat dihargai.',
+            'finance_source' => $proposal['finance_source'] ?? '',
+            'kulpl_review' => $proposal['kulpl_review'] ?? '',
+            'closing' => $proposal['closing'] ?? 'Adalah diharapkan pelaksanaan program ini dapat mencapai objektif yang telah ditetapkan serta memberi manfaat kepada semua peserta. Kerjasama dan sokongan semua pihak amat dihargai.',
             'prepared_by' => $creator?->name ?? '-',
             'checked_by' => $verifier?->name ?? 'Pegawai aktiviti',
             'approved_by' => $approver?->name ?? 'Untuk kelulusan',
@@ -140,11 +153,17 @@ class ActivityPaperworkController extends Controller
         $proposal = $activity->proposal_data ?? [];
         $missing = [];
         $budgetItems = collect($proposal['budget_items'] ?? []);
-        if ($budgetItems->isEmpty() || $budgetItems->contains(fn ($row) => ! is_array($row) || blank($row['description'] ?? null) || ! is_numeric($row['quantity'] ?? null) || ! is_numeric($row['estimated_cost'] ?? null))) $missing[] = 'Butiran anggaran perbelanjaan belum lengkap.';
+        if (($proposal['finance_source'] ?? null) !== 'Tiada' && ($budgetItems->isEmpty() || $budgetItems->contains(fn ($row) => ! is_array($row) || blank($row['description'] ?? null) || ! is_numeric($row['quantity'] ?? null) || ! is_numeric($row['estimated_cost'] ?? null)))) $missing[] = 'Butiran anggaran perbelanjaan belum lengkap.';
         $committee = collect($proposal['committee'] ?? []);
         if ($committee->isEmpty() || $committee->contains(fn ($row) => ! is_array($row) || blank($row['name'] ?? null) || blank($row['position'] ?? null))) $missing[] = 'Maklumat jawatankuasa belum lengkap.';
         if (empty($proposal['objectives'] ?? [])) $missing[] = 'Objektif program belum diisi.';
-        if (empty($proposal['funding_sources'] ?? [])) $missing[] = 'Sumber kewangan belum dipilih.';
+        if (empty($proposal['program_level'] ?? null)) $missing[] = 'Peringkat program belum dipilih.';
+        if (empty($proposal['purposes'] ?? [])) $missing[] = 'Penjajaran / tujuan program belum dipilih.';
+        if (empty($proposal['summary'] ?? null)) $missing[] = 'Ringkasan program belum diisi.';
+        if (empty($proposal['impact'] ?? null)) $missing[] = 'Hasil / impak program belum diisi.';
+        if (empty($proposal['closing'] ?? null)) $missing[] = 'Penutup program belum diisi.';
+        if (empty($proposal['finance_source'] ?? null)) $missing[] = 'Sumber kewangan belum dipilih.';
+        if (empty($proposal['kulpl_review'] ?? null)) $missing[] = 'Status semakan KULPL belum dipilih.';
         if (! $activity->participant_criteria) $missing[] = 'Kriteria peserta belum diisi.';
         if (! $activity->expected_participants) $missing[] = 'Bilangan peserta belum dinyatakan.';
         if (empty($proposal['target_participants'] ?? [])) $missing[] = 'Kumpulan sasaran belum dipilih.';

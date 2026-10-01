@@ -7,13 +7,14 @@
     $endTimeValue = old('end_time', isset($activity) ? $activity->end_time?->format('H:i') : '');
     $objectives = old('objectives', $proposal['objectives'] ?? ['']);
     $participants = old('target_participants', $proposal['target_participants'] ?? []);
-    $tentative = old('tentative', $proposal['tentative'] ?? [['time' => '', 'description' => '']]);
+    $tentative = old('tentative', $proposal['tentative'] ?? [['date' => $startDateValue, 'time' => '', 'description' => '']]);
     $committee = old('committee', $proposal['committee'] ?? [['name' => '', 'position' => '']]);
     $budgetItems = old('budget_items', $proposal['budget_items'] ?? [['description' => '', 'quantity' => '', 'estimated_cost' => '']]);
-    $fundingSources = old('funding_sources', $proposal['funding_sources'] ?? []);
+    $purposes = old('purposes', $proposal['purposes'] ?? []);
+    $courseCategories = old('course_categories', $proposal['course_categories'] ?? []);
+    $speakers = old('speakers', $proposal['speakers'] ?? [['name' => '', 'position' => '', 'grade' => '', 'institution' => '']]);
     $activityTypes = ['Seminar', 'Workshop', 'Training', 'Competition', 'Meeting', 'Visit', 'Community Program', 'Others'];
     $participantTypes = ['Student', 'Staff', 'Lecturer', 'External Community', 'Others'];
-    $fundingOptions = ['Department Allocation', 'Participant Fee', 'Sponsorship', 'Grant', 'Others'];
 @endphp
 
 @if($errors->any())
@@ -42,12 +43,17 @@
             <div class="col-md-6"><label class="form-label" for="program_category">Kategori Program</label><input class="form-control" id="program_category" name="program_category" value="{{ old('program_category', $activity->program_category ?? '') }}" data-required data-label="Kategori Program"><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="organizing_unit">Jabatan / Unit Penganjur</label><input class="form-control" id="organizing_unit" name="organizing_unit" value="{{ old('organizing_unit', $activity->organizing_unit ?? '') }}" data-required data-label="Jabatan / Unit Penganjur"><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="person_in_charge">Pegawai Bertanggungjawab</label><input class="form-control" id="person_in_charge" name="person_in_charge" value="{{ old('person_in_charge', $activity->person_in_charge ?? auth()->user()->name) }}" data-required data-label="Pegawai Bertanggungjawab"><div class="wizard-field-error"></div></div>
+            <div class="col-md-6"><label class="form-label" for="program_level">Peringkat Program</label><select class="form-select" id="program_level" name="program_level" data-required data-label="Peringkat Program"><option value="">Pilih peringkat</option>@foreach(['Jabatan', 'Politeknik / Institusi', 'Komuniti', 'Negeri', 'Kebangsaan', 'Antarabangsa'] as $level)<option value="{{ $level }}" @selected(old('program_level', $proposal['program_level'] ?? '') === $level)>{{ $level }}</option>@endforeach</select><div class="wizard-field-error"></div></div>
+            <div class="col-md-6"><label class="form-label" for="program_session">Sesi / Tahun Program</label><input class="form-control" id="program_session" name="session" value="{{ old('session', $proposal['session'] ?? '') }}" placeholder="Contoh: Sesi I 2026/2027"></div>
+            <div class="col-12"><span class="form-label d-block">Tujuan / penjajaran program (pilih yang berkaitan)</span><div class="d-flex flex-wrap gap-3">@foreach(['Tujuan', 'KPI', 'Pelan Strategik', 'Takwim PBT', 'Lain-lain'] as $purpose)<label class="form-check"><input class="form-check-input" type="checkbox" name="purposes[]" value="{{ $purpose }}" @checked(in_array($purpose, $purposes, true)) data-required-group="purposes"><span class="form-check-label">{{ $purpose }}</span></label>@endforeach</div><div class="wizard-group-error" data-group-error="purposes"></div></div>
         </div>
     </section>
 
     <section class="activity-wizard-panel" data-wizard-panel="1" aria-labelledby="activity-step-2" hidden>
         <h2 class="h5 soft-panel-title" id="activity-step-2">Langkah 2: Objektif & Peserta</h2>
         <div class="mb-4">
+            <div class="mb-3"><label class="form-label" for="program_summary">Ringkasan Program</label><textarea class="form-control" id="program_summary" name="summary" rows="5" placeholder="Terangkan latar belakang dan rasional program" data-required data-label="Ringkasan Program">{{ old('summary', $proposal['summary'] ?? '') }}</textarea><div class="wizard-field-error"></div></div>
+            <div class="mb-3"><span class="form-label d-block">Kategori Kursus (jika berkaitan)</span><div class="row row-cols-2 row-cols-md-3 g-2">@foreach(['Kepimpinan', 'Kewangan', 'Lain-lain', 'Pembangunan & Penyelidikan', 'Pembangunan Diri', 'Pengajaran & Pembelajaran', 'Pentadbiran / Pengurusan', 'Teknikal', 'Teknologi Maklumat', 'Perkeranian'] as $category)<div class="col"><label class="form-check"><input class="form-check-input" type="checkbox" name="course_categories[]" value="{{ $category }}" @checked(in_array($category, $courseCategories, true))><span class="form-check-label">{{ $category }}</span></label></div>@endforeach</div></div>
             <label class="form-label">Objektif Program</label>
             <div id="objectivesRows" class="activity-wizard-repeat-list">
                 @foreach($objectives as $objective)
@@ -66,7 +72,8 @@
         </div>
         <div class="row g-3">
             <div class="col-md-6"><label class="form-label" for="expected_participants">Anggaran Bilangan Peserta</label><input class="form-control" id="expected_participants" type="number" name="expected_participants" min="1" max="100000" value="{{ old('expected_participants', $activity->expected_participants ?? $activity->max_participants ?? '') }}" data-required data-label="Anggaran Bilangan Peserta"><div class="wizard-field-error"></div></div>
-            <div class="col-12"><label class="form-label" for="participant_criteria">Kriteria / Syarat Peserta</label><textarea class="form-control" id="participant_criteria" name="participant_criteria" rows="3" placeholder="Contoh: terbuka kepada 30 peserta terawal">{{ old('participant_criteria', $activity->participant_criteria ?? '') }}</textarea></div>
+            <div class="col-12"><label class="form-label" for="participant_criteria">Kriteria / Syarat Peserta</label><textarea class="form-control" id="participant_criteria" name="participant_criteria" rows="3" placeholder="Contoh: terbuka kepada 30 peserta terawal" data-required data-label="Kriteria / Syarat Peserta">{{ old('participant_criteria', $activity->participant_criteria ?? '') }}</textarea><div class="wizard-field-error"></div></div>
+            <div class="col-12"><label class="form-label" for="program_impact">Hasil / Impak Program</label><textarea class="form-control" id="program_impact" name="impact" rows="4" placeholder="Nyatakan hasil dan manfaat yang dijangka" data-required data-label="Hasil / Impak Program">{{ old('impact', $proposal['impact'] ?? '') }}</textarea><div class="wizard-field-error"></div></div>
         </div>
     </section>
 
@@ -83,12 +90,16 @@
         <details class="mt-3"><summary class="text-danger">Tetapan pendaftaran pilihan</summary><div class="row g-3 mt-1"><div class="col-md-6"><label class="form-label" for="registration_opens_at">Pendaftaran Dibuka</label><input class="form-control" type="datetime-local" id="registration_opens_at" name="registration_opens_at" value="{{ old('registration_opens_at', $activity?->registration_opens_at?->format('Y-m-d\\TH:i')) }}"></div><div class="col-md-6"><label class="form-label" for="registration_closes_at">Pendaftaran Ditutup</label><input class="form-control" type="datetime-local" id="registration_closes_at" name="registration_closes_at" value="{{ old('registration_closes_at', $activity?->registration_closes_at?->format('Y-m-d\\TH:i')) }}"></div></div></details>
         <hr class="my-4">
         <h3 class="h6">Tentatif Program</h3>
-        <div class="activity-wizard-table-wrap"><table class="table align-middle"><thead><tr><th>Masa</th><th>Keterangan Aktiviti</th><th></th></tr></thead><tbody id="tentativeRows">
+        <div class="activity-wizard-table-wrap"><table class="table align-middle"><thead><tr><th>Tarikh</th><th>Masa</th><th>Keterangan Aktiviti</th><th></th></tr></thead><tbody id="tentativeRows">
             @foreach($tentative as $row)
-                <tr class="tentative-row"><td><input class="form-control" type="time" data-field="time" value="{{ $row['time'] ?? '' }}" data-required data-label="Masa tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="description" value="{{ $row['description'] ?? '' }}" placeholder="Aktiviti" data-required data-label="Keterangan tentatif"><div class="wizard-field-error"></div></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang baris tentatif"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr>
+                <tr class="tentative-row"><td><input class="form-control" type="date" data-field="date" value="{{ $row['date'] ?? $startDateValue }}" data-required data-label="Tarikh tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" type="time" data-field="time" value="{{ $row['time'] ?? '' }}" data-required data-label="Masa tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="description" value="{{ $row['description'] ?? '' }}" placeholder="Aktiviti" data-required data-label="Keterangan tentatif"><div class="wizard-field-error"></div></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang baris tentatif"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr>
             @endforeach
         </tbody></table></div>
         <button class="btn btn-sm btn-outline-danger" type="button" data-add-row="tentativeRows" data-template="tentativeTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Baris</button>
+        <hr class="my-4"><h3 class="h6">Penceramah / Jemputan Luar / Perasmi</h3><p class="small text-muted">Isi jika program melibatkan jemputan luar atau perasmi.</p>
+        <div class="activity-wizard-table-wrap"><table class="table align-middle"><thead><tr><th>Nama</th><th>Jawatan</th><th>Gred</th><th>Jabatan / Institusi</th><th></th></tr></thead><tbody id="speakerRows">
+            @foreach($speakers as $row)<tr class="speaker-row"><td><input class="form-control" data-field="name" value="{{ $row['name'] ?? '' }}" placeholder="Nama pegawai"></td><td><input class="form-control" data-field="position" value="{{ $row['position'] ?? '' }}" placeholder="Jawatan"></td><td><input class="form-control" data-field="grade" value="{{ $row['grade'] ?? '' }}" placeholder="Gred"></td><td><input class="form-control" data-field="institution" value="{{ $row['institution'] ?? '' }}" placeholder="Institusi"></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang jemputan">&times;</button></td></tr>@endforeach
+        </tbody></table></div><button class="btn btn-sm btn-outline-danger" type="button" data-add-row="speakerRows" data-template="speakerTemplate">Tambah Jemputan</button>
     </section>
 
     <section class="activity-wizard-panel" data-wizard-panel="3" aria-labelledby="activity-step-4" hidden>
@@ -101,19 +112,16 @@
         </tbody></table></div>
         <button class="btn btn-sm btn-outline-danger mb-4" type="button" data-add-row="committeeRows" data-template="committeeTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Ahli Jawatankuasa</button>
 
-        <h3 class="h6">Anggaran Bajet</h3>
-        <div class="activity-wizard-table-wrap"><table class="table align-middle"><thead><tr><th>Keterangan Item</th><th>Kuantiti</th><th>Anggaran Kos / Unit (RM)</th><th>Jumlah (RM)</th><th></th></tr></thead><tbody id="budgetRows">
+        <div class="row g-3 mb-4"><div class="col-md-6"><label class="form-label" for="finance_source">Sumber Kewangan</label><select class="form-select" id="finance_source" name="finance_source" data-required data-label="Sumber Kewangan"><option value="">Pilih sumber</option>@foreach(['Kerajaan', 'Tiada', 'Akaun Amanah'] as $source)<option value="{{ $source }}" @selected(old('finance_source', $proposal['finance_source'] ?? '') === $source)>{{ $source }}</option>@endforeach</select><div class="wizard-field-error"></div></div><div class="col-md-6"><label class="form-label" for="kulpl_review">Semakan KULPL</label><select class="form-select" id="kulpl_review" name="kulpl_review" data-required data-label="Semakan KULPL"><option value="">Pilih</option><option @selected(old('kulpl_review', $proposal['kulpl_review'] ?? '') === 'Berkaitan')>Berkaitan</option><option @selected(old('kulpl_review', $proposal['kulpl_review'] ?? '') === 'Tidak Berkaitan')>Tidak Berkaitan</option></select><div class="wizard-field-error"></div><div class="form-text">Semakan bagi program PSH atau latihan staf seperti kursus dan taklimat.</div></div></div>
+        <div class="mb-4"><label class="form-label" for="program_closing">Penutup</label><textarea class="form-control" id="program_closing" name="closing" rows="4" data-required data-label="Penutup">{{ old('closing', $proposal['closing'] ?? 'Adalah diharapkan pelaksanaan program ini dapat mencapai objektif yang telah ditetapkan serta memberi manfaat kepada semua peserta. Kerjasama dan sokongan semua pihak amat dihargai.') }}</textarea><div class="wizard-field-error"></div></div>
+        <h3 class="h6">Anggaran Perbelanjaan</h3>
+        <div class="activity-wizard-table-wrap"><table class="table align-middle"><thead><tr><th>Keterangan Item</th><th>Kuantiti</th><th>Anggaran Kos / Unit (RM)</th><th>Sumber / Kod OS</th><th>Jumlah (RM)</th><th></th></tr></thead><tbody id="budgetRows">
             @foreach($budgetItems as $row)
-                <tr class="budget-row"><td><input class="form-control" data-field="description" value="{{ $row['description'] ?? '' }}" placeholder="Contoh: makanan"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0.01" step="0.01" data-field="quantity" value="{{ $row['quantity'] ?? '' }}" placeholder="1"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0" step="0.01" data-field="estimated_cost" value="{{ $row['estimated_cost'] ?? '' }}" placeholder="0.00"><div class="wizard-field-error"></div></td><td class="budget-row-total">RM 0.00</td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang item bajet"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr>
+                <tr class="budget-row"><td><input class="form-control" data-field="description" value="{{ $row['description'] ?? '' }}" placeholder="Contoh: makanan"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0.01" step="0.01" data-field="quantity" value="{{ $row['quantity'] ?? '' }}" placeholder="1"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0" step="0.01" data-field="estimated_cost" value="{{ $row['estimated_cost'] ?? '' }}" placeholder="0.00"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="source_code" value="{{ $row['source_code'] ?? '' }}" placeholder="Contoh: OS42000"></td><td class="budget-row-total">RM 0.00</td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang item bajet"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr>
             @endforeach
-        </tbody><tfoot><tr><th colspan="3" class="text-end">Jumlah Anggaran</th><th id="budgetGrandTotal">RM 0.00</th><th></th></tr></tfoot></table></div>
+        </tbody><tfoot><tr><th colspan="4" class="text-end">Jumlah Anggaran</th><th id="budgetGrandTotal">RM 0.00</th><th></th></tr></tfoot></table></div>
         <button class="btn btn-sm btn-outline-danger mb-4" type="button" data-add-row="budgetRows" data-template="budgetTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Item Bajet</button>
 
-        <div><span class="form-label d-block">Sumber Dana</span><div class="d-flex flex-wrap gap-3">
-            @foreach($fundingOptions as $funding)
-                <label class="form-check"><input class="form-check-input" type="checkbox" name="funding_sources[]" value="{{ $funding }}" @checked(in_array($funding, $fundingSources, true)) data-required-group="funding"><span class="form-check-label">{{ $funding }}</span></label>
-            @endforeach
-        </div><div class="wizard-group-error" data-group-error="funding"></div></div>
     </section>
 
     <section class="activity-wizard-panel" data-wizard-panel="4" aria-labelledby="activity-step-5" hidden>
@@ -133,9 +141,10 @@
 </form>
 
 <template id="objectiveTemplate"><div class="activity-wizard-repeat-row objective-row"><input class="form-control" name="objectives[]" placeholder="Nyatakan objektif program" data-required data-label="Objektif Program"><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang objektif"><i class="bi bi-trash" aria-hidden="true"></i></button><div class="wizard-field-error"></div></div></template>
-<template id="tentativeTemplate"><tr class="tentative-row"><td><input class="form-control" type="time" data-field="time" data-required data-label="Masa tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="description" placeholder="Aktiviti" data-required data-label="Keterangan tentatif"><div class="wizard-field-error"></div></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang baris tentatif"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr></template>
+<template id="tentativeTemplate"><tr class="tentative-row"><td><input class="form-control" type="date" data-field="date" data-required data-label="Tarikh tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" type="time" data-field="time" data-required data-label="Masa tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="description" placeholder="Aktiviti" data-required data-label="Keterangan tentatif"><div class="wizard-field-error"></div></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang baris tentatif"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr></template>
 <template id="committeeTemplate"><tr class="committee-row"><td><input class="form-control" data-field="name" data-required data-label="Nama ahli jawatankuasa"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="position" data-required data-label="Jawatan / Peranan"><div class="wizard-field-error"></div></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang ahli jawatankuasa"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr></template>
-<template id="budgetTemplate"><tr class="budget-row"><td><input class="form-control" data-field="description" placeholder="Contoh: makanan"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0.01" step="0.01" data-field="quantity" placeholder="1"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0" step="0.01" data-field="estimated_cost" placeholder="0.00"><div class="wizard-field-error"></div></td><td class="budget-row-total">RM 0.00</td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang item bajet"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr></template>
+<template id="budgetTemplate"><tr class="budget-row"><td><input class="form-control" data-field="description" placeholder="Contoh: makanan"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0.01" step="0.01" data-field="quantity" placeholder="1"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0" step="0.01" data-field="estimated_cost" placeholder="0.00"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="source_code" placeholder="Contoh: OS42000"></td><td class="budget-row-total">RM 0.00</td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang item bajet"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr></template>
+<template id="speakerTemplate"><tr class="speaker-row"><td><input class="form-control" data-field="name" placeholder="Nama pegawai"></td><td><input class="form-control" data-field="position" placeholder="Jawatan"></td><td><input class="form-control" data-field="grade" placeholder="Gred"></td><td><input class="form-control" data-field="institution" placeholder="Institusi"></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang jemputan">&times;</button></td></tr></template>
 
 @push('scripts')
 <script>
@@ -211,15 +220,15 @@
         }
         if (index === 3) {
             const incompleteBudget = [...form.querySelectorAll('.budget-row')].some((row) => {
-                const values = [...row.querySelectorAll('[data-field]')].map((field) => field.value.trim());
+                const values = [...row.querySelectorAll('[data-field]')].slice(0, 3).map((field) => field.value.trim());
                 return values.some(Boolean) && values.some((value) => !value);
             });
             if (incompleteBudget) {
                 valid = false;
                 document.getElementById('budgetRows').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 form.querySelector('.budget-row input:invalid')?.focus();
-                const emptyField = [...form.querySelectorAll('.budget-row')].flatMap((row) => [...row.querySelectorAll('[data-field]')]).find((field) => {
-                    const rowValues = [...field.closest('.budget-row').querySelectorAll('[data-field]')].map((el) => el.value.trim());
+                const emptyField = [...form.querySelectorAll('.budget-row')].flatMap((row) => [...row.querySelectorAll('[data-field]')].slice(0, 3)).find((field) => {
+                    const rowValues = [...field.closest('.budget-row').querySelectorAll('[data-field]')].slice(0, 3).map((el) => el.value.trim());
                     return rowValues.some(Boolean) && !field.value.trim();
                 });
                 if (emptyField) {
@@ -234,9 +243,10 @@
     function updateRepeatNames(container) {
         const rows = [...document.getElementById(container).children];
         const config = {
-            tentativeRows: { prefix: 'tentative', fields: ['time', 'description'] },
+            tentativeRows: { prefix: 'tentative', fields: ['date', 'time', 'description'] },
             committeeRows: { prefix: 'committee', fields: ['name', 'position'] },
-            budgetRows: { prefix: 'budget_items', fields: ['description', 'quantity', 'estimated_cost'] },
+            budgetRows: { prefix: 'budget_items', fields: ['description', 'quantity', 'estimated_cost', 'source_code'] },
+            speakerRows: { prefix: 'speakers', fields: ['name', 'position', 'grade', 'institution'] },
         }[container];
         rows.forEach((row, index) => config.fields.forEach((field) => {
             const control = row.querySelector(`[data-field="${field}"]`);
@@ -264,19 +274,21 @@
         const sections = [
             ['Maklumat Program', [
                 ['Nama', value('title')], ['Jenis', value('activity_type')], ['Kategori', value('program_category')],
-                ['Jabatan / Unit', value('organizing_unit')], ['Pegawai Bertanggungjawab', value('person_in_charge')],
+                ['Jabatan / Unit', value('organizing_unit')], ['Pegawai Bertanggungjawab', value('person_in_charge')], ['Peringkat', value('program_level')], ['Sesi', value('session')],
+                ['Penjajaran', list(checkedValues('purposes[]'))],
             ]],
             ['Objektif & Peserta', [
+                ['Ringkasan', value('summary')], ['Kategori Kursus', list(checkedValues('course_categories[]'))],
                 ['Objektif', list([...form.querySelectorAll('[name="objectives[]"]')].map((el) => el.value.trim()).filter(Boolean))],
-                ['Sasaran', list(checkedValues('target_participants[]'))], ['Anggaran Peserta', value('expected_participants')], ['Kriteria', value('participant_criteria')],
+                ['Sasaran', list(checkedValues('target_participants[]'))], ['Anggaran Peserta', value('expected_participants')], ['Kriteria', value('participant_criteria')], ['Hasil / Impak', value('impact')],
             ]],
             ['Tarikh, Tempat & Tentatif', [
                 ['Tarikh / Masa', `${value('start_date')} ${value('start_time')} hingga ${value('end_date')} ${value('end_time')}`],
-                ['Tempat', value('location')], ['Mod', value('implementation_mode')], ['Tentatif', list(rowText('.tentative-row', ['time', 'description']))],
+                ['Tempat', value('location')], ['Mod', value('implementation_mode')], ['Tentatif', list(rowText('.tentative-row', ['date', 'time', 'description']))], ['Jemputan', list(rowText('.speaker-row', ['name', 'position', 'grade', 'institution']))],
             ]],
             ['Jawatankuasa & Kewangan', [
                 ['Jawatankuasa', list(rowText('.committee-row', ['name', 'position']))], ['Item Bajet', list(rowText('.budget-row', ['description', 'quantity', 'estimated_cost']))],
-                ['Jumlah Anggaran', `RM ${updateBudgetTotal().toFixed(2)}`], ['Sumber Dana', list(checkedValues('funding_sources[]'))],
+                ['Jumlah Anggaran', `RM ${updateBudgetTotal().toFixed(2)}`], ['Sumber Kewangan', value('finance_source')], ['Semakan KULPL', value('kulpl_review')], ['Penutup', value('closing')],
             ]],
         ];
         document.getElementById('activityWizardSummary').innerHTML = sections.map(([title, rows]) => `<section class="activity-wizard-review-section"><h3>${title}</h3><dl>${rows.map(([label, text]) => `<div><dt>${label}</dt><dd>${escapeHtml(text)}</dd></div>`).join('')}</dl></section>`).join('');
@@ -285,7 +297,7 @@
             if (!field.value.trim()) missing.push(field.dataset.label || 'Medan wajib');
         }));
         if (!checkedValues('target_participants[]').length) missing.push('Sasaran Peserta');
-        if (!checkedValues('funding_sources[]').length) missing.push('Sumber Dana');
+        if (!checkedValues('purposes[]').length) missing.push('Tujuan / penjajaran program');
         const missingBox = document.getElementById('activityWizardMissing');
         missingBox.hidden = missing.length === 0;
         missingBox.querySelector('ul').innerHTML = [...new Set(missing)].map((text) => `<li>${escapeHtml(text)}</li>`).join('');
@@ -338,7 +350,7 @@
         }
     });
 
-    ['tentativeRows', 'committeeRows', 'budgetRows'].forEach(updateRepeatNames);
+    ['tentativeRows', 'committeeRows', 'budgetRows', 'speakerRows'].forEach(updateRepeatNames);
     updateBudgetTotal();
     setStep(0, false);
 })();

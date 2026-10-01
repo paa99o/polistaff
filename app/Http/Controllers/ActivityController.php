@@ -371,7 +371,7 @@ class ActivityController extends Controller
             : ($activity?->end_time ?? $startAt->copy()->addHour());
 
         $proposalData = [];
-        foreach (['objectives', 'target_participants', 'tentative', 'committee', 'budget_items', 'funding_sources'] as $key) {
+        foreach (['objectives', 'target_participants', 'tentative', 'committee', 'budget_items', 'funding_sources', 'purposes', 'course_categories', 'speakers'] as $key) {
             $values = $data[$key] ?? [];
             $proposalData[$key] = collect($values)->filter(function ($value): bool {
                 if (is_array($value)) {
@@ -380,6 +380,9 @@ class ActivityController extends Controller
 
                 return filled($value);
             })->values()->all();
+        }
+        foreach (['program_level', 'session', 'summary', 'impact', 'closing', 'finance_source', 'kulpl_review'] as $key) {
+            $proposalData[$key] = $data[$key] ?? ($activity?->proposal_data[$key] ?? null);
         }
 
         return [
