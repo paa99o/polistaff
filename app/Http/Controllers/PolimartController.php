@@ -260,7 +260,10 @@ class PolimartController extends Controller
         $sellerContacts = $this->sellerContactLinks($order);
 
         if ($order->payment_method === 'fpx') {
-            return redirect()->temporarySignedRoute('polimart.orders.fpx', now()->addDays(90), ['polimartOrder' => $order->id]);
+            $bank = $order->payment_instructions['fpx_bank'] ?? null;
+            if (isset(self::BANK_HOME_PAGES[$bank])) {
+                return redirect()->away(self::BANK_HOME_PAGES[$bank]);
+            }
         }
 
         return view('public.polimart-order-success', compact('order', 'trackingUrl', 'trackingEmailSent', 'sellerContacts'));
