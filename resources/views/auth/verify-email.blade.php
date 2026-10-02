@@ -37,7 +37,7 @@
             <h1>Semak peti masuk anda</h1>
             <p>Kami telah menghantar pautan pengesahan ke:</p>
             <strong class="verification-email">{{ auth()->user()->email }}</strong>
-            <p class="verification-note">Permohonan keahlian anda sudah dihantar untuk semakan. Klik pautan pengesahan emel; akses ahli hanya dibuka selepas permohonan diluluskan. Pautan sah selama 60 minit.</p>
+            <p class="verification-note">Permohonan keahlian anda sudah dihantar untuk semakan. Anda boleh mengesahkan emel sekarang; Admin juga akan mengaktifkan akaun dan mengesahkan emel apabila permohonan diluluskan. Pautan sah selama 60 minit.</p>
 
             <div class="verification-actions">
                 <form method="post" action="{{ route('verification.send') }}">

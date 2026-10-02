@@ -1,5 +1,20 @@
 # POLIBEST staging QA report — 2026-09-27
 
+## Membership approval flow update — 2026-10-02
+
+- Registration creates a standard member application with `pending` status for
+  Admin review.
+- Admin approval no longer depends on a separate email-verification click.
+  Approval activates the account, records the join date, and verifies the
+  registered email when needed.
+- The approved account remains in the `member` role. The approval email now
+  explicitly tells the user to sign in with their registered email and
+  password.
+- PHP syntax checks passed for the changed controller and Blade templates.
+- End-to-end browser approval/email/login was not run. Production has not been
+  updated; the code must be committed and pulled to the server before this
+  behavior is available on the published site.
+
 ## Scope and environment
 
 - Tested only the isolated local staging site at `http://127.0.0.1:8010`, using the disposable SQLite database `database/codex-staging.sqlite` and synthetic `.test` accounts/data.

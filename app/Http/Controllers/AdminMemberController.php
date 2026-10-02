@@ -26,13 +26,17 @@ class AdminMemberController extends Controller
     public function approve(User $user): RedirectResponse
     {
         abort_unless($user->membership_status === 'pending', 422, 'Permohonan ini sudah disemak.');
-        abort_if(! $user->hasVerifiedEmail(), 422, 'Pemohon perlu mengesahkan alamat emel sebelum permohonan boleh diluluskan.');
 
-        $user->update([
+        $approval = [
             'membership_status' => 'active',
             'membership_review_notes' => null,
             'joined_date' => now()->toDateString(),
-        ]);
+        ];
+        if (! $user->hasVerifiedEmail()) {
+            // Admin approval completes onboarding and enables the new member to sign in.
+            $approval['email_verified_at'] = now();
+        }
+        $user->update($approval);
 
         PortalNotification::create([
             'user_id' => $user->id,

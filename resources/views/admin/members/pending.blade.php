@@ -5,7 +5,7 @@
     <h1 class="h3 mb-0">Ahli Menunggu Kelulusan</h1>
     <a class="btn btn-outline-primary" href="{{ route('admin.index') }}">Pentadbiran</a>
 </div>
-<p class="text-muted">Permohonan baharu muncul di sini selepas dihantar. Pemohon perlu mengesahkan emel sebelum anda boleh meluluskan keahlian.</p>
+<p class="text-muted">Semak permohonan baharu di sini. Apabila diluluskan, akaun ahli akan diaktifkan, emel pengesahan diselesaikan dan pemohon menerima emel untuk log masuk.</p>
 
 <div class="card">
     <div class="table-responsive">
@@ -25,7 +25,7 @@
                         <td data-label="Nama">{{ $member->name }}</td>
                         <td data-label="Emel / Pengesahan">
                             {{ $member->email }}
-                            <span class="badge d-block mt-1 {{ $member->hasVerifiedEmail() ? 'text-bg-success' : 'text-bg-warning' }}">{{ $member->hasVerifiedEmail() ? 'Emel disahkan' : 'Belum sahkan emel' }}</span>
+                            <span class="badge d-block mt-1 {{ $member->hasVerifiedEmail() ? 'text-bg-success' : 'text-bg-warning' }}">{{ $member->hasVerifiedEmail() ? 'Emel disahkan' : 'Emel akan disahkan semasa kelulusan' }}</span>
                         </td>
                         <td data-label="Jabatan">{{ $member->department }}</td>
                         <td data-label="Maklumat">
@@ -38,7 +38,7 @@
                                 <form method="post" action="{{ route('admin.members.approve', $member) }}" data-confirm="Luluskan permohonan {{ $member->name }}?">
                                     @csrf
                                     @method('patch')
-                                    <button class="btn btn-sm btn-primary" @disabled(! $member->hasVerifiedEmail())>Luluskan</button>
+                                    <button class="btn btn-sm btn-primary">Luluskan</button>
                                 </form>
                                 <form method="post" action="{{ route('admin.members.reject', $member) }}" data-confirm="Tolak permohonan {{ $member->name }}? Emel akan dihantar kepada pemohon.">
                                     @csrf

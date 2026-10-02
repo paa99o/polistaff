@@ -33,6 +33,22 @@ post-activity evidence.
 
 ## Functional requirements
 
+### Member registration and approval
+
+- Registration creates a standard `member` account in `pending` status and
+  displays its application in the Admin approval list.
+- Admin can approve a pending application without requiring the applicant to
+  click a separate email-verification link first.
+- Approval activates the account, records its join date, and verifies the
+  registered email if it has not already been verified.
+- After approval, the system sends an email stating that Admin approved the
+  application and that the user can sign in with the credentials created at
+  registration.
+- The account remains a standard `member`; it must not receive Admin or
+  Treasurer permissions.
+- Rejecting an application leaves the account inactive and sends the reason to
+  the applicant by email.
+
 ### Activity submission
 
 - The submission form must not request an activity description.

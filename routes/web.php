@@ -49,11 +49,16 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
 });
 
+// The signed email link identifies the applicant, so it can be verified even
+// when the browser currently has an administrator session.
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])->middleware('throttle:6,1')->name('verification.send');
-    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/membership/apply', [MembershipApplicationController::class, 'create'])->name('membership.apply');
     Route::post('/membership/apply', [MembershipApplicationController::class, 'store'])->name('membership.store');

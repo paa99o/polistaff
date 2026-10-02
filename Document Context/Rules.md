@@ -6,6 +6,25 @@ These rules are the source of truth for activity behaviour. UI restrictions
 must also be enforced by controllers or policies; hiding a button is not an
 authorization control.
 
+## Member registration and approval
+
+- Public registration creates a `member` account with
+  `membership_status = pending`.
+- Pending applications appear in the Admin membership-approval list.
+- Email verification is not a prerequisite for Admin approval. The signed
+  verification link remains available, but approval itself verifies the
+  registered email so the applicant is not blocked by a separate email step.
+- Admin approval changes the membership status to `active`, records the join
+  date, and sets `email_verified_at` when it is still empty.
+- Approval sends the applicant an email confirming that Admin approved the
+  membership and that they can log in with the email and password used at
+  registration.
+- Once approved, the account retains the `member` role and receives the normal
+  active-member access rules. Approval must not promote the account to Admin or
+  Treasurer.
+- Rejection leaves the account inactive and sends a rejection email with the
+  Admin's reason.
+
 ## Activity scheduling
 
 - `date_time` stores the activity start date and time.

@@ -12,7 +12,8 @@
 
         <p>Salam {{ $user->name }},</p>
 
-        <p>Permohonan keahlian kelab staff anda telah diluluskan. Akaun anda kini aktif dan boleh menggunakan kemudahan ahli di POLIBEST.</p>
+        <p>Permohonan keahlian Kelab Staf anda telah diluluskan oleh Admin. Akaun anda kini aktif dan boleh menggunakan kemudahan ahli di POLIBEST.</p>
+        <p>Anda kini boleh log masuk menggunakan alamat emel dan kata laluan yang didaftarkan.</p>
 
         <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
@@ -32,8 +33,8 @@
         </table>
 
         <p>
-            <a href="{{ route('dashboard') }}" style="display: inline-block; background: #dc2626; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px;">
-                Buka Dashboard
+            <a href="{{ route('login') }}" style="display: inline-block; background: #dc2626; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px;">
+                Log Masuk ke POLIBEST
             </a>
         </p>
 
