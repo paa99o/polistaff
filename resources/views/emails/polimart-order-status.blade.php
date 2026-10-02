@@ -26,6 +26,12 @@ Kaedah bayaran: **Pindahan bank**<br>
 Bank: {{ $order->payment_instructions['bank_name'] }}<br>
 Nama akaun: {{ $order->payment_instructions['account_name'] }}<br>
 Nombor akaun: **{{ $order->payment_instructions['account_number'] }}**
+@elseif(in_array($order->payment_status, ['awaiting_payment', 'rejected'], true) && ($order->payment_instructions['method'] ?? null) === 'fpx')
+Kaedah bayaran: **FPX simulasi melalui {{ $order->payment_instructions['fpx_bank'] ?? 'bank pilihan' }}**<br>
+Halaman bank dalam PoliMart ialah simulasi dan bukan gateway. Buat pindahan sebenar ke akaun penjual melalui aplikasi bank, kemudian hantar bukti melalui pautan semakan.<br>
+Bank penerima: {{ $order->payment_instructions['bank_name'] }}<br>
+Nama akaun: {{ $order->payment_instructions['account_name'] }}<br>
+Nombor akaun: **{{ $order->payment_instructions['account_number'] }}**
 @endif
 
 @component('mail::button', ['url' => $trackingUrl])

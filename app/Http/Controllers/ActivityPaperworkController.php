@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class ActivityPaperworkController extends Controller
 {
-    private const TEMPLATE_VERSION = '2.0';
+    private const TEMPLATE_VERSION = '3.0';
 
     public function generate(Request $request, Activity $activity): RedirectResponse
     {
@@ -111,8 +111,6 @@ class ActivityPaperworkController extends Controller
 
         return [
             'title' => $activity->title,
-            'activity_type' => $activity->activity_type,
-            'program_category' => $activity->program_category,
             'organizing_unit' => $activity->organizing_unit,
             'person_in_charge' => $activity->person_in_charge,
             'program_level' => $proposal['program_level'] ?? '',
@@ -126,12 +124,10 @@ class ActivityPaperworkController extends Controller
             'start_time' => $activity->date_time?->format('h:i A'),
             'end_time' => $activity->end_time?->format('h:i A'),
             'location' => $activity->location,
-            'implementation_mode' => $activity->implementation_mode,
             'background' => $proposal['summary'] ?? '',
             'objectives' => $proposal['objectives'] ?? [],
-            'target_participants' => $proposal['target_participants'] ?? [],
+            'target_participants' => array_values(array_diff($proposal['target_participants'] ?? [], ['Student'])),
             'expected_participants' => $activity->expected_participants ?? $activity->max_participants,
-            'participant_criteria' => $activity->participant_criteria,
             'tentative' => $proposal['tentative'] ?? [],
             'committee' => $proposal['committee'] ?? [],
             'speakers' => $proposal['speakers'] ?? [],
@@ -164,9 +160,9 @@ class ActivityPaperworkController extends Controller
         if (empty($proposal['closing'] ?? null)) $missing[] = 'Penutup program belum diisi.';
         if (empty($proposal['finance_source'] ?? null)) $missing[] = 'Sumber kewangan belum dipilih.';
         if (empty($proposal['kulpl_review'] ?? null)) $missing[] = 'Status semakan KULPL belum dipilih.';
-        if (! $activity->participant_criteria) $missing[] = 'Kriteria peserta belum diisi.';
         if (! $activity->expected_participants) $missing[] = 'Bilangan peserta belum dinyatakan.';
-        if (empty($proposal['target_participants'] ?? [])) $missing[] = 'Kumpulan sasaran belum dipilih.';
+        $targetParticipants = array_diff($proposal['target_participants'] ?? [], ['Student']);
+        if (empty($targetParticipants)) $missing[] = 'Kumpulan sasaran belum dipilih.';
         if (! $activity->location) $missing[] = 'Tempat program belum dinyatakan.';
 
         return $missing;

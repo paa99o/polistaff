@@ -15,26 +15,22 @@
                         @endif
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="bill-selection">Bulan yang hendak dibayar</label>
-                        <select class="form-select @error('bill_ids') is-invalid @enderror" id="bill-selection" required>
-                            <option value="">-- Pilih bilangan bulan --</option>
-                            @foreach($bills as $bill)
-                                <option value="count:{{ $loop->iteration }}">Bayar {{ $loop->iteration }} bulan</option>
+                        <label class="form-label" for="months-selection">Tempoh bayaran yuran</label>
+                        <select class="form-select @error('months') is-invalid @enderror" id="months-selection" name="months" required>
+                            <option value="">-- Pilih tempoh bayaran --</option>
+                            @foreach($paymentMonthOptions as $months => $amount)
+                                <option value="{{ $months }}" @selected((string) old('months') === (string) $months)>Bayar {{ $months }} bulan (RM {{ number_format($amount, 2) }})</option>
                             @endforeach
-                            @if($overdueBills->isNotEmpty())
-                                <option value="overdue">Tunggakan ({{ $overdueBills->count() }} bulan)</option>
-                            @endif
                         </select>
-                        <div class="form-text">Bulan paling lama akan dipilih dahulu. Pilihan tunggakan hanya memaparkan bil yang telah melepasi tarikh akhir.</div>
-                        @include('partials.errors', ['name' => 'bill_ids'])
+                        <div class="form-text">Bayaran dikira RM10 bagi setiap bulan. Sistem akan tambah bil bulan akan datang apabila perlu, kemudian mengagihkan bayaran bermula daripada tunggakan paling lama.</div>
+                        @include('partials.errors', ['name' => 'months'])
                     </div>
                     <div id="selected-bills-summary" class="alert alert-info d-none mb-3" aria-live="polite"></div>
-                    <div id="selected-bills-inputs"></div>
-                    <div class="small text-muted mb-3" id="bill-selection-empty">Sila pilih bilangan bulan atau tunggakan untuk melihat pecahan bayaran.</div>
+                    <div class="small text-muted mb-3" id="bill-selection-empty">Pilih tempoh untuk melihat agihan bayaran bermula daripada bulan paling lama.</div>
                     <div class="table-responsive d-none mb-3" id="selected-bills-table-wrapper">
                         <table class="table table-sm align-middle mb-0 fee-selection-table">
-                            <caption class="visually-hidden">Bulan yang dipilih untuk bayaran</caption>
-                            <thead><tr><th>Bulan</th><th>Baki</th><th>Status</th></tr></thead>
+                            <caption class="visually-hidden">Anggaran agihan bayaran mengikut bil bulan paling lama dahulu</caption>
+                            <thead><tr><th>Bulan</th><th>Bayaran</th><th>Baki sebelum</th><th>Baki selepas</th><th>Status</th></tr></thead>
                             <tbody id="selected-bills-table"></tbody>
                         </table>
                     </div>
@@ -42,39 +38,41 @@
                     @if($pendingAmount > 0)
                         <div class="alert alert-info">Semua baki yuran yang dipilih kini diliputi bayaran menunggu semakan. Anda boleh menghantar bayaran baharu selepas semakan selesai.</div>
                     @else
-                        <div class="alert alert-success">Tiada tunggakan yuran untuk dibayar.</div>
+                        <div class="alert alert-success">Tiada tunggakan sedia ada. Anda masih boleh memilih pakej untuk bulan semasa dan bulan akan datang.</div>
                     @endif
                 @endif
 
-                <section class="mb-4" aria-labelledby="paid-current-year-fees-title">
-                    <h2 class="h6 mb-2" id="paid-current-year-fees-title">Bayaran Tahun Semasa ({{ now()->year }})</h2>
-                    <p class="small text-muted mb-2">Bulan yang telah selesai dibayar turut dipaparkan sebagai rekod dan tidak boleh dipilih semula.</p>
-                    <div class="table-responsive">
+                @if($bills->isEmpty())
+                    <div class="mb-3">
+                        <label class="form-label" for="months-selection">Tempoh bayaran yuran</label>
+                        <select class="form-select @error('months') is-invalid @enderror" id="months-selection" name="months" required>
+                            <option value="">-- Pilih tempoh bayaran --</option>
+                            @foreach($paymentMonthOptions as $months => $amount)
+                                <option value="{{ $months }}" @selected((string) old('months') === (string) $months)>Bayar {{ $months }} bulan (RM {{ number_format($amount, 2) }})</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Bayaran dikira RM10 bagi setiap bulan. Bil bulan akan datang disediakan apabila pakej dihantar.</div>
+                        @include('partials.errors', ['name' => 'months'])
+                    </div>
+                    <div id="selected-bills-summary" class="alert alert-info d-none mb-3" aria-live="polite"></div>
+                    <div class="small text-muted mb-3" id="bill-selection-empty">Pilih tempoh untuk melihat anggaran bulan yang akan dibayar.</div>
+                    <div class="table-responsive d-none mb-3" id="selected-bills-table-wrapper">
                         <table class="table table-sm align-middle mb-0 fee-selection-table">
-                            <caption class="visually-hidden">Bil yuran tahun semasa yang telah selesai dibayar</caption>
-                            <thead><tr><th>Bulan</th><th>Jumlah Dibayar</th><th>Status</th></tr></thead>
-                            <tbody>
-                            @forelse($paidCurrentYearBills as $bill)
-                                <tr>
-                                    <td>{{ $bill->billing_month->format('F Y') }}</td>
-                                    <td>RM {{ number_format((float) $bill->paid_amount, 2) }}</td>
-                                    <td><span class="badge bg-success">Selesai</span></td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="3" class="text-muted">Belum ada bayaran yuran yang selesai bagi tahun {{ now()->year }}.</td></tr>
-                            @endforelse
-                            </tbody>
+                            <caption class="visually-hidden">Anggaran agihan bayaran mengikut bulan</caption>
+                            <thead><tr><th>Bulan</th><th>Bayaran</th><th>Baki sebelum</th><th>Baki selepas</th><th>Status</th></tr></thead>
+                            <tbody id="selected-bills-table"></tbody>
                         </table>
                     </div>
-                </section>
+                @endif
+
                 <form id="payment-submission-form" method="post" action="{{ route('payments.store') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="amount">Jumlah Bayaran</label>
-                            <input class="form-control @error('amount') is-invalid @enderror" id="amount" type="number" step="0.01" min="0.01" max="{{ number_format($outstanding, 2, '.', '') }}" name="amount" value="{{ old('amount', '') }}" readonly required>
+                            <input class="form-control @error('amount') is-invalid @enderror" id="amount" type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount', '') }}" readonly required>
                             @include('partials.errors', ['name' => 'amount'])
-                            <div class="form-text">Jumlah dikira secara automatik berdasarkan pilihan bulan.</div>
+                            <div class="form-text">Jumlah dikira automatik: RM10 × bilangan bulan.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="payment_method">Kaedah Bayaran</label>
@@ -92,11 +90,7 @@
                                 <div class="method-detail js-method-detail d-none" data-method="Cash"><strong>Bayaran tunai</strong><span>Sila serahkan bayaran kepada bendahari dan minta resit. Bukti bayaran akan disemak sebelum rekod yuran dikemas kini.</span></div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="payment_date">Tarikh Bayaran</label>
-                            <input class="form-control @error('payment_date') is-invalid @enderror" id="payment_date" type="date" name="payment_date" value="{{ old('payment_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required>
-                            @include('partials.errors', ['name' => 'payment_date'])
-                        </div>
+                        <div class="col-12"><div class="form-text">Tarikh bayaran akan direkod secara automatik apabila borang dihantar.</div></div>
                         <div class="col-12">
                             <label class="form-label" for="proof">Fail Bukti Bayaran <span class="text-muted">(pilihan)</span></label>
                             <input class="form-control @error('proof') is-invalid @enderror" id="proof" type="file" name="proof" accept=".jpg,.jpeg,.png,.pdf">
@@ -109,7 +103,7 @@
                             @include('partials.errors', ['name' => 'notes'])
                         </div>
                     </div>
-                    <button class="btn btn-danger mt-3" @disabled($outstanding <= 0)>Hantar Untuk Semakan</button>
+                    <button class="btn btn-danger mt-3">Hantar Untuk Semakan</button>
                 </form>
             </div>
         </div>
@@ -124,44 +118,67 @@
 ])->values())
 <script>
 const amountField = document.getElementById('amount');
-const billSelection = document.getElementById('bill-selection');
+const monthsSelection = document.getElementById('months-selection');
 const selectedBillsSummary = document.getElementById('selected-bills-summary');
 const selectedBillsTableWrapper = document.getElementById('selected-bills-table-wrapper');
 const selectedBillsTable = document.getElementById('selected-bills-table');
-const selectedBillsInputs = document.getElementById('selected-bills-inputs');
 const billSelectionEmpty = document.getElementById('bill-selection-empty');
 const bills = @json($billPayload);
-const oldBillIds = @json(array_map('strval', (array) old('bill_ids', request('bill_id') ? [request('bill_id')] : [])));
-function selectedBillsFor(value) {
-    if (value === 'overdue') return bills.filter(bill => bill.overdue);
-    const count = Number(value.replace('count:', ''));
-    return Number.isInteger(count) ? bills.slice(0, count) : [];
+const paymentMonthOptions = @json($paymentMonthOptions);
+let nextBillingMonth = @json($nextBillingMonth);
+const monthlyBillAmount = Number(@json($monthlyBillAmount));
+function previewAllocation(total) {
+    let remaining = total;
+    const allocations = [];
+    for (const bill of bills) {
+        if (remaining <= 0.005) break;
+        const available = Number(bill.amount);
+        const payment = Math.min(remaining, available);
+        if (payment > 0) allocations.push({ bill, payment });
+        remaining -= payment;
+    }
+    let futureMonth = new Date();
+    const latest = bills.length ? bills[bills.length - 1].month : null;
+    if (latest) {
+        // Month labels are localized, so use a server-provided ISO anchor instead.
+        futureMonth = new Date(@json(\Illuminate\Support\Carbon::parse($nextBillingMonth)->format('Y-m-d')) + 'T00:00:00');
+    } else {
+        futureMonth = new Date(@json(now()->startOfMonth()->format('Y-m-d')) + 'T00:00:00');
+    }
+    while (remaining > 0.005) {
+        const payment = Math.min(remaining, monthlyBillAmount);
+        const monthLabel = futureMonth.toLocaleDateString('ms-MY', { month: 'long', year: 'numeric' });
+        allocations.push({ bill: { month: monthLabel, amount: monthlyBillAmount, status: 'Belum dijana', overdue: false }, payment });
+        remaining -= payment;
+        futureMonth.setMonth(futureMonth.getMonth() + 1);
+    }
+    return allocations;
 }
 function updateBillSelection() {
-    const selectedBills = selectedBillsFor(billSelection.value);
-    selectedBillsInputs.innerHTML = selectedBills.map(bill => `<input type="hidden" name="bill_ids[]" value="${bill.id}" form="payment-submission-form">`).join('');
-    selectedBillsTable.innerHTML = selectedBills.map(bill => `<tr><td>${bill.month}</td><td>RM ${Number(bill.amount).toFixed(2)}</td><td>${bill.status}</td></tr>`).join('');
-    const total = selectedBills.reduce((sum, bill) => sum + Number(bill.amount), 0);
+    const months = Number(monthsSelection.value);
+    const total = Number(paymentMonthOptions[months] || 0);
+    const allocations = previewAllocation(total);
+    selectedBillsTable.innerHTML = allocations.map(({ bill, payment }) => {
+        const before = Number(bill.amount);
+        const after = Math.max(0, before - payment);
+        return `<tr><td>${bill.month}</td><td>RM ${payment.toFixed(2)}</td><td>RM ${before.toFixed(2)}</td><td>RM ${after.toFixed(2)}</td><td>${after > 0.005 ? 'Sebahagian' : 'Selesai selepas bayaran'}</td></tr>`;
+    }).join('');
     amountField.value = total ? total.toFixed(2) : '';
-    selectedBillsSummary.textContent = selectedBills.length ? `${selectedBills.length} bulan dipilih · Jumlah: RM ${total.toFixed(2)}` : '';
-    selectedBillsSummary.classList.toggle('d-none', selectedBills.length === 0);
-    selectedBillsTableWrapper.classList.toggle('d-none', selectedBills.length === 0);
-    billSelectionEmpty.classList.toggle('d-none', selectedBills.length > 0);
+    selectedBillsSummary.textContent = months ? `Bayaran ${months} bulan: RM ${total.toFixed(2)} · Agihan bermula dari bil paling lama.` : '';
+    selectedBillsSummary.classList.toggle('d-none', !months);
+    selectedBillsTableWrapper.classList.toggle('d-none', allocations.length === 0);
+    billSelectionEmpty.classList.toggle('d-none', !!months || bills.length === 0);
 }
-billSelection?.addEventListener('change', updateBillSelection);
+monthsSelection?.addEventListener('change', updateBillSelection);
 const methodSelect = document.getElementById('payment_method');
 function updateMethodDetails() {
     document.querySelectorAll('.js-method-detail').forEach(detail => detail.classList.toggle('d-none', detail.dataset.method !== methodSelect.value));
 }
 methodSelect.addEventListener('change', updateMethodDetails);
 updateMethodDetails();
-if (billSelection && oldBillIds.length) {
-    const oldCount = oldBillIds.length === 1 && bills.some(bill => String(bill.id) === oldBillIds[0]) ? `count:1` : `count:${oldBillIds.length}`;
-    billSelection.value = oldCount;
-}
-if (billSelection) updateBillSelection();
-document.querySelector('form').addEventListener('submit', function (event) {
-    if (billSelection && !selectedBillsInputs.querySelector('input')) { event.preventDefault(); alert('Sila pilih bulan yang hendak dibayar.'); }
+if (monthsSelection) updateBillSelection();
+document.getElementById('payment-submission-form').addEventListener('submit', function (event) {
+    if (monthsSelection && !monthsSelection.value) { event.preventDefault(); alert('Sila pilih tempoh bayaran yuran.'); }
 });
 </script>
 @endsection

@@ -17,7 +17,7 @@
                     <dt class="col-sm-4">Jumlah</dt><dd class="col-sm-8">RM {{ number_format((float) $payment->amount, 2) }}</dd>
                     <dt class="col-sm-4">Diperuntukkan kepada Bil</dt><dd class="col-sm-8">RM {{ number_format((float) $payment->allocated_amount, 2) }}</dd>
                     <dt class="col-sm-4">Kaedah</dt><dd class="col-sm-8">{{ $payment->payment_method }}</dd>
-                    <dt class="col-sm-4">Tarikh Bayaran</dt><dd class="col-sm-8">{{ $payment->payment_date->format('d/m/Y') }}</dd>
+                    <dt class="col-sm-4">Tarikh Direkod</dt><dd class="col-sm-8">{{ $payment->payment_date->format('d/m/Y') }}</dd>
                     <dt class="col-sm-4">Catatan Ahli</dt><dd class="col-sm-8">{{ $payment->notes ?? '-' }}</dd>
                     <dt class="col-sm-4">Disemak Oleh</dt><dd class="col-sm-8">{{ $payment->reviewer->name ?? '-' }}</dd>
                     <dt class="col-sm-4">Catatan Semakan</dt><dd class="col-sm-8">{{ $payment->review_notes ?? '-' }}</dd>
@@ -32,7 +32,7 @@
                 @if(auth()->id() === $payment->user_id && $payment->status === 'rejected')
                     <hr>
                     <h2 class="h5 soft-panel-title">Hantar Semula Bukti</h2>
-                    <p class="text-muted small">Betulkan maklumat atau muat naik bukti baharu berdasarkan catatan semakan.</p>
+                    <p class="text-muted small">Betulkan maklumat atau muat naik bukti baharu berdasarkan catatan semakan. Tarikh penghantaran semula direkod secara automatik.</p>
                     <form method="post" action="{{ route('payments.resubmit', $payment) }}" enctype="multipart/form-data">
                         @csrf
                         <div class="row g-3">
@@ -47,10 +47,6 @@
                                         <option value="{{ $method }}" @selected(old('payment_method', array_key_exists($payment->payment_method, $paymentOptions) ? $payment->payment_method : array_key_first($paymentOptions)) === $method)>{{ $label }}</option>
                                     @endforeach
                                 </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label" for="resubmit-date">Tarikh</label>
-                                <input class="form-control" id="resubmit-date" type="date" name="payment_date" value="{{ old('payment_date', $payment->payment_date?->format('Y-m-d')) }}" max="{{ now()->toDateString() }}" required>
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="resubmit-proof">Bukti Baharu</label>

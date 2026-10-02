@@ -37,6 +37,9 @@
                 @elseif(($order->payment_instructions['method'] ?? null) === 'bank_transfer')
                 <p>Buat pindahan menggunakan aplikasi bank anda, kemudian muat naik bukti di bawah. Penjual akan menyemak transaksi sebenar.</p>
                 <p>{{ $order->payment_instructions['bank_name'] }}<br>{{ $order->payment_instructions['account_name'] }}<br><strong>{{ $order->payment_instructions['account_number'] }}</strong></p>
+                @elseif(($order->payment_instructions['method'] ?? null) === 'fpx')
+                <p>Bank pilihan: <strong>{{ $order->payment_instructions['fpx_bank'] ?? '-' }}</strong>. Ini bukan gateway FPX; buat pindahan melalui aplikasi bank anda dan muat naik bukti. Penjual akan menyemak transaksi sebenar.</p>
+                <p>{{ $order->payment_instructions['bank_name'] }}<br>{{ $order->payment_instructions['account_name'] }}<br><strong>{{ $order->payment_instructions['account_number'] }}</strong></p>
                 @endif
             @endif
             @forelse($sellerContacts as $sellerContact)

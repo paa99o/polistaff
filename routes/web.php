@@ -187,6 +187,7 @@ Route::post('/polimart/cart/add/{polimartItem}', [PolimartController::class, 'ad
 Route::delete('/polimart/cart/{polimartItem}', [PolimartController::class, 'removeFromCart'])->name('polimart.cart.remove');
 Route::get('/polimart/checkout', [PolimartController::class, 'checkout'])->name('polimart.checkout');
 Route::post('/polimart/checkout', [PolimartController::class, 'placeOrder'])->name('polimart.checkout.store');
+Route::get('/polimart/order/{polimartOrder}/fpx', [PolimartController::class, 'fpxPayment'])->middleware('signed')->name('polimart.orders.fpx');
 Route::get('/polimart/order/{polimartOrder}', [PolimartController::class, 'trackOrder'])->middleware('signed')->name('polimart.orders.track');
 Route::post('/polimart/order/{polimartOrder}/payment-proof', [PolimartController::class, 'submitOrderPaymentProof'])->middleware(['signed', 'throttle:6,1'])->name('polimart.orders.payment-proof.submit');
 Route::get('/polimart/{polimartItem}', [PolimartController::class, 'publicShow'])->name('polimart.show');

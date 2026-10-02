@@ -10,7 +10,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
         <h1 class="h3 mb-0">Bayaran Yuran</h1>
-        <p class="text-muted mb-0">{{ $isFinanceManager ? 'Pantau bayaran yuran ahli dan semak bukti yang menunggu tindakan.' : 'Hantar bukti bayaran dan semak status kelulusan bendahari.' }}</p>
+        <p class="text-muted mb-0">{{ $isFinanceManager ? 'Pantau bayaran yuran ahli dan semak bukti yang menunggu tindakan.' : ($canViewAllPayments ? 'Lihat rekod bayaran yuran ahli.' : 'Hantar bukti bayaran dan semak status kelulusan bendahari.') }}</p>
     </div>
     @if($canSubmitPayment)
         <div class="d-flex flex-wrap gap-2">
@@ -47,11 +47,11 @@
                 <small class="text-muted">Baki yuran ahli aktif yang belum selesai</small>
             </a>
         </div>
-    @else
+    @elseif(!$canViewAllPayments)
     <div class="col-md-4">
         <button class="admin-stat-card payment-fee-stat-card w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#overdueFeesModal">
             <span class="admin-stat-icon"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span>
-            <strong>RM {{ number_format((float) $overdueBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong>
+            <strong>RM {{ number_format((float) $overdueBills->sum(fn ($bill) => $bill->payment_available_amount), 2) }}</strong>
             <span>Bayaran Tertunggak</span>
             <small class="text-muted">{{ $overdueBills->count() }} bulan tahun sebelumnya</small>
         </button>
@@ -67,7 +67,7 @@
     <div class="col-md-4">
         <button class="admin-stat-card payment-fee-stat-card w-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#unpaidFeesModal">
             <span class="admin-stat-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
-            <strong>RM {{ number_format((float) $currentUnpaidBills->sum(fn ($bill) => $bill->remainingAmount()), 2) }}</strong>
+            <strong>RM {{ number_format((float) $currentUnpaidBills->sum(fn ($bill) => $bill->payment_available_amount), 2) }}</strong>
             <span>Belum Dibayar sehingga {{ now()->translatedFormat('F Y') }}</span>
             <small class="text-muted">{{ $currentUnpaidBills->count() }} bulan belum selesai</small>
         </button>
@@ -102,7 +102,7 @@
         </form>
         <div class="table-responsive mt-3">
             <table class="table mobile-records align-middle mb-0">
-                <thead><tr><th>Ahli</th><th>Jumlah</th><th>Diperuntukkan</th><th>Kaedah</th><th>Tarikh Bayaran</th><th>Status</th><th>Resit</th><th>Tindakan</th></tr></thead>
+                <thead><tr><th>Ahli</th><th>Jumlah</th><th>Diperuntukkan</th><th>Kaedah</th><th>Tarikh Direkod</th><th>Status</th><th>Resit</th><th>Tindakan</th></tr></thead>
                 <tbody>
                 @forelse($payments as $payment)
                     <tr>
@@ -110,7 +110,7 @@
                         <td data-label="Jumlah">RM {{ number_format((float) $payment->amount, 2) }}</td>
                         <td data-label="Diperuntukkan">RM {{ number_format((float) $payment->allocated_amount, 2) }}</td>
                         <td data-label="Kaedah">{{ $payment->payment_method }}</td>
-                        <td data-label="Tarikh">{{ $payment->payment_date->format('d/m/Y') }}</td>
+                        <td data-label="Tarikh Direkod">{{ $payment->payment_date->format('d/m/Y') }}</td>
                         <td data-label="Status"><span class="badge bg-{{ $statusClasses[$payment->status] ?? 'secondary' }}">{{ $statusLabels[$payment->status] ?? ucfirst($payment->status) }}</span></td>
                         <td data-label="Resit">@if($payment->transaction)<a href="{{ route('transactions.show', $payment->transaction) }}">{{ $payment->transaction->receipt_number }}</a>@else<span class="text-muted">-</span>@endif</td>
                         <td data-label="Tindakan"><a class="btn btn-sm btn-outline-danger" href="{{ route('payments.show', $payment) }}">Keterangan</a></td>
@@ -132,7 +132,7 @@
 </div>
 <div class="mt-3">{{ $payments->links() }}</div>
 
-@unless($isFinanceManager)
+@unless($canViewAllPayments)
 <div class="modal fade" id="overdueFeesModal" tabindex="-1" aria-labelledby="overdueFeesTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -140,7 +140,7 @@
             <div class="modal-body">
                 <p class="text-muted">Berikut ialah bulan tahun sebelumnya yang masih belum dibayar.</p>
                 @forelse($overdueBills as $bill)
-                    <div class="d-flex justify-content-between align-items-center border-bottom py-2"><span>{{ $bill->billing_month->translatedFormat('F Y') }}</span><strong>RM {{ number_format($bill->remainingAmount(), 2) }}</strong></div>
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2"><span>{{ $bill->billing_month->translatedFormat('F Y') }}</span><strong>RM {{ number_format((float) $bill->payment_available_amount, 2) }}</strong></div>
                 @empty
                     <div class="alert alert-success mb-0">Tiada bayaran tertunggak.</div>
                 @endforelse
@@ -176,7 +176,7 @@
                 <p class="text-muted">{{ $canSubmitPayment ? 'Pilih bulan yang ingin dibayar. Bukti pembayaran perlu dimuat naik selepas pilihan dibuat.' : 'Maklumat bulan yuran yang masih belum selesai.' }}</p>
                 @forelse($currentUnpaidBills as $bill)
                     <div class="d-flex justify-content-between align-items-center border-bottom py-3 gap-3">
-                        <div><strong>{{ $bill->billing_month->translatedFormat('F Y') }}</strong><div class="small text-muted">Baki RM {{ number_format($bill->remainingAmount(), 2) }}</div></div>
+                        <div><strong>{{ $bill->billing_month->translatedFormat('F Y') }}</strong><div class="small text-muted">Baki RM {{ number_format((float) $bill->payment_available_amount, 2) }}</div></div>
                         @if($canSubmitPayment)
                             <a class="btn btn-sm btn-outline-danger" href="{{ route('payments.create', ['bill_id' => $bill->id]) }}">Bayar</a>
                         @endif

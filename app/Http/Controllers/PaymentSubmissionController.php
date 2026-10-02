@@ -24,15 +24,18 @@ use Illuminate\View\View;
 
 class PaymentSubmissionController extends Controller
 {
+    private const PAYMENT_PACKAGE_RATE = 10;
+
     public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
     public function index(Request $request): View
     {
         $query = PaymentSubmission::with('user', 'reviewer', 'transaction')->latest();
 
-        if (! $request->user()->hasRole('treasurer', 'admin')) {
+        $canViewAllPayments = $request->user()->hasRole('treasurer', 'admin', 'chairman');
+        if (! $canViewAllPayments) {
             $query->where('user_id', $request->user()->id);
-        } elseif ($request->filled('user_id')) {
+        } elseif ($canViewAllPayments && $request->filled('user_id')) {
             $query->where('user_id', $request->integer('user_id'));
         }
 
@@ -45,12 +48,15 @@ class PaymentSubmissionController extends Controller
 
         $user = $request->user();
         $isFinanceManager = $user->hasRole('treasurer', 'admin');
-        if (! $isFinanceManager) {
+        if (! $canViewAllPayments) {
             app(MonthlyFeeService::class)->ensureThrough($user);
         }
-        $bills = $isFinanceManager
+        $bills = $canViewAllPayments
             ? collect()
             : MemberFeeBill::where('user_id', $user->id)->orderBy('billing_month')->get();
+        [$availableBills] = $canViewAllPayments
+            ? [collect()]
+            : $this->availableBillsForPayment($user);
         $currentYear = now()->year;
         $currentMonth = now()->startOfMonth();
         $recentApprovedPayments = PaymentSubmission::where('user_id', $user->id)
@@ -70,6 +76,7 @@ class PaymentSubmissionController extends Controller
         return view('payments.index', [
             'payments' => $query->paginate(15)->withQueryString(),
             'isFinanceManager' => $isFinanceManager,
+            'canViewAllPayments' => $canViewAllPayments,
             'pendingPaymentCount' => $isFinanceManager
                 ? PaymentSubmission::where('status', 'pending')->whereHas('user', fn ($query) => $query->where('role', 'member'))->count()
                 : 0,
@@ -79,8 +86,8 @@ class PaymentSubmissionController extends Controller
             'outstandingTotal' => $isFinanceManager
                 ? User::where('role', 'member')->where('membership_status', 'active')->sum('fee_balance')
                 : 0,
-            'overdueBills' => $bills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year < $currentYear && $bill->remainingAmount() > 0),
-            'currentUnpaidBills' => $bills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year === $currentYear && $bill->billing_month->lte($currentMonth) && $bill->remainingAmount() > 0),
+            'overdueBills' => $availableBills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year < $currentYear),
+            'currentUnpaidBills' => $availableBills->filter(fn (MemberFeeBill $bill) => $bill->billing_month->year === $currentYear && $bill->billing_month->lte($currentMonth)),
             'recentApprovedPayments' => $recentApprovedPayments->filter(fn (PaymentSubmission $payment) => $payment->payment_date->year === $currentYear),
             'paidBills' => $paidBills,
         ]);
@@ -105,17 +112,18 @@ class PaymentSubmissionController extends Controller
         $monthlyFeeService->ensureThrough($user);
 
         [$bills, $pendingAmount, $outstanding] = $this->availableBillsForPayment($user);
-        $paidCurrentYearBills = MemberFeeBill::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->whereYear('billing_month', now()->year)
-            ->orderBy('billing_month')
-            ->get();
+        $latestBillingMonth = MemberFeeBill::where('user_id', $user->id)->max('billing_month');
+        $nextBillingMonth = $latestBillingMonth
+            ? \Illuminate\Support\Carbon::parse($latestBillingMonth)->addMonth()->startOfMonth()
+            : now()->startOfMonth();
         return view('payments.create', [
             'bills' => $bills,
-            'paidCurrentYearBills' => $paidCurrentYearBills,
             'overdueBills' => $bills->filter(fn (MemberFeeBill $bill): bool => $bill->due_date?->isPast() && ! $bill->due_date?->isToday()),
             'outstanding' => $outstanding,
             'pendingAmount' => (float) $pendingAmount,
+            'nextBillingMonth' => $nextBillingMonth->translatedFormat('F Y'),
+            'monthlyBillAmount' => (float) SystemSetting::getValue('monthly_fee', '20'),
+            'paymentMonthOptions' => [1 => 10, 3 => 30, 6 => 60, 12 => 120],
             'paymentOptions' => $this->paymentOptions(),
             'financePaymentQrPath' => SystemSetting::getValue('finance_payment_qr_path'),
             'financeBankDetails' => [
@@ -129,39 +137,51 @@ class PaymentSubmissionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         abort_unless($request->user()->hasRole('member'), 403);
-        app(MonthlyFeeService::class)->ensureThrough($request->user());
-        [$availableBills, , $available] = $this->availableBillsForPayment($request->user());
-
         $data = $request->validate([
+            'months' => ['required', 'integer', 'in:1,3,6,12'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['required', 'string', 'max:120'],
-            'payment_date' => ['required', 'date', 'before_or_equal:today'],
             'proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'bill_ids' => ['nullable', 'array'],
-            'bill_ids.*' => ['integer', 'exists:member_fee_bills,id'],
         ], [
+            'months.required' => 'Sila pilih tempoh bayaran yuran.',
+            'months.in' => 'Tempoh bayaran yang dipilih tidak sah.',
             'amount.required' => 'Sila isi jumlah bayaran.',
             'amount.min' => 'Jumlah bayaran mesti sekurang-kurangnya RM 0.01.',
             'payment_method.required' => 'Sila pilih kaedah bayaran.',
-            'payment_date.required' => 'Sila pilih tarikh bayaran.',
-            'payment_date.before_or_equal' => 'Tarikh bayaran tidak boleh melebihi hari ini.',
             'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
 
-        $requestedBillIds = array_values(array_unique(array_map('intval', $data['bill_ids'] ?? [])));
-        $selectedBills = $availableBills->whereIn('id', $requestedBillIds)->values();
-        if (count($requestedBillIds) !== $selectedBills->count()) {
-            return back()->withInput()->withErrors(['bill_ids' => 'Ada bil yang sudah diliputi bayaran menunggu semakan. Sila muat semula dan pilih semula.']);
+        $expectedAmount = (int) $data['months'] * self::PAYMENT_PACKAGE_RATE;
+        if (abs((float) $data['amount'] - $expectedAmount) > 0.005) {
+            return back()->withInput()->withErrors(['amount' => 'Jumlah bayaran mesti sepadan dengan pilihan tempoh (RM 10 sebulan).']);
         }
-        $selectedAmount = (float) $selectedBills->sum(fn (MemberFeeBill $bill): float => (float) $bill->payment_available_amount);
-        if ($selectedBills->isNotEmpty() && abs((float) $data['amount'] - $selectedAmount) > 0.005) {
-            return back()->withInput()->withErrors(['amount' => 'Jumlah bayaran mesti sama dengan jumlah bulan yang dipilih.']);
+
+        $user = $request->user();
+        $monthlyFeeService = app(MonthlyFeeService::class);
+        $monthlyFeeService->ensureThrough($user);
+        [$availableBills, , $available] = $this->availableBillsForPayment($user);
+
+        // Create future monthly bills on demand so members can prepay months ahead.
+        // Existing unpaid bills remain first in the allocation order.
+        $latestBillingMonth = MemberFeeBill::where('user_id', $user->id)->max('billing_month');
+        $nextMonth = $latestBillingMonth
+            ? now()->parse($latestBillingMonth)->addMonth()->startOfMonth()
+            : now()->startOfMonth();
+        $monthsToCreate = 0;
+        while ($available + 0.005 < (float) $data['amount'] && $monthsToCreate < 24) {
+            $monthsToCreate++;
+            $monthlyFeeService->ensureThrough($user, $nextMonth->copy());
+            [$availableBills, , $available] = $this->availableBillsForPayment($user);
+            $latestBillingMonth = MemberFeeBill::where('user_id', $user->id)->max('billing_month');
+            if ($latestBillingMonth) {
+                $nextMonth = \Illuminate\Support\Carbon::parse($latestBillingMonth)->addMonth()->startOfMonth();
+            }
         }
         if ((float) $data['amount'] > $available + 0.005) {
             return back()->withInput()->withErrors([
-                'amount' => 'Jumlah bayaran tidak boleh melebihi tunggakan yang belum dihantar. Bayaran akan diperuntukkan bermula daripada bulan paling lama.',
+                'amount' => 'Sistem tidak dapat menyediakan bil bulanan yang mencukupi untuk pakej ini. Sila hubungi bendahari.',
             ]);
         }
 
@@ -169,20 +189,37 @@ class PaymentSubmissionController extends Controller
             ? $request->file('proof')->store('payment-proofs', 'private')
             : null;
 
+        $remainingToAllocate = (float) $data['amount'];
+        $targetBills = collect();
+        foreach ($availableBills as $bill) {
+            if ($remainingToAllocate <= 0.005) {
+                break;
+            }
+
+            $targetBills->push($bill);
+            $remainingToAllocate -= min($remainingToAllocate, (float) $bill->payment_available_amount);
+        }
+
+        $packageNote = 'Pakej bayaran '.$data['months'].' bulan (RM '.number_format(self::PAYMENT_PACKAGE_RATE, 2).' sebulan).';
+        $notes = trim(($data['notes'] ?? '').' '.$packageNote);
+        if ($targetBills->isNotEmpty()) {
+            $notes .= ' Agihan bermula: '.$targetBills->map(fn (MemberFeeBill $bill) => $bill->billing_month->format('m/Y'))->join(', ').'.';
+        }
+
         $payment = PaymentSubmission::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'amount' => $data['amount'],
             'payment_method' => $data['payment_method'],
-            'payment_date' => $data['payment_date'],
+            'payment_date' => now()->toDateString(),
             'proof_path' => $path,
-                'notes' => trim(($data['notes'] ?? '').($selectedBills->isNotEmpty() ? ' Bulan dipilih: '.$selectedBills->map(fn ($bill) => $bill->billing_month->format('m/Y'))->join(', ').'.' : '')),
-            'bill_ids' => $selectedBills->pluck('id')->values()->all(),
+            'notes' => $notes,
+            'bill_ids' => $targetBills->pluck('id')->values()->all(),
             'status' => 'pending',
         ]);
 
-        $paidMonths = $selectedBills->isNotEmpty()
-            ? $selectedBills->map(fn (MemberFeeBill $bill) => $bill->billing_month->translatedFormat('F Y'))->join(', ')
-            : 'bulan tertunggak';
+        $paidMonths = $targetBills->isNotEmpty()
+            ? $targetBills->map(fn (MemberFeeBill $bill) => $bill->billing_month->translatedFormat('F Y'))->join(', ')
+            : 'tunggakan yuran terawal';
         User::where('role', 'treasurer')->where('membership_status', 'active')->get()->each(function (User $treasurer) use ($payment, $request, $paidMonths): void {
             PortalNotification::create([
                 'user_id' => $treasurer->id,
@@ -226,15 +263,12 @@ class PaymentSubmissionController extends Controller
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['required', 'string', 'max:120'],
-            'payment_date' => ['required', 'date', 'before_or_equal:today'],
             'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'amount.required' => 'Sila isi jumlah bayaran.',
             'amount.min' => 'Jumlah bayaran mesti sekurang-kurangnya RM 0.01.',
             'payment_method.required' => 'Sila pilih kaedah bayaran.',
-            'payment_date.required' => 'Sila pilih tarikh bayaran.',
-            'payment_date.before_or_equal' => 'Tarikh bayaran tidak boleh melebihi hari ini.',
             'proof.required' => 'Sila upload fail bukti bayaran baharu.',
             'proof.mimes' => 'Bukti bayaran mesti dalam format JPG, PNG atau PDF.',
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
@@ -254,6 +288,7 @@ class PaymentSubmissionController extends Controller
 
         $payment->update([
             ...collect($data)->except('proof')->all(),
+            'payment_date' => now()->toDateString(),
             'proof_path' => $newProofPath,
             'status' => 'pending',
             'reviewed_by' => null,

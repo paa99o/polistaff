@@ -22,7 +22,10 @@ th, td { border: .6px solid #555; padding: 5px 6px; text-align: left; vertical-a
 th { background: #eee; }
 .plain td { border: 0; padding: 3px 4px; }
 .meta td:first-child { width: 24%; font-weight: bold; }
-.categories td { width: 50%; }
+.categories { table-layout: fixed; }
+.categories td:nth-child(1), .categories td:nth-child(4) { width: 8%; }
+.categories td:nth-child(2), .categories td:nth-child(5) { width: 37%; }
+.categories td:nth-child(3), .categories td:nth-child(6) { width: 5%; text-align: center; }
 .mark { font-family: DejaVu Sans; font-weight: bold; }
 .text { white-space: pre-wrap; text-align: justify; }
 .signature-table { margin-top: 18px; }
@@ -47,13 +50,24 @@ tr { page-break-inside: avoid; }
 <h2>Kategori Kursus</h2>
 @php($courseCategories = ['Kepimpinan', 'Kewangan', 'Lain-lain', 'Pembangunan & Penyelidikan', 'Pembangunan Diri', 'Pengajaran & Pembelajaran', 'Pentadbiran / Pengurusan', 'Teknikal', 'Teknologi Maklumat', 'Perkeranian'])
 <table class="categories"><tr><th>Bil.</th><th>Bidang Kursus</th><th>Pilihan</th><th>Bil.</th><th>Bidang Kursus</th><th>Pilihan</th></tr>
-@for($i = 0; $i < 5; $i++)<tr><td>{{ sprintf('%02d', $i + 1) }}</td><td>{{ $courseCategories[$i] }}</td><td class="mark">{{ in_array($courseCategories[$i], $version->content['course_categories'] ?? [], true) ? '✓' : '' }}</td><td>{{ sprintf('%02d', $i + 6) }}</td><td>{{ $courseCategories[$i + 5] }}</td><td class="mark">{{ in_array($courseCategories[$i + 5], $version->content['course_categories'] ?? [], true) ? '✓' : '' }}</td></tr>@endfor
+@for($i = 0; $i < 5; $i++)<tr><td>{{ sprintf('%02d', $i + 1) }}</td><td>{{ str_replace(' / ', '/', $courseCategories[$i]) }}</td><td class="mark">{{ in_array($courseCategories[$i], $version->content['course_categories'] ?? [], true) ? '/' : '' }}</td><td>{{ sprintf('%02d', $i + 6) }}</td><td>{{ str_replace(' / ', '/', $courseCategories[$i + 5]) }}</td><td class="mark">{{ in_array($courseCategories[$i + 5], $version->content['course_categories'] ?? [], true) ? '/' : '' }}</td></tr>@endfor
 </table>
 <div class="note"><strong>Penjajaran:</strong> @forelse($version->content['purposes'] ?? [] as $purpose){{ $purpose }}@if(!$loop->last), @endif @empty - @endforelse</div>
 
 <h2>Maklumat Program / Kursus</h2>
-<table class="meta"><tr><td>Nama Program</td><td>{{ $version->content['title'] ?? $activity->title }}</td></tr><tr><td>Peringkat / Sesi</td><td>{{ $version->content['program_level'] ?? '-' }}{{ !empty($version->content['session']) ? ' · '.$version->content['session'] : '' }}</td></tr><tr><td>Kategori Kursus</td><td>{{ implode(', ', $version->content['course_categories'] ?? []) ?: '-' }}</td></tr><tr><td>Ringkasan Program</td><td class="text">{{ ($version->content['summary'] ?? '') ?: (($version->content['background'] ?? '') ?: '-') }}</td></tr><tr><td>Objektif</td><td><ol style="margin:0;padding-left:18px">@forelse($version->content['objectives'] ?? [] as $objective)<li>{{ $objective }}</li>@empty<li>-</li>@endforelse</ol></td></tr><tr><td>Tempat</td><td>{{ $version->content['location'] ?? '-' }}</td></tr><tr><td>Tarikh / Masa</td><td>{{ $version->content['start_date'] ?? '-' }}{{ !empty($version->content['end_date']) && ($version->content['end_date'] ?? null) !== ($version->content['start_date'] ?? null) ? ' hingga '.$version->content['end_date'] : '' }} · {{ $version->content['start_time'] ?? '-' }} - {{ $version->content['end_time'] ?? '-' }}</td></tr><tr><td>Anjuran</td><td>{{ $version->content['organizing_unit'] ?? '-' }}</td></tr><tr><td>Kumpulan Sasaran</td><td>{{ implode(', ', $version->content['target_participants'] ?? []) ?: '-' }}{{ !empty($version->content['participant_criteria']) ? ' — '.$version->content['participant_criteria'] : '' }}</td></tr><tr><td>Bilangan Peserta</td><td>{{ $version->content['expected_participants'] ?? '-' }} orang</td></tr></table>
+<table class="meta">
+<tr><td>Nama Program</td><td>{{ $version->content['title'] ?? $activity->title }}</td></tr>
+<tr><td>Jabatan / Unit Penganjur</td><td>{{ $version->content['organizing_unit'] ?? '-' }}</td></tr>
+<tr><td>Pegawai Bertanggungjawab</td><td>{{ $version->content['person_in_charge'] ?? '-' }}</td></tr>
+<tr><td>Peringkat / Sesi</td><td>{{ $version->content['program_level'] ?? '-' }}{{ !empty($version->content['session']) ? ' &middot; '.$version->content['session'] : '' }}</td></tr>
+<tr><td>Tarikh / Masa</td><td>{{ $version->content['start_date'] ?? '-' }}{{ !empty($version->content['end_date']) && ($version->content['end_date'] ?? null) !== ($version->content['start_date'] ?? null) ? ' hingga '.$version->content['end_date'] : '' }} &middot; {{ $version->content['start_time'] ?? '-' }} - {{ $version->content['end_time'] ?? '-' }}</td></tr>
+<tr><td>Tempat</td><td>{{ $version->content['location'] ?? '-' }}</td></tr>
+<tr><td>Kumpulan Sasaran</td><td>{{ collect($version->content['target_participants'] ?? [])->reject(fn ($participant) => $participant === 'Student')->implode(', ') ?: '-' }}</td></tr>
+<tr><td>Bilangan Peserta</td><td>{{ $version->content['expected_participants'] ?? '-' }} orang</td></tr>
+</table>
 
+<h2>1. Ringkasan Program</h2><div class="text">{{ ($version->content['summary'] ?? '') ?: (($version->content['background'] ?? '') ?: '-') }}</div>
+<h2>2. Objektif Program</h2><ol>@forelse($version->content['objectives'] ?? [] as $objective)<li>{{ $objective }}</li>@empty<li>-</li>@endforelse</ol>
 <h2>3. Hasil / Impak Program</h2><div class="text">{{ $version->content['impact'] ?? '-' }}</div>
 <h2>4. Jawatankuasa Program</h2><div class="note">(Sila sertakan lampiran sekiranya perlu)</div><table><tr><th style="width:9%">Bil.</th><th>Nama</th><th>Jawatan / Peranan</th></tr>
 @forelse($version->content['committee'] ?? [] as $i => $row)<tr><td>{{ $i + 1 }}</td><td>{{ $row['name'] ?? '-' }}</td><td>{{ $row['position'] ?? '-' }}</td></tr>@empty<tr><td colspan="3">-</td></tr>@endforelse</table>

@@ -10,15 +10,21 @@ use Illuminate\Support\Carbon;
 class MonthlyFeeService
 {
     /**
-     * Make sure a member has a bill for every month from their first known
-     * bill (or membership start) through the requested month.
+     * Make sure a member has a bill for every month from January in their
+     * membership year through the requested month. Existing earlier bills
+     * remain the anchor so imported history is preserved.
      */
     public function ensureThrough(User $user, ?Carbon $through = null): int
     {
         $through = ($through ?? now())->copy()->startOfMonth();
         $firstBill = $user->feeBills()->oldest('billing_month')->first();
-        $start = $firstBill?->billing_month?->copy()->startOfMonth()
-            ?? ($user->joined_date ? Carbon::parse($user->joined_date)->startOfMonth() : $through);
+        $membershipYearStart = $user->joined_date
+            ? Carbon::parse($user->joined_date)->startOfYear()
+            : $through->copy()->startOfYear();
+        $firstExistingMonth = $firstBill?->billing_month?->copy()->startOfMonth();
+        $start = $firstExistingMonth && $firstExistingMonth->lt($membershipYearStart)
+            ? $firstExistingMonth
+            : $membershipYearStart;
         $fee = (float) SystemSetting::getValue('monthly_fee', '20');
         $created = 0;
 

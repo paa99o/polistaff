@@ -36,7 +36,7 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
             'role' => 'member',
             'membership_status' => 'pending',
-            'fee_balance' => 10,
+            'fee_balance' => 0,
         ]);
 
         User::where('role', 'admin')->get()->each(fn (User $admin) => PortalNotification::create([

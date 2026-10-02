@@ -34,7 +34,6 @@ class MembershipApplicationController extends Controller
             ...$request->validated(),
             'membership_status' => 'pending',
             'membership_review_notes' => null,
-            'fee_balance' => max((float) $user->fee_balance, 10),
         ]);
 
         AuditLog::create([

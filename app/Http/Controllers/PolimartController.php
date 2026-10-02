@@ -19,11 +19,26 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
 class PolimartController extends Controller
 {
+    private const FPX_BANKS = ['Maybank', 'CIMB', 'Bank Islam', 'RHB', 'Public Bank', 'Hong Leong Bank', 'AmBank', 'BSN', 'OCBC', 'Alliance Bank'];
+    private const BANK_HOME_PAGES = [
+        'Maybank' => 'https://www.maybank2u.com.my/maybank2u/malaysia/en/personal/index.page',
+        'CIMB' => 'https://www.cimb.com.my/en/personal/home.html',
+        'Bank Islam' => 'https://www.bankislam.com/',
+        'RHB' => 'https://www.rhbgroup.com/index.html',
+        'Public Bank' => 'https://www.publicbankgroup.com/',
+        'Hong Leong Bank' => 'https://www.hlb.com.my/en/personal-banking/home.html',
+        'AmBank' => 'https://www.ambank.com.my/',
+        'BSN' => 'https://www.bsn.com.my/',
+        'OCBC' => 'https://www.ocbc.com.my/personal-banking/home',
+        'Alliance Bank' => 'https://www.alliancebank.com.my/',
+    ];
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
@@ -163,7 +178,7 @@ class PolimartController extends Controller
         $sellerId = $cart['items']->first()['item']->user_id;
         $paymentProfile = PolimartSellerPaymentProfile::where('user_id', $sellerId)->first();
 
-        return view('public.polimart-checkout', [...$cart, 'paymentProfile' => $paymentProfile]);
+        return view('public.polimart-checkout', [...$cart, 'paymentProfile' => $paymentProfile, 'fpxBanks' => self::FPX_BANKS]);
     }
 
     public function placeOrder(Request $request): View|RedirectResponse
@@ -178,7 +193,8 @@ class PolimartController extends Controller
             'postcode' => ['required', 'string', 'max:20'],
             'state' => ['required', 'string', 'max:120'],
             'note' => ['nullable', 'string', 'max:1000'],
-            'payment_method' => ['required', 'in:qr,bank_transfer'],
+            'payment_method' => ['required', 'in:qr,fpx'],
+            'fpx_bank' => ['required_if:payment_method,fpx', 'nullable', 'string', Rule::in(self::FPX_BANKS)],
             'terms' => ['accepted'],
         ]);
         $cart = $this->cartData($request);
@@ -233,7 +249,7 @@ class PolimartController extends Controller
                 'total' => $subtotal + $shippingFee,
                 'status' => 'pending',
                 'payment_method' => $data['payment_method'],
-                'payment_instructions' => $this->paymentInstructions($paymentProfile, $data['payment_method']),
+                'payment_instructions' => $this->paymentInstructions($paymentProfile, $data['payment_method'], $data['fpx_bank'] ?? null),
                 'payment_status' => 'awaiting_payment',
                 'payment_expires_at' => now()->addHours(24),
             ]);
@@ -243,7 +259,20 @@ class PolimartController extends Controller
         $trackingEmailSent = $this->sendOrderEmail($order, $trackingUrl);
         $sellerContacts = $this->sellerContactLinks($order);
 
+        if ($order->payment_method === 'fpx') {
+            return redirect()->temporarySignedRoute('polimart.orders.fpx', now()->addDays(90), ['polimartOrder' => $order->id]);
+        }
+
         return view('public.polimart-order-success', compact('order', 'trackingUrl', 'trackingEmailSent', 'sellerContacts'));
+    }
+
+    public function fpxPayment(PolimartOrder $polimartOrder): RedirectResponse
+    {
+        abort_unless($polimartOrder->payment_method === 'fpx', 404);
+        $bank = $polimartOrder->payment_instructions['fpx_bank'] ?? '';
+        abort_unless(isset(self::BANK_HOME_PAGES[$bank]), 404);
+
+        return redirect()->away(self::BANK_HOME_PAGES[$bank]);
     }
 
     public function trackOrder(PolimartOrder $polimartOrder): View
@@ -681,7 +710,7 @@ class PolimartController extends Controller
             : filled($profile->bank_name) && filled($profile->account_name) && filled($profile->account_number);
     }
 
-    private function paymentInstructions(PolimartSellerPaymentProfile $profile, string $method): array
+    private function paymentInstructions(PolimartSellerPaymentProfile $profile, string $method, ?string $fpxBank = null): array
     {
         if ($method === 'qr') {
             return [
@@ -692,7 +721,8 @@ class PolimartController extends Controller
         }
 
         return [
-            'method' => 'bank_transfer',
+            'method' => 'fpx',
+            'fpx_bank' => $fpxBank,
             'bank_name' => $profile->bank_name,
             'account_name' => $profile->account_name,
             'account_number' => $profile->account_number,

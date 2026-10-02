@@ -16,7 +16,7 @@
                     <strong>{{ ['awaiting_payment' => 'Menunggu bayaran', 'proof_submitted' => 'Bukti dihantar', 'paid' => 'Bayaran disahkan', 'rejected' => 'Perlu bukti semula', 'expired' => 'Pesanan luput', 'cancelled' => 'Dibatalkan', 'refund_required' => 'Perlu pulangan wang', 'refunded' => 'Wang dipulangkan'][$order->payment_status] ?? $order->payment_status }}</strong>
                     @if($order->payment_expires_at && $order->payment_status === 'awaiting_payment')<div class="small text-muted">Luput: {{ $order->payment_expires_at->format('d/m/Y h:i A') }}</div>@endif
                     @if($order->payment_review_note)<div class="small text-danger">{{ $order->payment_review_note }}</div>@endif
-                    <div class="small text-muted">{{ $order->payment_method === 'qr' ? 'QR' : 'Pindahan bank' }}{{ $order->payment_reference ? ' · '.$order->payment_reference : '' }}</div>
+                    <div class="small text-muted">{{ $order->payment_method === 'qr' ? 'QR' : ($order->payment_method === 'fpx' ? 'FPX simulasi · '.($order->payment_instructions['fpx_bank'] ?? 'Bank') : 'Pindahan bank') }}{{ $order->payment_reference ? ' · '.$order->payment_reference : '' }}</div>
                     @if($order->payment_proof_path)
                         <a class="btn btn-sm btn-outline-secondary mt-1" href="{{ route('admin.polimart.orders.payment-proof', $order) }}" target="_blank">Lihat bukti</a>
                     @endif

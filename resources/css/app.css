@@ -5219,7 +5219,6 @@ html[data-theme="dark"] .btn-outline-primary {
 .method-detail span { color: var(--color-muted, #6c7888); }
 .payment-qr { background: #fff; border-radius: 5px; height: 92px; object-fit: contain; width: 92px; }
 @media (max-width: 575.98px) { .method-detail { align-items: flex-start; flex-direction: column; gap: 8px; } }
-.claim-fixed-amount { align-items: center; background: #fff8ed; border: 1px solid #edd7ad; border-radius: 8px; color: #8b5c16; display: inline-flex; font-weight: 700; min-height: 38px; padding: 0 13px; white-space: nowrap; }
 .activity-wizard-progress {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));

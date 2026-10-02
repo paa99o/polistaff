@@ -13,8 +13,7 @@
     $purposes = old('purposes', $proposal['purposes'] ?? []);
     $courseCategories = old('course_categories', $proposal['course_categories'] ?? []);
     $speakers = old('speakers', $proposal['speakers'] ?? [['name' => '', 'position' => '', 'grade' => '', 'institution' => '']]);
-    $activityTypes = ['Seminar', 'Workshop', 'Training', 'Competition', 'Meeting', 'Visit', 'Community Program', 'Others'];
-    $participantTypes = ['Student', 'Staff', 'Lecturer', 'External Community', 'Others'];
+    $participantTypes = ['Staff', 'Lecturer', 'External Community', 'Others'];
 @endphp
 
 @if($errors->any())
@@ -39,9 +38,7 @@
         <h2 class="h5 soft-panel-title" id="activity-step-1">Langkah 1: Maklumat Program</h2>
         <div class="row g-3">
             <div class="col-md-8"><label class="form-label" for="title">Nama Aktiviti / Program</label><input class="form-control" id="title" name="title" value="{{ old('title', $activity->title ?? '') }}" data-required data-label="Nama Aktiviti / Program"><div class="wizard-field-error"></div></div>
-            <div class="col-md-4"><label class="form-label" for="activity_type">Jenis Aktiviti</label><select class="form-select" id="activity_type" name="activity_type" data-required data-label="Jenis Aktiviti"><option value="">Pilih jenis</option>@foreach($activityTypes as $type)<option value="{{ $type }}" @selected(old('activity_type', $activity->activity_type ?? '') === $type)>{{ $type }}</option>@endforeach</select><div class="wizard-field-error"></div></div>
-            <div class="col-md-6"><label class="form-label" for="program_category">Kategori Program</label><input class="form-control" id="program_category" name="program_category" value="{{ old('program_category', $activity->program_category ?? '') }}" data-required data-label="Kategori Program"><div class="wizard-field-error"></div></div>
-            <div class="col-md-6"><label class="form-label" for="organizing_unit">Jabatan / Unit Penganjur</label><input class="form-control" id="organizing_unit" name="organizing_unit" value="{{ old('organizing_unit', $activity->organizing_unit ?? '') }}" data-required data-label="Jabatan / Unit Penganjur"><div class="wizard-field-error"></div></div>
+            <div class="col-md-6"><label class="form-label" for="organizing_unit">Jabatan / Unit Penganjur</label><select class="form-select" id="organizing_unit" name="organizing_unit" data-required data-label="Jabatan / Unit Penganjur"><option value="">Pilih jabatan / unit</option>@foreach(['JTMK', 'JRKV'] as $unit)<option value="{{ $unit }}" @selected(old('organizing_unit', $activity->organizing_unit ?? '') === $unit)>{{ $unit }}</option>@endforeach</select><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="person_in_charge">Pegawai Bertanggungjawab</label><input class="form-control" id="person_in_charge" name="person_in_charge" value="{{ old('person_in_charge', $activity->person_in_charge ?? auth()->user()->name) }}" data-required data-label="Pegawai Bertanggungjawab"><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="program_level">Peringkat Program</label><select class="form-select" id="program_level" name="program_level" data-required data-label="Peringkat Program"><option value="">Pilih peringkat</option>@foreach(['Jabatan', 'Politeknik / Institusi', 'Komuniti', 'Negeri', 'Kebangsaan', 'Antarabangsa'] as $level)<option value="{{ $level }}" @selected(old('program_level', $proposal['program_level'] ?? '') === $level)>{{ $level }}</option>@endforeach</select><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="program_session">Sesi / Tahun Program</label><input class="form-control" id="program_session" name="session" value="{{ old('session', $proposal['session'] ?? '') }}" placeholder="Contoh: Sesi I 2026/2027"></div>
@@ -53,7 +50,7 @@
         <h2 class="h5 soft-panel-title" id="activity-step-2">Langkah 2: Objektif & Peserta</h2>
         <div class="mb-4">
             <div class="mb-3"><label class="form-label" for="program_summary">Ringkasan Program</label><textarea class="form-control" id="program_summary" name="summary" rows="5" placeholder="Terangkan latar belakang dan rasional program" data-required data-label="Ringkasan Program">{{ old('summary', $proposal['summary'] ?? '') }}</textarea><div class="wizard-field-error"></div></div>
-            <div class="mb-3"><span class="form-label d-block">Kategori Kursus (jika berkaitan)</span><div class="row row-cols-2 row-cols-md-3 g-2">@foreach(['Kepimpinan', 'Kewangan', 'Lain-lain', 'Pembangunan & Penyelidikan', 'Pembangunan Diri', 'Pengajaran & Pembelajaran', 'Pentadbiran / Pengurusan', 'Teknikal', 'Teknologi Maklumat', 'Perkeranian'] as $category)<div class="col"><label class="form-check"><input class="form-check-input" type="checkbox" name="course_categories[]" value="{{ $category }}" @checked(in_array($category, $courseCategories, true))><span class="form-check-label">{{ $category }}</span></label></div>@endforeach</div></div>
+            <div class="mb-3"><span class="form-label d-block">Kategori Kursus (jika berkaitan)</span><div class="row row-cols-2 row-cols-md-3 g-2">@foreach(['Kepimpinan', 'Kewangan', 'Lain-lain', 'Pembangunan & Penyelidikan', 'Pembangunan Diri', 'Pengajaran & Pembelajaran', 'Pentadbiran / Pengurusan', 'Teknikal', 'Teknologi Maklumat', 'Perkeranian'] as $index => $category)<div class="col"><label class="form-check"><input class="form-check-input" type="checkbox" name="course_categories[]" value="{{ $category }}" @checked(in_array($category, $courseCategories, true))><span class="form-check-label">{{ sprintf('%02d', $index + 1) }} &nbsp; {{ str_replace(' / ', '/', $category) }}</span></label></div>@endforeach</div></div>
             <label class="form-label">Objektif Program</label>
             <div id="objectivesRows" class="activity-wizard-repeat-list">
                 @foreach($objectives as $objective)
@@ -72,7 +69,6 @@
         </div>
         <div class="row g-3">
             <div class="col-md-6"><label class="form-label" for="expected_participants">Anggaran Bilangan Peserta</label><input class="form-control" id="expected_participants" type="number" name="expected_participants" min="1" max="100000" value="{{ old('expected_participants', $activity->expected_participants ?? $activity->max_participants ?? '') }}" data-required data-label="Anggaran Bilangan Peserta"><div class="wizard-field-error"></div></div>
-            <div class="col-12"><label class="form-label" for="participant_criteria">Kriteria / Syarat Peserta</label><textarea class="form-control" id="participant_criteria" name="participant_criteria" rows="3" placeholder="Contoh: terbuka kepada 30 peserta terawal" data-required data-label="Kriteria / Syarat Peserta">{{ old('participant_criteria', $activity->participant_criteria ?? '') }}</textarea><div class="wizard-field-error"></div></div>
             <div class="col-12"><label class="form-label" for="program_impact">Hasil / Impak Program</label><textarea class="form-control" id="program_impact" name="impact" rows="4" placeholder="Nyatakan hasil dan manfaat yang dijangka" data-required data-label="Hasil / Impak Program">{{ old('impact', $proposal['impact'] ?? '') }}</textarea><div class="wizard-field-error"></div></div>
         </div>
     </section>
@@ -85,7 +81,6 @@
             <div class="col-md-6"><label class="form-label" for="start_time">Masa Mula</label><input class="form-control" id="start_time" type="time" name="start_time" value="{{ $startTimeValue }}" data-required data-label="Masa Mula"><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="end_time">Masa Tamat</label><input class="form-control" id="end_time" type="time" name="end_time" value="{{ $endTimeValue }}" data-required data-label="Masa Tamat"><div class="wizard-field-error"></div></div>
             <div class="col-md-6"><label class="form-label" for="location">Tempat / Venue</label><input class="form-control" id="location" name="location" value="{{ old('location', isset($activity) && $activity->location !== 'Belum ditetapkan' ? $activity->location : '') }}" data-required data-label="Tempat / Venue"><div class="wizard-field-error"></div></div>
-            <div class="col-md-6"><label class="form-label" for="implementation_mode">Mod Pelaksanaan</label><select class="form-select" id="implementation_mode" name="implementation_mode" data-required data-label="Mod Pelaksanaan"><option value="">Pilih mod</option>@foreach(['Physical' => 'Fizikal', 'Online' => 'Dalam Talian', 'Hybrid' => 'Hibrid'] as $value => $label)<option value="{{ $value }}" @selected(old('implementation_mode', $activity->implementation_mode ?? '') === $value)>{{ $label }}</option>@endforeach</select><div class="wizard-field-error"></div></div>
         </div>
         <details class="mt-3"><summary class="text-danger">Tetapan pendaftaran pilihan</summary><div class="row g-3 mt-1"><div class="col-md-6"><label class="form-label" for="registration_opens_at">Pendaftaran Dibuka</label><input class="form-control" type="datetime-local" id="registration_opens_at" name="registration_opens_at" value="{{ old('registration_opens_at', $activity?->registration_opens_at?->format('Y-m-d\\TH:i')) }}"></div><div class="col-md-6"><label class="form-label" for="registration_closes_at">Pendaftaran Ditutup</label><input class="form-control" type="datetime-local" id="registration_closes_at" name="registration_closes_at" value="{{ old('registration_closes_at', $activity?->registration_closes_at?->format('Y-m-d\\TH:i')) }}"></div></div></details>
         <hr class="my-4">
@@ -273,18 +268,18 @@
         const rowText = (selector, fields) => [...form.querySelectorAll(selector)].map((row) => fields.map((field) => row.querySelector(`[data-field="${field}"]`)?.value?.trim()).filter(Boolean).join(' — ')).filter(Boolean);
         const sections = [
             ['Maklumat Program', [
-                ['Nama', value('title')], ['Jenis', value('activity_type')], ['Kategori', value('program_category')],
+                ['Nama Program', value('title')],
                 ['Jabatan / Unit', value('organizing_unit')], ['Pegawai Bertanggungjawab', value('person_in_charge')], ['Peringkat', value('program_level')], ['Sesi', value('session')],
                 ['Penjajaran', list(checkedValues('purposes[]'))],
             ]],
             ['Objektif & Peserta', [
                 ['Ringkasan', value('summary')], ['Kategori Kursus', list(checkedValues('course_categories[]'))],
                 ['Objektif', list([...form.querySelectorAll('[name="objectives[]"]')].map((el) => el.value.trim()).filter(Boolean))],
-                ['Sasaran', list(checkedValues('target_participants[]'))], ['Anggaran Peserta', value('expected_participants')], ['Kriteria', value('participant_criteria')], ['Hasil / Impak', value('impact')],
+                ['Sasaran Peserta', list(checkedValues('target_participants[]'))], ['Anggaran Peserta', value('expected_participants')], ['Hasil / Impak', value('impact')],
             ]],
             ['Tarikh, Tempat & Tentatif', [
                 ['Tarikh / Masa', `${value('start_date')} ${value('start_time')} hingga ${value('end_date')} ${value('end_time')}`],
-                ['Tempat', value('location')], ['Mod', value('implementation_mode')], ['Tentatif', list(rowText('.tentative-row', ['date', 'time', 'description']))], ['Jemputan', list(rowText('.speaker-row', ['name', 'position', 'grade', 'institution']))],
+                ['Tempat', value('location')], ['Tentatif', list(rowText('.tentative-row', ['date', 'time', 'description']))], ['Jemputan', list(rowText('.speaker-row', ['name', 'position', 'grade', 'institution']))],
             ]],
             ['Jawatankuasa & Kewangan', [
                 ['Jawatankuasa', list(rowText('.committee-row', ['name', 'position']))], ['Item Bajet', list(rowText('.budget-row', ['description', 'quantity', 'estimated_cost']))],
