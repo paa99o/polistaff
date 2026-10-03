@@ -7,7 +7,11 @@ use App\Mail\ActivityApprovedMail;
 use App\Mail\ActivityCancelledMail;
 use App\Models\Activity;
 use App\Models\ActivityEvidencePhoto;
+use App\Models\ActivityRegistration;
+use App\Models\Attendance;
 use App\Models\AuditLog;
+use App\Models\EmailDelivery;
+use App\Models\GuestActivityRegistration;
 use App\Models\PortalNotification;
 use App\Models\User;
 use App\Services\EmailAuditService;
@@ -16,6 +20,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -203,11 +208,73 @@ class ActivityController extends Controller
 
     public function destroy(Activity $activity): RedirectResponse
     {
-        Gate::authorize('manage-activities');
-        abort_unless($activity->created_by === auth()->id() && in_array($activity->status, ['draft', 'pending_approval'], true), 403);
-        $activity->delete();
+        $user = auth()->user();
+        $isAdminDeletingApprovedActivity = $user->hasRole('admin') && $activity->status === 'approved';
+        $isOwnerDeletingUnapprovedActivity = $user->hasRole('member')
+            && (int) $activity->created_by === (int) $user->id
+            && in_array($activity->status, ['draft', 'pending_approval'], true);
 
-        return redirect()->route('activities.index')->with('status', 'Aktiviti dipadam.');
+        abort_unless($isAdminDeletingApprovedActivity || $isOwnerDeletingUnapprovedActivity, 403);
+
+        $activity->load('evidencePhotos');
+        $publicFiles = collect([
+            $activity->evidence_photo_path,
+            ...$activity->evidencePhotos->pluck('path'),
+        ])->filter()->unique()->values()->all();
+        $privateFiles = array_values(array_filter([$activity->report_photo_path]));
+        $activityUrlPath = parse_url(route('activities.show', $activity), PHP_URL_PATH);
+
+        DB::transaction(function () use ($activity, $publicFiles, $privateFiles, $activityUrlPath): void {
+            if ($publicFiles !== [] && ! Storage::disk('public')->delete($publicFiles)) {
+                abort(500, 'Fail gambar aktiviti tidak dapat dipadam sepenuhnya. Rekod aktiviti dikekalkan.');
+            }
+            if ($privateFiles !== [] && ! Storage::disk('private')->delete($privateFiles)) {
+                abort(500, 'Fail laporan aktiviti tidak dapat dipadam sepenuhnya. Rekod aktiviti dikekalkan.');
+            }
+
+            $registrationIds = $activity->registrations()->pluck('id');
+            $guestRegistrationIds = $activity->guestRegistrations()->pluck('id');
+            $attendanceIds = $activity->attendances()->pluck('id');
+
+            EmailDelivery::query()
+                ->where('record_type', Activity::class)
+                ->where('record_id', $activity->id)
+                ->delete();
+
+            AuditLog::query()->where(function ($query) use ($activity, $registrationIds, $guestRegistrationIds, $attendanceIds): void {
+                $query->where(fn ($q) => $q->where('record_type', Activity::class)->where('record_id', $activity->id));
+                if ($registrationIds->isNotEmpty()) {
+                    $query->orWhere(fn ($q) => $q->where('record_type', ActivityRegistration::class)->whereIn('record_id', $registrationIds));
+                }
+                if ($guestRegistrationIds->isNotEmpty()) {
+                    $query->orWhere(fn ($q) => $q->where('record_type', GuestActivityRegistration::class)->whereIn('record_id', $guestRegistrationIds));
+                }
+                if ($attendanceIds->isNotEmpty()) {
+                    $query->orWhere(fn ($q) => $q->where('record_type', Attendance::class)->whereIn('record_id', $attendanceIds));
+                }
+            })->delete();
+
+            if ($activityUrlPath) {
+                $activityUrlPath = rtrim($activityUrlPath, '/');
+                $notificationIds = PortalNotification::query()
+                    ->where(function ($query) use ($activityUrlPath): void {
+                        $query->where('link', 'like', '%'.$activityUrlPath)
+                            ->orWhere('link', 'like', '%'.$activityUrlPath.'?%')
+                            ->orWhere('link', 'like', '%'.$activityUrlPath.'#%');
+                    })
+                    ->pluck('id');
+
+                if ($notificationIds->isNotEmpty()) {
+                    EmailDelivery::query()->whereIn('notification_id', $notificationIds)->delete();
+                    PortalNotification::query()->whereIn('id', $notificationIds)->delete();
+                }
+            }
+
+            $activity->feedbacks()->delete();
+            $activity->delete();
+        });
+
+        return redirect()->route('activities.index')->with('status', 'Aktiviti dan semua rekod berkaitan berjaya dipadam.');
     }
 
     public function uploadEvidencePhotos(Request $request, Activity $activity): RedirectResponse

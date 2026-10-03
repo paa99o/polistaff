@@ -37,6 +37,7 @@ Route::get('/', function () {
 
     $homepageActivities = Activity::query()
         ->where('status', 'approved')
+        ->with('evidencePhotos')
         ->orderByRaw('CASE WHEN date_time >= ? THEN 0 ELSE 1 END', [now()])
         ->orderByRaw('CASE WHEN date_time >= ? THEN date_time END ASC', [now()])
         ->orderByRaw('CASE WHEN date_time < ? THEN date_time END DESC', [now()])
@@ -122,8 +123,11 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/admin/backup/restore', [BackupController::class, 'restore'])->middleware('role:admin')->name('backup.restore');
 
     Route::resource('activities', ActivityController::class)
-        ->except(['index', 'show'])
-        ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:member');
+        ->except(['index', 'show', 'destroy'])
+        ->middlewareFor(['create', 'store', 'edit', 'update'], 'role:member');
+    Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])
+        ->middleware('role:admin,member')
+        ->name('activities.destroy');
     Route::get('/activities/status/{status}', [ActivityController::class, 'statusList'])->name('activities.status-list');
     Route::post('/activities/{activity}/paperwork', [ActivityPaperworkController::class, 'generate'])->name('activities.paperwork.generate');
     Route::get('/activities/{activity}/paperwork/{version}', [ActivityPaperworkController::class, 'preview'])->name('activities.paperwork.preview');

@@ -71,6 +71,13 @@
                             <td data-label="Tindakan">
                                 <div class="d-flex gap-2 flex-wrap">
                                     <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.show', $activity) }}">Lihat Butiran</a>
+                                    @if(auth()->user()->hasRole('admin'))
+                                        <form method="post" action="{{ route('activities.destroy', $activity) }}" data-confirm="Padam aktiviti ini secara kekal? Semua pendaftaran, kehadiran, maklum balas, gambar, rekod dokumen, notifikasi dan log berkaitannya akan dipadam.">
+                                            @csrf
+                                            @method('delete')
+                                            <button class="btn btn-sm btn-danger" type="submit">Padam Aktiviti</button>
+                                        </form>
+                                    @endif
                                     @if($activity->isFinished())
                                         <a class="btn btn-sm btn-outline-secondary" href="{{ route('reports.activities.pdf', $activity) }}">Muat Turun Kertas Kerja</a>
                                     @else

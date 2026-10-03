@@ -91,8 +91,18 @@
                     <div class="homepage-activity-grid">
                 @foreach($homepageActivities as $activity)
                     <article class="public-activity-card homepage-activity-card">
-                        <div class="public-activity-date"><strong>{{ $activity->date_time->format('d') }}</strong><span>{{ mb_strtoupper($activity->date_time->format('M')) }}</span></div>
-                        <div><p class="public-activity-meta">{{ $activity->date_time->format('d/m/Y · h:i A') }}@if($activity->location) · {{ $activity->location }}@endif</p><h3>{{ $activity->title }}</h3><span class="homepage-activity-status">{{ $activity->date_time->isPast() ? 'Telah dijalankan' : 'Akan datang' }}</span><a class="homepage-text-link" href="{{ route('activities.show', $activity) }}">Lihat butiran <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
+                        @php($previewPhoto = $activity->evidencePhotos->first())
+                        <div class="homepage-activity-preview" aria-hidden="true">
+                            @if($previewPhoto)
+                                <img src="{{ asset('storage/'.$previewPhoto->path) }}" alt="" loading="lazy">
+                            @else
+                                <span class="homepage-preview-sun"></span><i class="bi bi-people-fill"></i><i class="bi bi-stars"></i>
+                            @endif
+                        </div>
+                        <div class="homepage-activity-card-body">
+                            <div class="public-activity-date"><strong>{{ $activity->date_time->format('d') }}</strong><span>{{ mb_strtoupper($activity->date_time->format('M')) }}</span></div>
+                            <div><p class="public-activity-meta">{{ $activity->date_time->format('d/m/Y · h:i A') }}@if($activity->location) · {{ $activity->location }}@endif</p><h3>{{ $activity->title }}</h3><span class="homepage-activity-status">{{ $activity->date_time->isPast() ? 'Telah dijalankan' : 'Akan datang' }}</span><a class="homepage-text-link" href="{{ route('activities.show', $activity) }}">Lihat butiran <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
+                        </div>
                     </article>
                 @endforeach
                     </div>

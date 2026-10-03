@@ -23,6 +23,11 @@ class Activity extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function feedbacks(): HasMany
+    {
+        return $this->hasMany(Feedback::class);
+    }
+
     public function evidencePhotos(): HasMany
     {
         return $this->hasMany(ActivityEvidencePhoto::class);

@@ -5469,7 +5469,16 @@ html[data-theme="dark"] .btn-outline-primary {
 .homepage-carousel::-webkit-scrollbar { display:none; }
 .homepage-activity-grid { display:flex; gap:16px; }
 .homepage-activity-card { border-color: rgba(39,52,64,.09); border-radius: 12px; box-shadow: 0 5px 18px rgba(39,52,64,.035); gap: 18px; padding: 23px; }
-.homepage-carousel .homepage-activity-card { flex:0 0 calc((100% - 16px)/2); min-width:0; scroll-snap-align:start; }
+.homepage-carousel .homepage-activity-card { display:grid; flex:0 0 calc((100% - 16px)/2); gap:14px; grid-template-columns:minmax(0,1fr); min-width:0; padding:12px; scroll-snap-align:start; }
+.homepage-activity-preview { align-items:center; aspect-ratio:2.55/1; background:linear-gradient(135deg,#e4eee9,#c4d9cf 55%,#91b4a5); border-radius:10px; color:rgba(255,255,255,.94); display:flex; justify-content:center; overflow:hidden; position:relative; }
+.homepage-activity-preview::before, .homepage-activity-preview::after { background:rgba(255,244,220,.34); border-radius:50%; content:''; height:150px; position:absolute; right:10%; top:-82px; width:150px; }
+.homepage-activity-preview::after { background:rgba(68,94,99,.18); height:110px; left:-20px; right:auto; top:auto; bottom:-78px; width:55%; }
+.homepage-activity-preview > img { height:100%; object-fit:cover; position:absolute; width:100%; }
+.homepage-activity-preview > i:first-of-type { font-size:52px; position:relative; z-index:1; }
+.homepage-activity-preview > i:last-of-type { font-size:20px; position:absolute; right:27%; top:20%; z-index:1; }
+.homepage-preview-sun { background:rgba(255,247,220,.75); border-radius:50%; height:52px; position:absolute; right:23%; top:14%; width:52px; }
+.homepage-activity-card-body { align-items:start; display:grid; gap:16px; grid-template-columns:64px minmax(0,1fr); padding:2px 8px 8px; }
+.homepage-activity-card-body .public-activity-date { height:64px; }
 .homepage-activity-card h3 { color: #273440; font-size: 18px; font-weight: 750; margin: 0 0 13px; }
 .homepage-activity-card .public-activity-date { background: #e7f0ed; border-radius: 12px; color: #3f6e63; flex: 0 0 auto; }
 .homepage-activity-card .homepage-text-link { font-size: 12px; }
@@ -5515,6 +5524,7 @@ html[data-theme="dark"] .homepage-activities { color:#f5f7fb; }
 html[data-theme="dark"] .homepage-activity-card, html[data-theme="dark"] .homepage-no-events { background:#202c3f; border-color:rgba(222,231,245,.16); }
 html[data-theme="dark"] .homepage-carousel-button { background:#202c3f; border-color:rgba(222,231,245,.2); color:#ffd08a; }
 html[data-theme="dark"] .homepage-activity-status { color:#ffd08a; }
+html[data-theme="dark"] .homepage-activity-preview { background:linear-gradient(135deg,#e6b69d,#cd7e79 58%,#8faeaa); }
 html[data-theme="dark"] .homepage-about { border-color:rgba(222,231,245,.16); }
 html[data-theme="dark"] .homepage-benefit { background:#26354b; border-color:rgba(222,231,245,.14); }
 html[data-theme="dark"] .homepage-market-icon, html[data-theme="dark"] .homepage-benefit-icon, html[data-theme="dark"] .homepage-empty-icon, html[data-theme="dark"] .homepage-activity-card .public-activity-date { background:#344056; color:#f0c184; }

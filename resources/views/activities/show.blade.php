@@ -35,6 +35,13 @@
                         @if(auth()->id() === $activity->created_by && in_array($activity->status, ['draft', 'pending_approval'], true))
                             <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                         @endif
+                        @if(auth()->user()->hasRole('admin') && $activity->status === 'approved')
+                            <form method="post" action="{{ route('activities.destroy', $activity) }}" data-confirm="Padam aktiviti ini secara kekal? Semua pendaftaran, kehadiran, maklum balas, gambar, rekod dokumen, notifikasi dan log berkaitannya akan dipadam.">
+                                @csrf
+                                @method('delete')
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Padam Aktiviti</button>
+                            </form>
+                        @endif
                         @if($activity->status === 'approved' && $activity->isFinished())
                             @php
                                 $activityExportOptions = [
