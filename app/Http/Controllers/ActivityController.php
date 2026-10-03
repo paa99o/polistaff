@@ -91,11 +91,16 @@ class ActivityController extends Controller
 
     public function publicIndex(Request $request): View
     {
-        $view = $request->query('view') === 'past' ? 'past' : 'upcoming';
+        $view = in_array($request->query('view'), ['upcoming', 'past'], true) ? $request->query('view') : 'all';
+        $now = now();
         $activities = Activity::query()
             ->where('status', 'approved')
             ->when($view === 'past', fn ($query) => $query->where('date_time', '<', now())->latest('date_time'))
             ->when($view === 'upcoming', fn ($query) => $query->where('date_time', '>=', now())->oldest('date_time'))
+            ->when($view === 'all', fn ($query) => $query
+                ->orderByRaw('CASE WHEN date_time >= ? THEN 0 ELSE 1 END', [$now])
+                ->orderByRaw('CASE WHEN date_time >= ? THEN date_time END ASC', [$now])
+                ->orderByRaw('CASE WHEN date_time < ? THEN date_time END DESC', [$now]))
             ->paginate(12)
             ->withQueryString();
 

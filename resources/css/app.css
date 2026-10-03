@@ -4915,13 +4915,21 @@ html[data-theme="dark"] .maintenance-icon {
 .public-market-hero { background: var(--site-background); max-width: none; padding-left: max(24px, calc((100% - 1280px) / 2)); padding-right: max(24px, calc((100% - 1280px) / 2)); }
 .public-activity-grid-section,
 .public-store-grid-section { padding-bottom: 96px; }
+.public-activity-filters { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.public-activity-filters a { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-muted); font-size: 14px; font-weight: 700; padding: 10px 15px; text-decoration: none; transition: background .18s ease, border-color .18s ease, color .18s ease; }
+.public-activity-filters a:hover,
+.public-activity-filters a.is-active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
 .public-activity-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .public-activity-card { background: var(--color-surface); border: 1px solid var(--color-border); display: grid; gap: 24px; grid-template-columns: 78px 1fr; padding: 28px; }
 .public-activity-date { align-items: center; background: var(--color-secondary); color: var(--color-primary); display: flex; flex-direction: column; height: 78px; justify-content: center; }
+.public-activity-date.is-past { background: color-mix(in srgb, var(--color-muted) 12%, var(--color-surface)); color: var(--color-muted); }
 .public-activity-date strong { font-size: 32px; line-height: 1; }
 .public-activity-date span { font-size: 12px; font-weight: 700; margin-top: 6px; }
 .public-activity-meta { color: var(--color-muted); font-size: 13px; margin: 0 0 10px; }
 .public-activity-card h2 { font-size: 22px; margin: 0 0 10px; }
+.public-activity-list-status { color: var(--color-primary); display: block; font-size: 13px; font-weight: 700; margin: 0 0 14px; }
+.public-activity-list-status.is-past { color: var(--color-muted); }
+.public-activity-card .btn { justify-self: start; }
 .public-activity-card p:not(.public-activity-meta) { color: var(--color-muted); margin-bottom: 20px; }
 .public-store-filter { align-items: center; display: grid; gap: 12px; grid-template-columns: 1fr 220px auto; margin-bottom: 56px; }
 .public-search-field { position: relative; }
