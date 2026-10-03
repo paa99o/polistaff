@@ -10,7 +10,7 @@ class VerifyEmailNotification extends VerifyEmail
 {
     public function toMail($notifiable): MailMessage
     {
-        $url = URL::temporarySignedRoute(
+        $relativeUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes(60),
             [
@@ -19,6 +19,7 @@ class VerifyEmailNotification extends VerifyEmail
             ],
             absolute: false,
         );
+        $url = rtrim((string) config('app.url'), '/').$relativeUrl;
 
         return (new MailMessage)
             ->subject('[POLIBEST] Sahkan alamat emel anda')
