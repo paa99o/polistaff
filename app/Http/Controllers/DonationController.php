@@ -8,8 +8,10 @@ use App\Models\PortalNotification;
 use App\Models\SystemSetting;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\FinancialHistoryDeletionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -23,6 +25,42 @@ class DonationController extends Controller
             $query->where('user_id', $request->user()->id);
         }
         return view('donations.index', ['donations' => $query->paginate(15)->withQueryString()]);
+    }
+
+    public function destroyHistory(Request $request, Donation $donation, FinancialHistoryDeletionService $history): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('treasurer'), 403);
+
+        $paperworkPath = $donation->paperwork_path;
+
+        DB::transaction(function () use ($request, $donation, $history): void {
+            $donation = Donation::query()->whereKey($donation->id)->lockForUpdate()->firstOrFail();
+            $transaction = $donation->transaction_id
+                ? Transaction::query()->whereKey($donation->transaction_id)->lockForUpdate()->first()
+                : null;
+
+            $history->deleteRelatedMessages($donation, '/donations/'.$donation->id);
+            $history->deleteTransactionAndReversals($transaction);
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'deleted',
+                'module' => 'Donation',
+                'record_type' => Donation::class,
+                'record_id' => $donation->id,
+                'description' => 'Treasurer deleted donation history #'.$donation->id.'.',
+                'changes' => ['user_id' => $donation->user_id, 'category' => $donation->category, 'amount' => $donation->amount, 'status' => $donation->status, 'transaction_id' => $donation->transaction_id],
+                'ip_address' => $request->ip(),
+            ]);
+
+            $donation->delete();
+        });
+
+        if ($paperworkPath) {
+            Storage::disk('private')->delete($paperworkPath);
+        }
+
+        return redirect()->route('donations.index')->with('status', 'Sejarah sumbangan dan transaksi berkait telah dipadam.');
     }
 
     public function create(): View

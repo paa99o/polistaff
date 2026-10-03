@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\EmailAuditService;
 use App\Services\EmailDeliveryService;
+use App\Services\FinancialHistoryDeletionService;
 use App\Services\MonthlyFeeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -314,6 +315,81 @@ class PaymentSubmissionController extends Controller
         $this->auditPaymentAction($payment, 'cancelled', 'Cancelled pending payment proof.', $request);
 
         return redirect()->route('payments.index')->with('status', 'Penghantaran bukti bayaran telah dibatalkan.');
+    }
+
+    public function destroyHistory(Request $request, PaymentSubmission $payment, FinancialHistoryDeletionService $history): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('treasurer'), 403);
+
+        $proofPath = $payment->proof_path;
+
+        DB::transaction(function () use ($request, $payment, $history): void {
+            $payment = PaymentSubmission::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
+            $transaction = $payment->transaction_id
+                ? Transaction::query()->whereKey($payment->transaction_id)->lockForUpdate()->first()
+                : null;
+
+            if ($payment->status === 'approved') {
+                if (! $transaction || $transaction->status === 'active') {
+                    $feeOwner = User::query()->whereKey($payment->user_id)->lockForUpdate()->first();
+                    $feeOwner?->increment('fee_balance', (float) $payment->amount);
+                }
+
+                $billIds = $payment->bill_ids ?? [];
+                $bills = MemberFeeBill::query()
+                    ->where('user_id', $payment->user_id)
+                    ->when($billIds !== [], fn ($query) => $query->whereIn('id', $billIds))
+                    ->when($billIds === [], fn ($query) => $query->where('paid_amount', '>', 0))
+                    ->orderByDesc('billing_month')
+                    ->lockForUpdate()
+                    ->get();
+
+                $remaining = (float) $payment->allocated_amount;
+                if ($remaining <= 0) {
+                    $remaining = (float) $payment->amount;
+                }
+
+                foreach ($bills as $bill) {
+                    if ($remaining <= 0) {
+                        break;
+                    }
+
+                    $restored = min($remaining, (float) $bill->paid_amount);
+                    if ($restored <= 0) {
+                        continue;
+                    }
+
+                    $bill->paid_amount = max(0, (float) $bill->paid_amount - $restored);
+                    $bill->status = (float) $bill->paid_amount > 0
+                        ? 'partial'
+                        : ($bill->due_date?->lt(today()) ? 'overdue' : 'unpaid');
+                    $bill->save();
+                    $remaining -= $restored;
+                }
+            }
+
+            $history->deleteRelatedMessages($payment, '/payments/'.$payment->id);
+            $history->deleteTransactionAndReversals($transaction);
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'deleted',
+                'module' => 'Payment Proof',
+                'record_type' => PaymentSubmission::class,
+                'record_id' => $payment->id,
+                'description' => 'Treasurer deleted payment history #'.$payment->id.'.',
+                'changes' => ['user_id' => $payment->user_id, 'amount' => $payment->amount, 'status' => $payment->status, 'transaction_id' => $payment->transaction_id],
+                'ip_address' => $request->ip(),
+            ]);
+
+            $payment->delete();
+        });
+
+        if ($proofPath) {
+            Storage::disk('private')->delete($proofPath);
+        }
+
+        return redirect()->route('payments.index')->with('status', 'Sejarah bayaran yuran dipadam. Bil dan baki ahli yang berkaitan telah dikemas kini.');
     }
 
     public function approve(Request $request, PaymentSubmission $payment): RedirectResponse

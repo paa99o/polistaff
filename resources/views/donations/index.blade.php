@@ -18,6 +18,7 @@
     @if($canApproveDonations && $donation->status === 'treasurer_verified')<button class="btn btn-sm btn-danger" type="button" data-donation-action data-bs-toggle="modal" data-bs-target="#donationActionModal" data-action="{{ route('donations.approve', $donation) }}" data-kind="approve" data-limit="{{ $donation->limit_amount }}">Luluskan</button>@endif
     @if($isFinanceReviewer && in_array($donation->status, ['pending', 'treasurer_verified'], true))<button class="btn btn-sm btn-outline-secondary" type="button" data-donation-action data-bs-toggle="modal" data-bs-target="#donationActionModal" data-action="{{ route('donations.reject', $donation) }}" data-kind="reject">Tolak</button>@endif
     <a class="btn btn-sm btn-outline-danger" href="{{ route('donations.show', $donation) }}">Keterangan</a>
+    @if($isTreasurer)<form method="post" action="{{ route('donations.history.destroy', $donation) }}" data-confirm="Padam sejarah sumbangan ini serta transaksi, kertas kerja dan notifikasi berkait?">@csrf @method('delete')<button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-trash me-1" aria-hidden="true"></i>Padam</button></form>@endif
 </div></td></tr>@empty<tr><td colspan="6"><div class="dashboard-empty-state my-3"><span class="stat-icon"><i class="bi bi-heart" aria-hidden="true"></i></span><p class="text-muted mb-0">Tiada permohonan sumbangan.</p></div></td></tr>@endforelse
 </tbody></table></div></div><div class="mt-3">{{ $donations->links() }}</div>
 

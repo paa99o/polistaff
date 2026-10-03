@@ -12,6 +12,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -124,5 +126,67 @@ class AdminController extends Controller
         ]);
 
         return back()->with('status', 'Maklumat ahli berjaya dikemas kini.');
+    }
+
+    public function destroyUser(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('admin'), 403);
+        abort_if($request->user()->is($user), 422, 'Anda tidak boleh memadam akaun sendiri.');
+
+        if ($user->role === 'admin' && $user->membership_status === 'active'
+            && ! User::where('role', 'admin')->where('membership_status', 'active')->where('id', '!=', $user->id)->exists()) {
+            return back()->withErrors(['user' => 'Akaun admin aktif yang terakhir tidak boleh dipadam.']);
+        }
+
+        $publicFiles = collect([$user->profile_photo_path])
+            ->merge(DB::table('polimart_items')->where('user_id', $user->id)->pluck('image_path'))
+            ->merge(DB::table('activity_evidence_photos')->where('user_id', $user->id)->pluck('path'))
+            ->merge(DB::table('polimart_seller_payment_profiles')->where('user_id', $user->id)->pluck('qr_code_path'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $privateFiles = collect()
+            ->merge(DB::table('payment_submissions')->where('user_id', $user->id)->pluck('proof_path'))
+            ->merge(DB::table('expense_claims')->where('user_id', $user->id)->pluck('receipt_path'))
+            ->merge(DB::table('donations')->where('user_id', $user->id)->pluck('paperwork_path'))
+            ->merge(DB::table('member_documents')->where('user_id', $user->id)->pluck('file_path'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        DB::transaction(function () use ($request, $user): void {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+            if ($user->role === 'admin' && $user->membership_status === 'active'
+                && ! User::where('role', 'admin')->where('membership_status', 'active')->where('id', '!=', $user->id)->exists()) {
+                throw ValidationException::withMessages(['user' => 'Akaun admin aktif yang terakhir tidak boleh dipadam.']);
+            }
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'deleted',
+                'module' => 'Admin User Management',
+                'record_type' => User::class,
+                'record_id' => $user->id,
+                'description' => 'Deleted user '.$user->name.' ('.$user->email.').',
+                'changes' => ['name' => $user->name, 'email' => $user->email, 'role' => $user->role, 'membership_status' => $user->membership_status],
+                'ip_address' => $request->ip(),
+            ]);
+
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+            DB::table('email_deliveries')->where('user_id', $user->id)->delete();
+            $user->delete();
+        });
+
+        if ($publicFiles !== []) {
+            Storage::disk('public')->delete($publicFiles);
+        }
+        if ($privateFiles !== []) {
+            Storage::disk('private')->delete($privateFiles);
+        }
+
+        return to_route('admin.users')->with('status', 'Pengguna '.$user->name.' dan rekod peribadi berkait berjaya dipadam.');
     }
 }

@@ -110,6 +110,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/admin/polimart/orders/{polimartOrder}/payment-proof', [PolimartController::class, 'orderPaymentProof'])->middleware('role:admin,member')->name('admin.polimart.orders.payment-proof');
     Route::patch('/admin/polimart/reports/{polimartReport}', [PolimartReportController::class, 'update'])->middleware('role:admin')->name('admin.polimart.reports.update');
     Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->middleware('role:admin')->name('admin.users.update');
+    Route::delete('/admin/users/{user}', [AdminController::class, 'destroyUser'])->middleware('role:admin')->name('admin.users.destroy');
     Route::get('/admin/settings', [SystemSettingController::class, 'edit'])->middleware('role:admin')->name('settings.edit');
     Route::put('/admin/settings', [SystemSettingController::class, 'update'])->middleware('role:admin')->name('settings.update');
     Route::get('/finance/fees', [SystemSettingController::class, 'feeOperations'])->middleware('role:admin,treasurer')->name('finance.fees.index');
@@ -168,12 +169,14 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/donations/{donation}/verify', [DonationController::class, 'verify'])->middleware('role:treasurer,admin')->name('donations.verify');
     Route::patch('/donations/{donation}/approve', [DonationController::class, 'approve'])->middleware('role:admin')->name('donations.approve');
     Route::patch('/donations/{donation}/reject', [DonationController::class, 'reject'])->middleware('role:admin')->name('donations.reject');
+    Route::delete('/donations/{donation}/history', [DonationController::class, 'destroyHistory'])->middleware('role:treasurer')->name('donations.history.destroy');
     Route::get('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmitForm'])->name('claims.resubmit.form');
     Route::post('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmit'])->name('claims.resubmit');
     Route::get('/claims/{claim}/receipt', [ExpenseClaimController::class, 'receipt'])->name('claims.receipt');
     Route::patch('/claims/{claim}/verify', [ExpenseClaimController::class, 'verify'])->middleware('role:treasurer,admin')->name('claims.verify');
     Route::patch('/claims/{claim}/approve', [ExpenseClaimController::class, 'approve'])->middleware('role:admin')->name('claims.approve');
     Route::patch('/claims/{claim}/reject', [ExpenseClaimController::class, 'reject'])->middleware('role:admin')->name('claims.reject');
+    Route::delete('/claims/{claim}/history', [ExpenseClaimController::class, 'destroyHistory'])->middleware('role:treasurer')->name('claims.history.destroy');
 
     Route::get('/payments', [PaymentSubmissionController::class, 'index'])->name('payments.index');
     Route::get('/payments/statement', [PaymentSubmissionController::class, 'statement'])->name('payments.statement');
@@ -185,6 +188,7 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/payments/{payment}/cancel', [PaymentSubmissionController::class, 'cancel'])->name('payments.cancel');
     Route::patch('/payments/{payment}/approve', [PaymentSubmissionController::class, 'approve'])->middleware('role:treasurer,admin')->name('payments.approve');
     Route::patch('/payments/{payment}/reject', [PaymentSubmissionController::class, 'reject'])->middleware('role:treasurer,admin')->name('payments.reject');
+    Route::delete('/payments/{payment}/history', [PaymentSubmissionController::class, 'destroyHistory'])->middleware('role:treasurer')->name('payments.history.destroy');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/admin/notifications/delivery', [NotificationController::class, 'deliveryMonitor'])->middleware('role:admin')->name('admin.notifications.delivery');

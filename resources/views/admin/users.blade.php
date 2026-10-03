@@ -69,6 +69,7 @@
                             <td data-label="Status"><span class="badge {{ $statusClass }}">{{ \App\Support\PolistaffLabels::status($user->membership_status) }}</span></td>
                             <td data-label="Baki Yuran">RM {{ number_format((float) $user->fee_balance, 2) }}</td>
                             <td data-label="Tindakan">
+                                <div class="d-flex flex-column gap-2">
                                 <form method="post" action="{{ route('admin.users.update', $user) }}" class="admin-user-update" data-confirm="Kemaskini peranan, status atau baki yuran untuk {{ $user->name }}?">
                                     @csrf
                                     @method('patch')
@@ -85,6 +86,14 @@
                                     <input class="form-control form-control-sm" type="number" step="0.01" min="0" name="fee_balance" value="{{ $user->fee_balance }}" aria-label="Baki yuran {{ $user->name }}">
                                     <button class="btn btn-sm btn-primary" type="submit">Kemaskini</button>
                                 </form>
+                                @unless(auth()->user()->is($user))
+                                    <form method="post" action="{{ route('admin.users.destroy', $user) }}" data-confirm="Padam akaun {{ $user->name }} secara kekal? Rekod keahlian, kehadiran, permohonan kewangan, iklan Polimart dan fail milik pengguna ini akan dipadam. Transaksi kewangan dan log audit akan dikekalkan tanpa pautan kepada akaun ini.">
+                                        @csrf
+                                        @method('delete')
+                                        <button class="btn btn-sm btn-outline-danger w-100" type="submit"><i class="bi bi-trash me-1" aria-hidden="true"></i>Padam Pengguna</button>
+                                    </form>
+                                @endunless
+                                </div>
                             </td>
                         </tr>
                     @empty

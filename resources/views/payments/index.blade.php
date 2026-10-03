@@ -3,6 +3,7 @@
 @section('content')
 @php
     $canSubmitPayment = auth()->user()->hasRole('member');
+    $isTreasurer = auth()->user()->hasRole('treasurer');
     $statusLabels = ['pending' => 'Menunggu', 'approved' => 'Diluluskan', 'rejected' => 'Ditolak', 'cancelled' => 'Dibatalkan'];
     $statusClasses = ['pending' => 'warning', 'approved' => 'success', 'rejected' => 'danger', 'cancelled' => 'secondary'];
 @endphp
@@ -113,7 +114,14 @@
                         <td data-label="Tarikh Direkod">{{ $payment->payment_date->format('d/m/Y') }}</td>
                         <td data-label="Status"><span class="badge bg-{{ $statusClasses[$payment->status] ?? 'secondary' }}">{{ $statusLabels[$payment->status] ?? ucfirst($payment->status) }}</span></td>
                         <td data-label="Resit">@if($payment->transaction)<a href="{{ route('transactions.show', $payment->transaction) }}">{{ $payment->transaction->receipt_number }}</a>@else<span class="text-muted">-</span>@endif</td>
-                        <td data-label="Tindakan"><a class="btn btn-sm btn-outline-danger" href="{{ route('payments.show', $payment) }}">Keterangan</a></td>
+                        <td data-label="Tindakan"><div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-danger" href="{{ route('payments.show', $payment) }}">Keterangan</a>
+                            @if($isTreasurer)
+                                <form method="post" action="{{ route('payments.history.destroy', $payment) }}" data-confirm="Padam sejarah bayaran ini, transaksi/resit dan bukti bayaran? Jika bayaran telah diluluskan, bil ahli dan baki yuran akan dikemas kini semula.">
+                                    @csrf @method('delete')
+                                    <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-trash me-1" aria-hidden="true"></i>Padam</button>
+                                </form>
+                            @endif
+                        </div></td>
                     </tr>
                 @empty
                     <tr>

@@ -60,6 +60,12 @@
                                     <button class="btn btn-sm btn-outline-secondary" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.reject', $claim) }}" data-kind="reject">Tolak</button>
                                 @endif
                                 <a class="btn btn-sm btn-outline-danger" href="{{ route('claims.show', $claim) }}">Keterangan</a>
+                                @if($isTreasurer)
+                                    <form method="post" action="{{ route('claims.history.destroy', $claim) }}" data-confirm="Padam sejarah tuntutan ini serta transaksi, resit dan notifikasi berkait?">
+                                        @csrf @method('delete')
+                                        <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-trash me-1" aria-hidden="true"></i>Padam</button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

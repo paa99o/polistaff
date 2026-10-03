@@ -13,9 +13,11 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\EmailAuditService;
 use App\Services\EmailDeliveryService;
+use App\Services\FinancialHistoryDeletionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -111,6 +113,42 @@ class ExpenseClaimController extends Controller
         $claim->delete();
 
         return redirect()->route('claims.index')->with('status', 'Tuntutan pending telah dibatalkan.');
+    }
+
+    public function destroyHistory(Request $request, ExpenseClaim $claim, FinancialHistoryDeletionService $history): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('treasurer'), 403);
+
+        $receiptPath = $claim->receipt_path;
+
+        DB::transaction(function () use ($request, $claim, $history): void {
+            $claim = ExpenseClaim::query()->whereKey($claim->id)->lockForUpdate()->firstOrFail();
+            $transaction = $claim->transaction_id
+                ? Transaction::query()->whereKey($claim->transaction_id)->lockForUpdate()->first()
+                : null;
+
+            $history->deleteRelatedMessages($claim, '/claims/'.$claim->id);
+            $history->deleteTransactionAndReversals($transaction);
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'deleted',
+                'module' => 'Expense Claim',
+                'record_type' => ExpenseClaim::class,
+                'record_id' => $claim->id,
+                'description' => 'Treasurer deleted expense claim history #'.$claim->id.'.',
+                'changes' => ['user_id' => $claim->user_id, 'title' => $claim->title, 'amount' => $claim->amount, 'status' => $claim->status, 'transaction_id' => $claim->transaction_id],
+                'ip_address' => $request->ip(),
+            ]);
+
+            $claim->delete();
+        });
+
+        if ($receiptPath) {
+            Storage::disk('private')->delete($receiptPath);
+        }
+
+        return redirect()->route('claims.index')->with('status', 'Sejarah tuntutan dan transaksi berkait telah dipadam.');
     }
 
     public function resubmitForm(ExpenseClaim $claim): View
