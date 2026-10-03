@@ -4,8 +4,10 @@
 @php
     $proposal = $activity->proposal_data ?? [];
     $objectives = collect($proposal['objectives'] ?? [])->filter(fn ($item) => filled($item));
-    $participants = collect($proposal['target_participants'] ?? [])->filter(fn ($item) => filled($item));
+    $participantLabels = ['Staff' => 'Staf', 'Lecturer' => 'Pensyarah', 'External Community' => 'Komuniti luar', 'Others' => 'Lain-lain'];
+    $participants = collect($proposal['target_participants'] ?? [])->filter(fn ($item) => filled($item))->map(fn ($item) => $participantLabels[$item] ?? $item);
     $tentative = collect($proposal['tentative'] ?? [])->filter(fn ($row) => filled($row['description'] ?? null));
+    $tentativeByDate = $tentative->groupBy(fn ($row) => filled($row['date'] ?? null) ? \Carbon\Carbon::parse($row['date'])->format('Y-m-d') : $activity->date_time->format('Y-m-d'));
 @endphp
 <section class="public-container public-detail-hero">
     <a class="public-back-link" href="{{ route('activities.index') }}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Semua aktiviti</a>
@@ -58,8 +60,15 @@
             <section class="public-detail-copy public-detail-schedule">
                 <h3><i class="bi bi-list-check" aria-hidden="true"></i> Tentatif program</h3>
                 <div class="public-detail-timeline">
-                    @foreach($tentative as $row)
-                        <div><span>{{ filled($row['time'] ?? null) ? \Carbon\Carbon::parse($row['time'])->format('h:i A') : 'Program' }}</span><p>{{ $row['description'] }}</p>@if(filled($row['date'] ?? null))<small>{{ \Carbon\Carbon::parse($row['date'])->format('d/m/Y') }}</small>@endif</div>
+                    @foreach($tentativeByDate as $date => $rows)
+                        <section class="public-detail-day">
+                            <h4><i class="bi bi-calendar3" aria-hidden="true"></i>{{ \Carbon\Carbon::parse($date)->translatedFormat('l, d F Y') }}</h4>
+                            <div class="public-detail-day-items">
+                                @foreach($rows as $row)
+                                    <div class="public-detail-schedule-item"><span>{{ filled($row['time'] ?? null) ? \Carbon\Carbon::parse($row['time'])->format('h:i A') : 'Masa belum ditetapkan' }}</span><p>{{ $row['description'] }}</p></div>
+                                @endforeach
+                            </div>
+                        </section>
                     @endforeach
                 </div>
             </section>
