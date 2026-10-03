@@ -119,6 +119,32 @@ document.querySelectorAll('input[name="reduce_motion"]').forEach((input) => {
 
 applyAccessibilityPreferences();
 
+document.querySelectorAll('[data-homepage-carousel]').forEach((carousel) => {
+    const controls = carousel.closest('.homepage-activities')?.querySelector('.homepage-carousel-controls');
+    const buttons = controls ? [...controls.querySelectorAll('[data-carousel-direction]')] : [];
+    const updateCarouselControls = () => {
+        const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+        const canScroll = maxScroll > 2;
+        controls?.classList.toggle('is-hidden', !canScroll);
+        buttons.forEach((button) => {
+            const atStart = carousel.scrollLeft <= 2;
+            const atEnd = carousel.scrollLeft >= maxScroll - 2;
+            button.disabled = !canScroll || (button.dataset.carouselDirection === 'prev' ? atStart : atEnd);
+        });
+    };
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const direction = button.dataset.carouselDirection === 'next' ? 1 : -1;
+            carousel.scrollBy({ left: direction * carousel.clientWidth * 0.9, behavior: reduceMotion ? 'instant' : 'smooth' });
+        });
+    });
+
+    carousel.addEventListener('scroll', updateCarouselControls, { passive: true });
+    window.addEventListener('resize', updateCarouselControls);
+    updateCarouselControls();
+});
+
 document.addEventListener('submit', (event) => {
     const form = event.target.closest('form[data-confirm]');
 

@@ -5460,11 +5460,20 @@ html[data-theme="dark"] .btn-outline-primary {
 .homepage-section-heading .public-eyebrow, .homepage-about .public-eyebrow, .homepage-market .public-eyebrow { color: #4f8074; font-size: 11px; letter-spacing: .13em; margin-bottom: 9px; }
 .homepage-section-heading h2 { color: #273440; font-size: clamp(26px,3.3vw,38px); font-weight: 750; letter-spacing: -.035em; margin: 0; }
 .homepage-section-heading .homepage-text-link { margin-bottom: 5px; white-space: nowrap; }
-.homepage-activity-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.homepage-carousel-controls { display:flex; gap:8px; justify-content:flex-end; margin:-8px 0 14px; }
+.homepage-carousel-controls.is-hidden { display:none; }
+.homepage-carousel-button { align-items:center; background:#fff; border:1px solid rgba(39,52,64,.14); border-radius:50%; color:#3f6e63; cursor:pointer; display:inline-flex; height:40px; justify-content:center; transition:background .2s,color .2s,opacity .2s; width:40px; }
+.homepage-carousel-button:hover:not(:disabled) { background:#4f8074; color:#fff; }
+.homepage-carousel-button:disabled { cursor:default; opacity:.38; }
+.homepage-carousel { overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; scroll-behavior:smooth; scroll-snap-type:x mandatory; }
+.homepage-carousel::-webkit-scrollbar { display:none; }
+.homepage-activity-grid { display:flex; gap:16px; }
 .homepage-activity-card { border-color: rgba(39,52,64,.09); border-radius: 12px; box-shadow: 0 5px 18px rgba(39,52,64,.035); gap: 18px; padding: 23px; }
+.homepage-carousel .homepage-activity-card { flex:0 0 calc((100% - 16px)/2); min-width:0; scroll-snap-align:start; }
 .homepage-activity-card h3 { color: #273440; font-size: 18px; font-weight: 750; margin: 0 0 13px; }
 .homepage-activity-card .public-activity-date { background: #e7f0ed; border-radius: 12px; color: #3f6e63; flex: 0 0 auto; }
 .homepage-activity-card .homepage-text-link { font-size: 12px; }
+.homepage-activity-status { color:#4f8074; display:block; font-size:11px; font-weight:700; margin:-6px 0 12px; text-transform:uppercase; }
 .homepage-no-events { align-items: center; background: rgba(255,255,255,.82); border: 1px solid rgba(39,52,64,.09); border-radius: 12px; display: flex; gap: 17px; grid-column: 1/-1; padding: 22px 25px; }
 .homepage-empty-icon { align-items: center; background: #e7f0ed; border-radius: 12px; color: #4f8074; display: flex; flex: 0 0 auto; font-size: 20px; height: 48px; justify-content: center; width: 48px; }
 .homepage-no-events h3 { color: #273440; font-size: 15px; font-weight: 750; margin: 0 0 4px; }
@@ -5504,6 +5513,8 @@ html[data-theme="dark"] .homepage-feature-card, html[data-theme="dark"] .homepag
 html[data-theme="dark"] .homepage-feature-card h2, html[data-theme="dark"] .homepage-section-heading h2, html[data-theme="dark"] .homepage-activity-card h3, html[data-theme="dark"] .homepage-about-heading h2, html[data-theme="dark"] .homepage-benefit h3, html[data-theme="dark"] .homepage-market h2, html[data-theme="dark"] .homepage-no-events h3 { color:#f5f7fb; }
 html[data-theme="dark"] .homepage-activities { color:#f5f7fb; }
 html[data-theme="dark"] .homepage-activity-card, html[data-theme="dark"] .homepage-no-events { background:#202c3f; border-color:rgba(222,231,245,.16); }
+html[data-theme="dark"] .homepage-carousel-button { background:#202c3f; border-color:rgba(222,231,245,.2); color:#ffd08a; }
+html[data-theme="dark"] .homepage-activity-status { color:#ffd08a; }
 html[data-theme="dark"] .homepage-about { border-color:rgba(222,231,245,.16); }
 html[data-theme="dark"] .homepage-benefit { background:#26354b; border-color:rgba(222,231,245,.14); }
 html[data-theme="dark"] .homepage-market-icon, html[data-theme="dark"] .homepage-benefit-icon, html[data-theme="dark"] .homepage-empty-icon, html[data-theme="dark"] .homepage-activity-card .public-activity-date { background:#344056; color:#f0c184; }
@@ -5518,7 +5529,8 @@ html[data-theme="dark"] .homepage-actions .btn-outline-primary { border-color:rg
     .homepage-feature-card { min-height:0; }
     .homepage-activities { padding-bottom:54px; padding-top:54px; }
     .homepage-section-heading { align-items:flex-start; flex-direction:column; gap:12px; }
-    .homepage-activity-grid, .homepage-benefits { grid-template-columns:1fr; }
+    .homepage-benefits { grid-template-columns:1fr; }
+    .homepage-carousel .homepage-activity-card { flex-basis:min(88%, 440px); }
     .homepage-no-events { align-items:flex-start; flex-wrap:wrap; }
     .homepage-no-events > .homepage-text-link { margin-left:65px; }
     .homepage-about { padding-bottom:54px; padding-top:54px; }

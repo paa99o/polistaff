@@ -35,7 +35,14 @@ Route::get('/', function () {
         ->limit(3)
         ->get();
 
-    return view('welcome', compact('upcomingActivities'));
+    $homepageActivities = Activity::query()
+        ->where('status', 'approved')
+        ->orderByRaw('CASE WHEN date_time >= ? THEN 0 ELSE 1 END', [now()])
+        ->orderByRaw('CASE WHEN date_time >= ? THEN date_time END ASC', [now()])
+        ->orderByRaw('CASE WHEN date_time < ? THEN date_time END DESC', [now()])
+        ->get();
+
+    return view('welcome', compact('upcomingActivities', 'homepageActivities'));
 });
 
 Route::middleware('guest')->group(function (): void {

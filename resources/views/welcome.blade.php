@@ -79,19 +79,27 @@
 
         <section id="aktiviti" class="homepage-activities" aria-labelledby="activities-title">
             <div class="homepage-section-heading">
-                <div><p class="public-eyebrow">Program komuniti Poli</p><h2 id="activities-title">Jumpa di aktiviti akan datang.</h2></div>
+                <div><p class="public-eyebrow">Program komuniti Poli</p><h2 id="activities-title">Aktiviti komuniti.</h2></div>
                 <a class="homepage-text-link" href="{{ route('activities.index') }}">Semua aktiviti <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
             </div>
-            <div class="public-activity-grid homepage-activity-grid">
-                @forelse($upcomingActivities as $activity)
+            @if($homepageActivities->isNotEmpty())
+                <div class="homepage-carousel-controls" aria-label="Kawalan senarai aktiviti">
+                    <button type="button" class="homepage-carousel-button" data-carousel-direction="prev" aria-label="Aktiviti sebelumnya"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
+                    <button type="button" class="homepage-carousel-button" data-carousel-direction="next" aria-label="Aktiviti seterusnya"><i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+                </div>
+                <div class="homepage-carousel" data-homepage-carousel tabindex="0" aria-label="Senarai semua aktiviti yang diluluskan">
+                    <div class="homepage-activity-grid">
+                @foreach($homepageActivities as $activity)
                     <article class="public-activity-card homepage-activity-card">
                         <div class="public-activity-date"><strong>{{ $activity->date_time->format('d') }}</strong><span>{{ mb_strtoupper($activity->date_time->format('M')) }}</span></div>
-                        <div><p class="public-activity-meta">{{ $activity->date_time->format('d/m/Y · h:i A') }}@if($activity->location) · {{ $activity->location }}@endif</p><h3>{{ $activity->title }}</h3><a class="homepage-text-link" href="{{ route('activities.show', $activity) }}">Lihat butiran <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
+                        <div><p class="public-activity-meta">{{ $activity->date_time->format('d/m/Y · h:i A') }}@if($activity->location) · {{ $activity->location }}@endif</p><h3>{{ $activity->title }}</h3><span class="homepage-activity-status">{{ $activity->date_time->isPast() ? 'Telah dijalankan' : 'Akan datang' }}</span><a class="homepage-text-link" href="{{ route('activities.show', $activity) }}">Lihat butiran <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
                     </article>
-                @empty
+                @endforeach
+                    </div>
+                </div>
+            @else
                     <div class="homepage-no-events"><span class="homepage-empty-icon"><i class="bi bi-calendar-heart" aria-hidden="true"></i></span><div><h3>Belum ada aktiviti dijadualkan.</h3><p>Semak semula nanti atau terokai semua maklumat aktiviti.</p></div><a class="homepage-text-link" href="{{ route('activities.index') }}">Terokai aktiviti <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
-                @endforelse
-            </div>
+            @endif
         </section>
 
         <section id="tentang" class="homepage-about" aria-labelledby="about-title">
