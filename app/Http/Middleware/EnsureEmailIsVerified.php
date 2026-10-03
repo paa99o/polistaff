@@ -13,6 +13,10 @@ class EnsureEmailIsVerified
     {
         $user = $request->user();
 
+        // Authenticated users may keep a serialized model in their session. Refresh it
+        // so admin approval or membership changes made in another session take effect.
+        $user?->refresh();
+
         if (! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail()) {
             return $next($request);
         }
