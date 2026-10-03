@@ -21,7 +21,7 @@
                 </dl>
                 @if(auth()->id() === $claim->user_id && $claim->status === 'pending')
                     <div class="d-flex gap-2 flex-wrap">
-                        <a class="btn btn-outline-danger" href="{{ route('claims.edit', $claim) }}">Ubah Tuntutan</a>
+                    <a class="btn btn-outline-secondary" href="{{ route('claims.edit', $claim) }}">Ubah Tuntutan</a>
                         <form method="post" action="{{ route('claims.destroy', $claim) }}" data-confirm="Batalkan tuntutan ini? Rekod tuntutan akan dipadam.">
                             @csrf
                             @method('delete')
@@ -29,7 +29,7 @@
                         </form>
                     </div>
                 @elseif(auth()->id() === $claim->user_id && $claim->status === 'rejected')
-                    <a class="btn btn-danger" href="{{ route('claims.resubmit.form', $claim) }}">Hantar Semula Tuntutan</a>
+                    <a class="btn btn-primary" href="{{ route('claims.resubmit.form', $claim) }}">Hantar Semula Tuntutan</a>
                 @endif
             </div>
         </div>
@@ -49,7 +49,7 @@
                         <label class="form-label" for="treasurer_notes">Catatan Bendahari</label>
                         <textarea class="form-control @error('treasurer_notes') is-invalid @enderror mb-2" id="treasurer_notes" name="treasurer_notes" rows="3" placeholder="Catatan bendahari">{{ old('treasurer_notes') }}</textarea>
                         @include('partials.errors', ['name' => 'treasurer_notes'])
-                        <button class="btn btn-danger w-100">Sahkan sebagai Bendahari</button>
+                        <button class="btn btn-primary w-100">Sahkan sebagai Bendahari</button>
                     </form>
                 @endif
 
@@ -60,7 +60,7 @@
                         <label class="form-label" for="approve_review_notes">Catatan Kelulusan</label>
                         <textarea class="form-control @error('review_notes') is-invalid @enderror mb-2" id="approve_review_notes" name="review_notes" rows="3" placeholder="Catatan">{{ old('review_notes') }}</textarea>
                         @include('partials.errors', ['name' => 'review_notes'])
-                        <button class="btn btn-danger w-100">Luluskan Tuntutan</button>
+                        <button class="btn btn-primary w-100">Luluskan Tuntutan</button>
                     </form>
                 @endif
 

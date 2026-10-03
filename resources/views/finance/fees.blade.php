@@ -9,7 +9,7 @@
         <h1 class="h3 mb-1">Pengurusan Yuran</h1>
         <p class="text-muted mb-0">Jana bil bulanan dan maklumkan ahli yang masih mempunyai tunggakan.</p>
     </div>
-    <a class="btn btn-outline-danger" href="{{ route('payments.index') }}">
+    <a class="btn btn-outline-primary" href="{{ route('payments.index') }}">
         <i class="bi bi-wallet2 me-1" aria-hidden="true"></i> Semak Bayaran
     </a>
 </div>
@@ -35,7 +35,7 @@
                     <div class="input-group">
                         <span class="input-group-text">RM</span>
                         <input class="form-control @error('monthly_fee') is-invalid @enderror" id="monthly_fee" type="number" name="monthly_fee" min="0" step="0.01" value="{{ old('monthly_fee', $monthlyFee) }}" required>
-                        <button class="btn btn-outline-danger" type="submit">Simpan</button>
+                        <button class="btn btn-primary" type="submit">Simpan</button>
                     </div>
                     @error('monthly_fee')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </form>
@@ -96,11 +96,11 @@
                         </td>
                         <td data-label="Tindakan">
                             <div class="d-flex flex-wrap gap-2">
-                                <a class="btn btn-sm btn-outline-danger" href="{{ route('payments.index', ['user_id' => $member->id]) }}">Lihat Bayaran</a>
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ route('payments.index', ['user_id' => $member->id]) }}">Lihat Bayaran</a>
                                 @if($canManageFees && $member->outstanding_total > 0)
                                     <form method="post" action="{{ route('finance.fees.reminder', $member) }}" data-confirm="Hantar peringatan tunggakan kepada {{ $member->name }}?">
                                         @csrf
-                                        <button class="btn btn-sm btn-danger" type="submit"><i class="bi bi-bell me-1" aria-hidden="true"></i>Ingatkan</button>
+                                        <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-bell me-1" aria-hidden="true"></i>Ingatkan</button>
                                     </form>
                                 @endif
                             </div>
@@ -128,7 +128,7 @@
                     <label class="form-label" for="billing_month">Bulan Bil</label>
                     <div class="d-flex flex-column flex-sm-row gap-2">
                         <input class="form-control @error('billing_month') is-invalid @enderror" id="billing_month" type="month" name="billing_month" value="{{ old('billing_month', now()->format('Y-m')) }}">
-                        <button class="btn btn-danger flex-shrink-0" type="submit"><i class="bi bi-receipt me-1" aria-hidden="true"></i> Jana Bil</button>
+                        <button class="btn btn-primary flex-shrink-0" type="submit"><i class="bi bi-receipt me-1" aria-hidden="true"></i> Jana Bil</button>
                     </div>
                     @error('billing_month')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                 </form>
@@ -144,7 +144,7 @@
                 <p class="text-muted">Hantar notifikasi dalam aplikasi dan emel kepada ahli aktif yang masih mempunyai baki yuran.</p>
                 <form class="mt-auto" method="post" action="{{ route('finance.fees.reminders') }}" data-confirm="Hantar peringatan yuran kepada semua ahli yang masih tertunggak?">
                     @csrf
-                    <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-bell me-1" aria-hidden="true"></i> Hantar Peringatan</button>
+                    <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-bell me-1" aria-hidden="true"></i> Hantar Peringatan</button>
                 </form>
             </div>
         </div>
@@ -158,7 +158,7 @@
                 <h2 class="h4 soft-panel-title mb-1">Semak Prestasi Kewangan</h2>
                 <p class="text-muted mb-0">Lihat pecahan kutipan, perbelanjaan dan trend kewangan semasa.</p>
             </div>
-            <a class="btn btn-outline-danger" href="{{ route('reports.financial') }}">
+            <a class="btn btn-outline-secondary" href="{{ route('reports.financial') }}">
                 <i class="bi bi-graph-up-arrow me-1" aria-hidden="true"></i> Lihat Laporan
             </a>
         </div>

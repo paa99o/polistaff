@@ -57,7 +57,7 @@
                     <div class="activity-wizard-repeat-row objective-row"><input class="form-control" name="objectives[]" value="{{ $objective }}" placeholder="Nyatakan objektif program" data-required data-label="Objektif Program"><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang objektif"><i class="bi bi-trash" aria-hidden="true"></i></button><div class="wizard-field-error"></div></div>
                 @endforeach
             </div>
-            <button class="btn btn-sm btn-outline-danger mt-2" type="button" data-add-row="objectivesRows" data-template="objectiveTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Objektif</button>
+            <button class="btn btn-sm btn-outline-secondary mt-2" type="button" data-add-row="objectivesRows" data-template="objectiveTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Objektif</button>
         </div>
         <div class="mb-3">
             <span class="form-label d-block">Sasaran Peserta</span>
@@ -90,11 +90,11 @@
                 <tr class="tentative-row"><td><input class="form-control" type="date" data-field="date" value="{{ $row['date'] ?? $startDateValue }}" data-required data-label="Tarikh tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" type="time" data-field="time" value="{{ $row['time'] ?? '' }}" data-required data-label="Masa tentatif"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="description" value="{{ $row['description'] ?? '' }}" placeholder="Aktiviti" data-required data-label="Keterangan tentatif"><div class="wizard-field-error"></div></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang baris tentatif"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr>
             @endforeach
         </tbody></table></div>
-        <button class="btn btn-sm btn-outline-danger" type="button" data-add-row="tentativeRows" data-template="tentativeTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Baris</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-add-row="tentativeRows" data-template="tentativeTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Baris</button>
         <hr class="my-4"><h3 class="h6">Penceramah / Jemputan Luar / Perasmi</h3><p class="small text-muted">Isi jika program melibatkan jemputan luar atau perasmi.</p>
         <div class="activity-wizard-table-wrap"><table class="table align-middle"><thead><tr><th>Nama</th><th>Jawatan</th><th>Gred</th><th>Jabatan / Institusi</th><th></th></tr></thead><tbody id="speakerRows">
             @foreach($speakers as $row)<tr class="speaker-row"><td><input class="form-control" data-field="name" value="{{ $row['name'] ?? '' }}" placeholder="Nama pegawai"></td><td><input class="form-control" data-field="position" value="{{ $row['position'] ?? '' }}" placeholder="Jawatan"></td><td><input class="form-control" data-field="grade" value="{{ $row['grade'] ?? '' }}" placeholder="Gred"></td><td><input class="form-control" data-field="institution" value="{{ $row['institution'] ?? '' }}" placeholder="Institusi"></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang jemputan">&times;</button></td></tr>@endforeach
-        </tbody></table></div><button class="btn btn-sm btn-outline-danger" type="button" data-add-row="speakerRows" data-template="speakerTemplate">Tambah Jemputan</button>
+        </tbody></table></div><button class="btn btn-sm btn-outline-secondary" type="button" data-add-row="speakerRows" data-template="speakerTemplate">Tambah Jemputan</button>
     </section>
 
     <section class="activity-wizard-panel" data-wizard-panel="3" aria-labelledby="activity-step-4" hidden>
@@ -105,7 +105,7 @@
                 <tr class="committee-row"><td><input class="form-control" data-field="name" value="{{ $row['name'] ?? '' }}" data-required data-label="Nama ahli jawatankuasa"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="position" value="{{ $row['position'] ?? '' }}" data-required data-label="Jawatan / Peranan"><div class="wizard-field-error"></div></td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang ahli jawatankuasa"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr>
             @endforeach
         </tbody></table></div>
-        <button class="btn btn-sm btn-outline-danger mb-4" type="button" data-add-row="committeeRows" data-template="committeeTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Ahli Jawatankuasa</button>
+        <button class="btn btn-sm btn-outline-secondary mb-4" type="button" data-add-row="committeeRows" data-template="committeeTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Ahli Jawatankuasa</button>
 
         <div class="row g-3 mb-4"><div class="col-md-6"><label class="form-label" for="finance_source">Sumber Kewangan</label><select class="form-select" id="finance_source" name="finance_source" data-required data-label="Sumber Kewangan"><option value="">Pilih sumber</option>@foreach(['Kerajaan', 'Tiada', 'Akaun Amanah'] as $source)<option value="{{ $source }}" @selected(old('finance_source', $proposal['finance_source'] ?? '') === $source)>{{ $source }}</option>@endforeach</select><div class="wizard-field-error"></div></div><div class="col-md-6"><label class="form-label" for="kulpl_review">Semakan KULPL</label><select class="form-select" id="kulpl_review" name="kulpl_review" data-required data-label="Semakan KULPL"><option value="">Pilih</option><option @selected(old('kulpl_review', $proposal['kulpl_review'] ?? '') === 'Berkaitan')>Berkaitan</option><option @selected(old('kulpl_review', $proposal['kulpl_review'] ?? '') === 'Tidak Berkaitan')>Tidak Berkaitan</option></select><div class="wizard-field-error"></div><div class="form-text">Semakan bagi program PSH atau latihan staf seperti kursus dan taklimat.</div></div></div>
         <div class="mb-4"><label class="form-label" for="program_closing">Penutup</label><textarea class="form-control" id="program_closing" name="closing" rows="4" data-required data-label="Penutup">{{ old('closing', $proposal['closing'] ?? 'Adalah diharapkan pelaksanaan program ini dapat mencapai objektif yang telah ditetapkan serta memberi manfaat kepada semua peserta. Kerjasama dan sokongan semua pihak amat dihargai.') }}</textarea><div class="wizard-field-error"></div></div>
@@ -115,7 +115,7 @@
                 <tr class="budget-row"><td><input class="form-control" data-field="description" value="{{ $row['description'] ?? '' }}" placeholder="Contoh: makanan"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0.01" step="0.01" data-field="quantity" value="{{ $row['quantity'] ?? '' }}" placeholder="1"><div class="wizard-field-error"></div></td><td><input class="form-control" type="number" min="0" step="0.01" data-field="estimated_cost" value="{{ $row['estimated_cost'] ?? '' }}" placeholder="0.00"><div class="wizard-field-error"></div></td><td><input class="form-control" data-field="source_code" value="{{ $row['source_code'] ?? '' }}" placeholder="Contoh: OS42000"></td><td class="budget-row-total">RM 0.00</td><td><button type="button" class="btn btn-outline-secondary" data-remove-row aria-label="Buang item bajet"><i class="bi bi-trash" aria-hidden="true"></i></button></td></tr>
             @endforeach
         </tbody><tfoot><tr><th colspan="4" class="text-end">Jumlah Anggaran</th><th id="budgetGrandTotal">RM 0.00</th><th></th></tr></tfoot></table></div>
-        <button class="btn btn-sm btn-outline-danger mb-4" type="button" data-add-row="budgetRows" data-template="budgetTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Item Bajet</button>
+        <button class="btn btn-sm btn-outline-secondary mb-4" type="button" data-add-row="budgetRows" data-template="budgetTemplate"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tambah Item Bajet</button>
 
     </section>
 
@@ -128,10 +128,10 @@
 
     <div class="activity-wizard-actions">
         <button class="btn btn-outline-secondary" type="button" id="activityWizardPrevious" hidden>Kembali</button>
-        <button class="btn btn-outline-danger" type="submit" name="intent" value="draft" formnovalidate>Simpan Draf & Keluar</button>
+        <button class="btn btn-outline-secondary" type="submit" name="intent" value="draft" formnovalidate>Simpan Draf & Keluar</button>
         <span class="flex-grow-1"></span>
-        <button class="btn btn-danger" type="button" id="activityWizardNext">Seterusnya</button>
-        <button class="btn btn-danger" type="submit" id="activityWizardSubmit" name="intent" value="submit" hidden>Hantar Permohonan</button>
+        <button class="btn btn-primary" type="button" id="activityWizardNext">Seterusnya</button>
+        <button class="btn btn-primary" type="submit" id="activityWizardSubmit" name="intent" value="submit" hidden>Hantar Permohonan</button>
     </div>
 </form>
 

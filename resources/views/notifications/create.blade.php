@@ -69,7 +69,7 @@
                     @include('partials.errors', ['name' => 'message'])
                 </div>
             </div>
-            <button class="btn btn-danger mt-3">Hantar</button>
+            <button class="btn btn-primary mt-3">Hantar</button>
         </form>
     </div>
 </div>

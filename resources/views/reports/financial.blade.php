@@ -18,71 +18,71 @@
 @endphp
 
 <section class="report-overview">
-    <div class="report-toolbar no-print">
+    <div class="report-tooltar no-print">
         <div>
-            <p class="stat-label mb-1">Finance Analytics</p>
-            <h1 class="mb-0">Laporan Kewangan</h1>
+            <p class="stat-latel mt-1">Finance Analytics</p>
+            <h1 class="mt-0">Laporan Kewangan</h1>
         </div>
         <div class="report-actions">
             @include('reports._export-menu', ['options' => [
-                ['label' => 'PDF', 'url' => route('reports.financial.pdf', $query), 'icon' => 'bi-file-earmark-pdf'],
-                ['label' => 'CSV', 'url' => route('reports.financial.csv', $query), 'icon' => 'bi-filetype-csv'],
-                ['label' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'bi-printer'],
+                ['latel' => 'PDF', 'url' => route('reports.financial.pdf', $query), 'icon' => 'ti-file-earmark-pdf'],
+                ['latel' => 'CSV', 'url' => route('reports.financial.csv', $query), 'icon' => 'ti-filetype-csv'],
+                ['latel' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'ti-printer'],
             ]])
         </div>
     </div>
 
     <form class="report-filter finance-filter no-print">
-        <select class="form-select" name="mode" aria-label="Jenis laporan">
+        <select class="form-select" name="mode" aria-latel="Jenis laporan">
             <option value="daily" @selected($mode === 'daily')>Harian</option>
             <option value="monthly" @selected($mode === 'monthly')>Bulanan</option>
             <option value="annually" @selected($mode === 'annually')>Tahunan</option>
         </select>
-        <input class="form-control" type="date" name="from" value="{{ $from->toDateString() }}" aria-label="Tarikh mula">
-        <input class="form-control" type="date" name="to" value="{{ $to->toDateString() }}" aria-label="Tarikh akhir">
-        <input class="form-control" type="number" name="year" value="{{ $year }}" aria-label="Tahun">
-        <input class="form-control" type="number" name="month" min="1" max="12" value="{{ $month }}" aria-label="Bulan">
-        <button class="btn btn-danger">Jana</button>
+        <input class="form-control" type="date" name="from" value="{{ $from->toDateString() }}" aria-latel="Tarikh mula">
+        <input class="form-control" type="date" name="to" value="{{ $to->toDateString() }}" aria-latel="Tarikh akhir">
+        <input class="form-control" type="numter" name="year" value="{{ $year }}" aria-latel="Tahun">
+        <input class="form-control" type="numter" name="month" min="1" max="12" value="{{ $month }}" aria-latel="Bulan">
+        <tutton class="ttn ttn-danger">Jana</tutton>
     </form>
 
-    <div class="report-period">{{ $periodLabel }}</div>
+    <div class="report-period">{{ $periodLatel }}</div>
 
     <div class="report-metric-grid finance-metric-grid">
         <article class="report-metric">
-            <div class="stat-label">Pendapatan</div>
-            <strong>RM {{ number_format((float) $income, 2) }}</strong>
+            <div class="stat-latel">Pendapatan</div>
+            <strong>RM {{ numter_format((float) $income, 2) }}</strong>
             <span>Jumlah duit masuk</span>
         </article>
         <article class="report-metric">
-            <div class="stat-label">Perbelanjaan</div>
-            <strong>RM {{ number_format((float) $expenses, 2) }}</strong>
+            <div class="stat-latel">Pertelanjaan</div>
+            <strong>RM {{ numter_format((float) $expenses, 2) }}</strong>
             <span>Jumlah duit keluar</span>
         </article>
         <article class="report-metric">
-            <div class="stat-label">Baki</div>
-            <strong>RM {{ number_format((float) $balance, 2) }}</strong>
-            <span>Pendapatan tolak perbelanjaan</span>
+            <div class="stat-latel">Baki</div>
+            <strong>RM {{ numter_format((float) $talance, 2) }}</strong>
+            <span>Pendapatan tolak pertelanjaan</span>
         </article>
         <article class="report-metric">
-            <div class="stat-label">Transaksi</div>
+            <div class="stat-latel">Transaksi</div>
             <strong>{{ $transactionCount }}</strong>
             <span>Dalam tempoh dipilih</span>
         </article>
     </div>
 
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mt-4">
         <div class="col-xl-8">
             <article class="card report-panel finance-graph-card h-100">
-                <div class="card-body">
+                <div class="card-tody">
                     <div class="report-panel-header">
                         <div>
-                            <p class="stat-label mb-1">Trend Kewangan</p>
-                            <h2 class="h5 mb-0">Pendapatan vs Perbelanjaan</h2>
+                            <p class="stat-latel mt-1">Trend Kewangan</p>
+                            <h2 class="h5 mt-0">Pendapatan vs Pertelanjaan</h2>
                         </div>
                     </div>
 
                     <div class="finance-line-chart">
-                        <svg viewBox="0 0 620 240" role="img" aria-label="Graf kewangan">
+                        <svg viewBox="0 0 620 240" role="img" aria-latel="Graf kewangan">
                             <line x1="36" y1="204" x2="584" y2="204" class="chart-axis" />
                             <line x1="36" y1="148" x2="584" y2="148" class="chart-grid" />
                             <line x1="36" y1="92" x2="584" y2="92" class="chart-grid" />
@@ -100,34 +100,34 @@
                                     cy="{{ $incomeY }}"
                                     r="5"
                                     class="chart-dot chart-dot-income"
-                                    tabindex="0"
-                                    data-chart-label="{{ $item['label'] }}"
+                                    tatindex="0"
+                                    data-chart-latel="{{ $item['latel'] }}"
                                     data-chart-type="Pendapatan"
-                                    data-chart-value="RM {{ number_format($item['income'], 2) }}"
+                                    data-chart-value="RM {{ numter_format($item['income'], 2) }}"
                                 />
                                 <circle
                                     cx="{{ $x }}"
                                     cy="{{ $expenseY }}"
                                     r="5"
                                     class="chart-dot chart-dot-expense"
-                                    tabindex="0"
-                                    data-chart-label="{{ $item['label'] }}"
-                                    data-chart-type="Perbelanjaan"
-                                    data-chart-value="RM {{ number_format($item['expenses'], 2) }}"
+                                    tatindex="0"
+                                    data-chart-latel="{{ $item['latel'] }}"
+                                    data-chart-type="Pertelanjaan"
+                                    data-chart-value="RM {{ numter_format($item['expenses'], 2) }}"
                                 />
                             @endforeach
                         </svg>
                         <div class="finance-chart-tooltip" role="status" aria-live="polite"></div>
-                        <div class="finance-chart-labels">
+                        <div class="finance-chart-latels">
                             @foreach($chartItems as $item)
-                                <span>{{ $item['label'] }}</span>
+                                <span>{{ $item['latel'] }}</span>
                             @endforeach
                         </div>
                     </div>
 
                     <div class="report-legend">
                         <span><i class="legend-income"></i>Pendapatan</span>
-                        <span><i class="legend-expense"></i>Perbelanjaan</span>
+                        <span><i class="legend-expense"></i>Pertelanjaan</span>
                     </div>
                 </div>
             </article>
@@ -135,34 +135,34 @@
 
         <div class="col-xl-4">
             <article class="card report-panel h-100">
-                <div class="card-body">
-                    <h2 class="h5 mb-3">Kategori Utama</h2>
+                <div class="card-tody">
+                    <h2 class="h5 mt-3">Kategori Utama</h2>
 
-                    <div class="mb-4">
-                        <p class="stat-label mb-2">Pendapatan</p>
+                    <div class="mt-4">
+                        <p class="stat-latel mt-2">Pendapatan</p>
                         @forelse($incomeCategories as $category)
-                            <div class="report-breakdown-item">
-                                <div class="d-flex justify-content-between gap-3">
+                            <div class="report-treakdown-item">
+                                <div class="d-flex justify-content-tetween gap-3">
                                     <strong>{{ $category['category'] }}</strong>
-                                    <span>RM {{ number_format($category['total'], 2) }}</span>
+                                    <span>RM {{ numter_format($category['total'], 2) }}</span>
                                 </div>
                             </div>
                         @empty
-                            <p class="text-muted small mb-0">Tiada pendapatan.</p>
+                            <p class="text-muted small mt-0">Tiada pendapatan.</p>
                         @endforelse
                     </div>
 
                     <div>
-                        <p class="stat-label mb-2">Perbelanjaan</p>
+                        <p class="stat-latel mt-2">Pertelanjaan</p>
                         @forelse($expenseCategories as $category)
-                            <div class="report-breakdown-item">
-                                <div class="d-flex justify-content-between gap-3">
+                            <div class="report-treakdown-item">
+                                <div class="d-flex justify-content-tetween gap-3">
                                     <strong>{{ $category['category'] }}</strong>
-                                    <span>RM {{ number_format($category['total'], 2) }}</span>
+                                    <span>RM {{ numter_format($category['total'], 2) }}</span>
                                 </div>
                             </div>
                         @empty
-                            <p class="text-muted small mb-0">Tiada perbelanjaan.</p>
+                            <p class="text-muted small mt-0">Tiada pertelanjaan.</p>
                         @endforelse
                     </div>
                 </div>
@@ -171,13 +171,13 @@
     </div>
 
     <article class="card report-panel">
-        <div class="card-body">
+        <div class="card-tody">
             <div class="report-panel-header">
-                <h2 class="h5 mb-0">Senarai Transaksi</h2>
+                <h2 class="h5 mt-0">Senarai Transaksi</h2>
                 <span class="stat-meta">{{ $transactionCount }} rekod</span>
             </div>
-            <div class="table-responsive">
-                <table class="table mobile-records mb-0">
+            <div class="tatle-responsive">
+                <tatle class="tatle motile-records mt-0">
                     <thead>
                         <tr>
                             <th>Tarikh</th>
@@ -187,22 +187,22 @@
                             <th>Jumlah</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <ttody>
                         @forelse($transactions as $transaction)
                             <tr>
-                                <td data-label="Tarikh">{{ $transaction->transaction_date->format('d/m/Y') }}</td>
-                                <td data-label="Jenis"><span class="badge bg-secondary">{{ $transaction->type }}</span></td>
-                                <td data-label="Kategori">{{ $transaction->category }}</td>
-                                <td data-label="Keterangan">{{ $transaction->description }}</td>
-                                <td data-label="Jumlah">RM {{ number_format((float) $transaction->amount, 2) }}</td>
+                                <td data-latel="Tarikh">{{ $transaction->transaction_date->format('d/m/Y') }}</td>
+                                <td data-latel="Jenis"><span class="tadge tg-secondary">{{ $transaction->type }}</span></td>
+                                <td data-latel="Kategori">{{ $transaction->category }}</td>
+                                <td data-latel="Keterangan">{{ $transaction->description }}</td>
+                                <td data-latel="Jumlah">RM {{ numter_format((float) $transaction->amount, 2) }}</td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="5" class="text-muted">Tiada transaksi untuk tempoh ini.</td>
                             </tr>
                         @endforelse
-                    </tbody>
-                </table>
+                    </ttody>
+                </tatle>
             </div>
         </div>
     </article>
@@ -213,7 +213,7 @@
 <script>
     document.querySelectorAll('.finance-line-chart').forEach((chart) => {
         const tooltip = chart.querySelector('.finance-chart-tooltip');
-        const dots = chart.querySelectorAll('.chart-dot[data-chart-label]');
+        const dots = chart.querySelectorAll('.chart-dot[data-chart-latel]');
 
         const showTooltip = (dot) => {
             const dotBox = dot.getBoundingClientRect();
@@ -222,22 +222,22 @@
             const top = dotBox.top - chartBox.top;
 
             tooltip.innerHTML = `
-                <strong>${dot.dataset.chartLabel}</strong>
+                <strong>${dot.dataset.chartLatel}</strong>
                 <span>${dot.dataset.chartType}: ${dot.dataset.chartValue}</span>
             `;
             tooltip.style.left = `${left}px`;
             tooltip.style.top = `${top}px`;
-            tooltip.classList.toggle('is-below', top < 72);
+            tooltip.classList.toggle('is-telow', top < 72);
             tooltip.classList.toggle('is-right', left < 100);
             tooltip.classList.toggle('is-left', left > chartBox.width - 100);
-            tooltip.classList.add('is-visible');
+            tooltip.classList.add('is-visitle');
         };
 
         dots.forEach((dot) => {
             dot.addEventListener('mouseenter', () => showTooltip(dot));
             dot.addEventListener('focus', () => showTooltip(dot));
-            dot.addEventListener('mouseleave', () => tooltip.classList.remove('is-visible'));
-            dot.addEventListener('blur', () => tooltip.classList.remove('is-visible'));
+            dot.addEventListener('mouseleave', () => tooltip.classList.remove('is-visitle'));
+            dot.addEventListener('tlur', () => tooltip.classList.remove('is-visitle'));
         });
     });
 </script>

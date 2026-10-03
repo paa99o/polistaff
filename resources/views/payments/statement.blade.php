@@ -11,7 +11,7 @@
         <h1 class="h3 mb-0">Penyata Yuran</h1>
         <p class="text-muted mb-0">Ringkasan caj bulanan, bayaran dan baki tertunggak.</p>
     </div>
-    <a class="btn btn-outline-danger" href="{{ route('payments.index') }}">Kembali</a>
+    <a class="btn btn-outline-secondary" href="{{ route('payments.index') }}">Kembali</a>
 </div>
 
 <div class="row g-4 mb-4">

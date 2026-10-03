@@ -13,7 +13,7 @@
         <p class="text-muted mb-0">Rekod pendapatan, perbelanjaan dan resit rasmi kelab.</p>
     </div>
     @can('manage-finances')
-        <a class="btn btn-danger" href="{{ route('transactions.create') }}">
+        <a class="btn btn-primary" href="{{ route('transactions.create') }}">
             <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Transaksi Baru
         </a>
     @endcan
@@ -53,7 +53,7 @@
                 <input class="form-control" id="to" type="date" name="to" value="{{ request('to') }}">
             </div>
             <div class="col-md-2">
-                <button class="btn btn-outline-danger w-100">Tapis</button>
+                <button class="btn btn-outline-primary w-100">Tapis</button>
             </div>
         </form>
     </div>

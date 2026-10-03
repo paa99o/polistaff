@@ -11,10 +11,10 @@
         <form method="post" action="{{ route('notifications.read-all') }}">
             @csrf
             @method('patch')
-            <button class="btn btn-outline-danger">Tanda Semua Dibaca</button>
+            <button class="btn btn-outline-primary">Tanda Semua Dibaca</button>
         </form>
         @if(auth()->user()->hasRole('admin'))
-            <a class="btn btn-danger" href="{{ route('notifications.create') }}">
+            <a class="btn btn-primary" href="{{ route('notifications.create') }}">
                 <i class="bi bi-send me-2" aria-hidden="true"></i>Hantar Notifikasi
             </a>
         @endif
@@ -34,7 +34,7 @@
                 <p class="mb-2">{{ $notification->message }}</p>
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     @if($notification->link)
-                        <a class="btn btn-sm btn-outline-danger" href="{{ $notification->link }}">Buka</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ $notification->link }}">Buka</a>
                     @endif
                     @unless($notification->is_read)
                         <form method="post" action="{{ route('notifications.read', $notification) }}">

@@ -7,7 +7,7 @@
         <h1 class="h3 mb-0">Status Email</h1>
         <p class="text-muted mb-0">Pantau status email notification yang dihantar kepada ahli.</p>
     </div>
-    <a class="btn btn-outline-danger" href="{{ route('notifications.index') }}">Kembali ke Notifikasi</a>
+    <a class="btn btn-outline-secondary" href="{{ route('notifications.index') }}">Kembali ke Notifikasi</a>
 </div>
 
 <div class="card">
@@ -27,7 +27,7 @@
                         @if($delivery->status === 'failed')
                             <form method="post" action="{{ $delivery->notification ? route('admin.notifications.retry', $delivery->notification) : route('admin.email-deliveries.retry', $delivery) }}" class="mt-2">
                                 @csrf
-                                <button class="btn btn-sm btn-outline-danger" type="submit">Cuba Semula</button>
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Cuba Semula</button>
                             </form>
                         @endif
                     </td>

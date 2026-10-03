@@ -27,7 +27,7 @@
                             @include('partials.errors', ['name' => 'approved_paperwork'])
                         </div>
                     </div>
-                    <button class="btn btn-danger mt-3" type="submit">Mohon Sumbangan</button>
+                    <button class="btn btn-primary mt-3" type="submit">Mohon Sumbangan</button>
                 </form>
             </div>
         </div>

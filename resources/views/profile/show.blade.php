@@ -13,7 +13,7 @@
                 <strong>Lengkapkan profil anda.</strong>
                 <p class="mb-0">Maklumat belum lengkap: {{ implode(', ', $missingProfileFields) }}.</p>
             </div>
-            <a class="btn btn-sm btn-danger" href="{{ route('profile.edit') }}">Lengkapkan</a>
+            <a class="btn btn-sm btn-primary" href="{{ route('profile.edit') }}">Lengkapkan</a>
         </div>
     @endif
 
@@ -40,8 +40,8 @@
             <div class="profile-actions no-print">
                 <button class="btn btn-outline-secondary" type="button" onclick="window.print()"><i class="bi bi-printer me-2" aria-hidden="true"></i>Cetak Kad</button>
                 <a class="btn btn-outline-secondary" href="{{ route('preferences.edit') }}"><i class="bi bi-gear me-2" aria-hidden="true"></i>Tetapan Saya</a>
-                <a class="btn btn-outline-danger" href="{{ route('profile.password') }}">Kata Laluan</a>
-                <a class="btn btn-danger" href="{{ route('profile.edit') }}">Edit Profil</a>
+                <a class="btn btn-outline-secondary" href="{{ route('profile.password') }}">Kata Laluan</a>
+                <a class="btn btn-primary" href="{{ route('profile.edit') }}">Edit Profil</a>
             </div>
         </div>
     </div>

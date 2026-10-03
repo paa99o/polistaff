@@ -25,15 +25,15 @@
                                 @csrf
                                 @method('patch')
                                 <input type="hidden" name="treasurer_notes" value="Aktiviti disokong bendahari.">
-                                <button class="btn btn-sm btn-danger">Sokong</button>
+                                <button class="btn btn-sm btn-primary">Sokong</button>
                             </form>
                         @endif
                         @if(auth()->user()->hasRole('admin') && $activity->status === 'treasurer_verified')
-                            <form method="post" action="{{ route('activities.approve', $activity) }}" data-confirm="Luluskan aktiviti ini dan buka kepada ahli?">@csrf @method('patch')<button class="btn btn-sm btn-danger">Luluskan</button></form>
+                            <form method="post" action="{{ route('activities.approve', $activity) }}" data-confirm="Luluskan aktiviti ini dan buka kepada ahli?">@csrf @method('patch')<button class="btn btn-sm btn-primary">Luluskan</button></form>
                             <form method="post" action="{{ route('activities.reject', $activity) }}" data-confirm="Tolak aktiviti ini?">@csrf @method('patch')<input type="hidden" name="review_notes" value="Tidak memenuhi keperluan kelulusan."><button class="btn btn-sm btn-outline-danger">Tolak</button></form>
                         @endif
                         @if(auth()->id() === $activity->created_by && in_array($activity->status, ['draft', 'pending_approval'], true))
-                            <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.edit', $activity) }}">Ubah</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                         @endif
                         @if(auth()->user()->hasRole('admin') && $activity->status === 'approved')
                             <form method="post" action="{{ route('activities.destroy', $activity) }}" data-confirm="Padam aktiviti ini secara kekal? Semua pendaftaran, kehadiran, maklum balas, gambar, rekod dokumen, notifikasi dan log berkaitannya akan dipadam.">
@@ -114,7 +114,7 @@
                             @csrf
                             <input class="form-control" type="file" name="photos[]" accept="image/*" multiple required>
                             @include('partials.errors', ['name' => 'photos'])
-                            <button class="btn btn-sm btn-danger mt-2">Muat Naik Gambar</button>
+                                <button class="btn btn-sm btn-primary mt-2">Muat Naik Gambar</button>
                         </form>
                     </div></div>
                 @endif
@@ -139,7 +139,7 @@
                     @else
                         <form method="post" action="{{ route('activities.register', $activity) }}">
                             @csrf
-                            <button class="btn btn-danger">{{ $activity->hasCapacity() ? 'Daftar Aktiviti' : 'Sertai Senarai Menunggu' }}</button>
+                            <button class="btn btn-primary">{{ $activity->hasCapacity() ? 'Daftar Aktiviti' : 'Sertai Senarai Menunggu' }}</button>
                         </form>
                     @endif
                 @else
@@ -166,7 +166,7 @@
                             <span class="badge text-bg-secondary attendance-status">Belum Hadir</span>
                             <form method="post" action="{{ route('activities.attendance.store', [$activity, $item]) }}" data-confirm="Tanda {{ $item->user->name }} sebagai hadir?">
                                 @csrf
-                                <button class="btn btn-sm btn-outline-danger">Tanda Hadir</button>
+                            <button class="btn btn-sm btn-outline-primary">Tanda Hadir</button>
                             </form>
                         @endif
                     </div>
@@ -218,7 +218,7 @@
                             <form method="post" action="{{ route('activities.refresh-qr', $activity) }}" data-confirm="{{ $activity->qr_code_token ? 'Jana semula QR? QR lama tidak boleh digunakan lagi.' : 'Jana QR kehadiran untuk aktiviti ini?' }}">
                                 @csrf
                                 @method('patch')
-                                <button class="btn btn-sm btn-outline-danger">{{ $activity->qr_code_token ? 'Jana Semula QR' : 'Jana QR' }}</button>
+                                <button class="btn btn-sm btn-outline-primary">{{ $activity->qr_code_token ? 'Jana Semula QR' : 'Jana QR' }}</button>
                             </form>
                         @endif
                     </div>

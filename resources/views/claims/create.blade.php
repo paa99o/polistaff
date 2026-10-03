@@ -47,7 +47,7 @@
                     @include('partials.errors', ['name' => 'description'])
                 </div>
             </div>
-            <button class="btn btn-danger mt-3">{{ $isResubmitting ? 'Hantar Semula' : ($isEditing ? 'Simpan Perubahan' : 'Hantar Tuntutan') }}</button>
+            <button class="btn btn-primary mt-3">{{ $isResubmitting ? 'Hantar Semula' : ($isEditing ? 'Simpan Perubahan' : 'Hantar Tuntutan') }}</button>
         </form>
     </div>
 </div>

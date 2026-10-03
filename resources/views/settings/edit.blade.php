@@ -66,7 +66,7 @@
                             @error('finance_account_number')<div class="text-danger small">{{ $message }}</div>@enderror
                         </div>
                     </div>
-                    <button class="btn btn-danger mt-3"><i class="bi bi-floppy me-1" aria-hidden="true"></i> Simpan Tetapan</button>
+                    <button class="btn btn-primary mt-3"><i class="bi bi-floppy me-1" aria-hidden="true"></i> Simpan Tetapan</button>
                 </form>
             </div>
         </div>
@@ -78,7 +78,7 @@
                 <span class="section-kicker">Keselamatan Data</span>
                 <h2 class="h5 soft-panel-title">Sandaran Data</h2>
                 <p class="text-muted">Muat turun database dan semua fail upload pengguna dalam satu arkib ZIP. Maklumat rahsia aplikasi tidak disertakan.</p>
-                <a class="btn btn-outline-danger" href="{{ route('backup.export') }}"><i class="bi bi-download me-1" aria-hidden="true"></i> Muat Turun Sandaran</a>
+                <a class="btn btn-outline-secondary" href="{{ route('backup.export') }}"><i class="bi bi-download me-1" aria-hidden="true"></i> Muat Turun Sandaran</a>
 
                 <hr class="my-4">
 
@@ -128,7 +128,7 @@
             <form method="post" action="{{ route('settings.maintenance.disable') }}" data-confirm="Matikan mode penyelenggaraan dan buka semula sistem kepada semua pengguna?">
                 @csrf
                 @method('delete')
-                <button class="btn btn-danger" type="submit">
+                <button class="btn btn-primary" type="submit">
                     <i class="bi bi-play-circle me-1" aria-hidden="true"></i>
                     Buka Semula Sistem
                 </button>
@@ -154,7 +154,7 @@
                 </div>
                 <div class="maintenance-action-row">
                     <p><i class="bi bi-info-circle" aria-hidden="true"></i> Admin kekal boleh masuk. Semua ahli aktif menerima notifikasi dalam aplikasi; emel dihantar mengikut pilihan notifikasi mereka.</p>
-                    <button class="btn btn-outline-danger" type="submit">
+                    <button class="btn btn-outline-warning" type="submit">
                         <i class="bi bi-tools me-1" aria-hidden="true"></i>
                         Aktifkan Penyelenggaraan
                     </button>

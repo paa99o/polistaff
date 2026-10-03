@@ -103,7 +103,7 @@
                             @include('partials.errors', ['name' => 'notes'])
                         </div>
                     </div>
-                    <button class="btn btn-danger mt-3">Hantar Untuk Semakan</button>
+                    <button class="btn btn-primary mt-3">Hantar Untuk Semakan</button>
                 </form>
             </div>
         </div>

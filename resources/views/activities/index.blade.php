@@ -12,7 +12,7 @@
 @endphp
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3">Aktiviti</h1>
-    @can('manage-activities')<a class="btn btn-danger" href="{{ route('activities.create') }}"><i class="bi bi-plus-lg me-1"></i>Cipta Aktiviti</a>@endcan
+    @can('manage-activities')<a class="btn btn-primary" href="{{ route('activities.create') }}"><i class="bi bi-plus-lg me-1"></i>Cipta Aktiviti</a>@endcan
 </div>
 
 <div class="row g-3 mb-4">
@@ -33,7 +33,7 @@
             </div>
             <div class="activity-calendar-nav">
                 <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.index', ['month' => $calendarMonth->copy()->subMonth()->format('Y-m')]) }}" aria-label="Bulan sebelumnya" title="Bulan sebelumnya"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
-                <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.index', ['month' => now()->format('Y-m')]) }}">Bulan ini</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.index', ['month' => now()->format('Y-m')]) }}">Bulan ini</a>
                 <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.index', ['month' => $calendarMonth->copy()->addMonth()->format('Y-m')]) }}" aria-label="Bulan seterusnya" title="Bulan seterusnya"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
             </div>
         </div>

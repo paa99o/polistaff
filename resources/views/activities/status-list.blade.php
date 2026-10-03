@@ -35,7 +35,7 @@
                         <td data-label="Lokasi">{{ $activity->location }}</td>
                         <td data-label="Status"><span class="badge {{ \App\Support\PolistaffLabels::statusClass($activity->status) }}">{{ \App\Support\PolistaffLabels::status($activity->status) }}</span></td>
                         @if($isDraftList)
-                            <td data-label="Tindakan"><div class="d-flex gap-2 flex-wrap"><a class="btn btn-sm btn-danger" href="{{ route('activities.edit', $activity) }}">Sambung Draf</a><form method="post" action="{{ route('activities.destroy', $activity) }}" data-confirm="Padam draf aktiviti ini?">@csrf @method('delete')<button class="btn btn-sm btn-outline-secondary" type="submit">Padam</button></form></div></td>
+                            <td data-label="Tindakan"><div class="d-flex gap-2 flex-wrap"><a class="btn btn-sm btn-primary" href="{{ route('activities.edit', $activity) }}">Sambung Draf</a><form method="post" action="{{ route('activities.destroy', $activity) }}" data-confirm="Padam draf aktiviti ini?">@csrf @method('delete')<button class="btn btn-sm btn-outline-danger" type="submit">Padam</button></form></div></td>
                         @elseif($hasInlineReviewActions)
                             <td data-label="Tindakan">
                                 <div class="d-flex gap-2 flex-wrap">
@@ -44,23 +44,23 @@
                                             @csrf
                                             @method('patch')
                                             <input type="hidden" name="treasurer_notes" value="Aktiviti disokong bendahari.">
-                                            <button class="btn btn-sm btn-danger" type="submit">Luluskan</button>
+                                            <button class="btn btn-sm btn-primary" type="submit">Luluskan</button>
                                         </form>
                                     @else
                                         <form method="post" action="{{ route('activities.approve', $activity) }}" data-confirm="Luluskan aktiviti ini dan buka kepada ahli?">
                                             @csrf
                                             @method('patch')
-                                            <button class="btn btn-sm btn-danger" type="submit">Luluskan</button>
+                                            <button class="btn btn-sm btn-primary" type="submit">Luluskan</button>
                                         </form>
                                     @endif
                                     <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#rejectActivityModal" data-action="{{ route('activities.reject', $activity) }}">Tolak</button>
-                                    <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.show', $activity) }}">Keterangan</a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.show', $activity) }}">Keterangan</a>
                                     <form method="post" action="{{ route('activities.paperwork.generate', $activity) }}">@csrf<button class="btn btn-sm btn-outline-secondary" type="submit">Jana Kertas Kerja</button></form>
                                 </div>
                             </td>
                         @elseif(in_array($status, ['pending_approval', 'treasurer_verified'], true))
                             <td data-label="Tindakan"><div class="d-flex gap-2 flex-wrap">
-                                <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.show', $activity) }}">Keterangan</a>
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.show', $activity) }}">Keterangan</a>
                                 @if($activity->paperworkVersions->isNotEmpty())
                                     <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.paperwork.preview', [$activity, $activity->paperworkVersions->first()]) }}">Pratonton Kertas Kerja</a>
                                 @else
@@ -70,12 +70,12 @@
                         @elseif($status === 'approved')
                             <td data-label="Tindakan">
                                 <div class="d-flex gap-2 flex-wrap">
-                                    <a class="btn btn-sm btn-outline-danger" href="{{ route('activities.show', $activity) }}">Lihat Butiran</a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.show', $activity) }}">Lihat Butiran</a>
                                     @if(auth()->user()->hasRole('admin'))
                                         <form method="post" action="{{ route('activities.destroy', $activity) }}" data-confirm="Padam aktiviti ini secara kekal? Semua pendaftaran, kehadiran, maklum balas, gambar, rekod dokumen, notifikasi dan log berkaitannya akan dipadam.">
                                             @csrf
                                             @method('delete')
-                                            <button class="btn btn-sm btn-danger" type="submit">Padam Aktiviti</button>
+                                    <button class="btn btn-sm btn-danger" type="submit">Padam Aktiviti</button>
                                         </form>
                                     @endif
                                     @if($activity->isFinished())

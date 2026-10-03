@@ -15,7 +15,7 @@
     </div>
     @if($canSubmitPayment)
         <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-danger" href="{{ route('payments.create') }}">
+            <a class="btn btn-primary" href="{{ route('payments.create') }}">
                 <i class="bi bi-wallet2 me-2" aria-hidden="true"></i>Bayar Yuran
             </a>
         </div>
@@ -98,7 +98,7 @@
                 <input class="form-control" id="payment-to" type="date" name="to" value="{{ request('to') }}">
             </div>
             <div class="col-md-3 d-flex align-items-end">
-                <button class="btn btn-outline-danger w-100">Tapis</button>
+                <button class="btn btn-outline-primary w-100">Tapis</button>
             </div>
         </form>
         <div class="table-responsive mt-3">
@@ -114,7 +114,7 @@
                         <td data-label="Tarikh Direkod">{{ $payment->payment_date->format('d/m/Y') }}</td>
                         <td data-label="Status"><span class="badge bg-{{ $statusClasses[$payment->status] ?? 'secondary' }}">{{ $statusLabels[$payment->status] ?? ucfirst($payment->status) }}</span></td>
                         <td data-label="Resit">@if($payment->transaction)<a href="{{ route('transactions.show', $payment->transaction) }}">{{ $payment->transaction->receipt_number }}</a>@else<span class="text-muted">-</span>@endif</td>
-                        <td data-label="Tindakan"><div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-danger" href="{{ route('payments.show', $payment) }}">Keterangan</a>
+                        <td data-label="Tindakan"><div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="{{ route('payments.show', $payment) }}">Keterangan</a>
                             @if($isTreasurer)
                                 <form method="post" action="{{ route('payments.history.destroy', $payment) }}" data-confirm="Padam sejarah bayaran ini, transaksi/resit dan bukti bayaran? Jika bayaran telah diluluskan, bil ahli dan baki yuran akan dikemas kini semula.">
                                     @csrf @method('delete')
@@ -186,7 +186,7 @@
                     <div class="d-flex justify-content-between align-items-center border-bottom py-3 gap-3">
                         <div><strong>{{ $bill->billing_month->translatedFormat('F Y') }}</strong><div class="small text-muted">Baki RM {{ number_format((float) $bill->payment_available_amount, 2) }}</div></div>
                         @if($canSubmitPayment)
-                            <a class="btn btn-sm btn-outline-danger" href="{{ route('payments.create', ['bill_id' => $bill->id]) }}">Bayar</a>
+                            <a class="btn btn-sm btn-outline-primary" href="{{ route('payments.create', ['bill_id' => $bill->id]) }}">Bayar</a>
                         @endif
                     </div>
                 @empty
@@ -194,7 +194,7 @@
                 @endforelse
             </div>
             @if($canSubmitPayment && $currentUnpaidBills->isNotEmpty())
-                <div class="modal-footer"><a class="btn btn-danger" href="{{ route('payments.create') }}">Bayar &amp; upload bukti pembayaran</a></div>
+                <div class="modal-footer"><a class="btn btn-primary" href="{{ route('payments.create') }}">Bayar &amp; upload bukti pembayaran</a></div>
             @endif
         </div>
     </div>

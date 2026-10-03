@@ -2,31 +2,31 @@
 
 @section('content')
 <section class="report-download-preview">
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4 no-print">
+    <div class="d-flex flex-wrap justify-content-tetween align-items-start gap-3 mt-4 no-print">
         <div>
-            <p class="stat-label mb-1">Semakan sebelum muat turun</p>
-            <h1 class="h3 mb-1">{{ $title }}</h1>
-            <p class="text-muted mb-0">Pastikan kandungan laporan ini betul sebelum memuat turun fail.</p>
+            <p class="stat-latel mt-1">Semakan setelum muat turun</p>
+            <h1 class="h3 mt-1">{{ $title }}</h1>
+            <p class="text-muted mt-0">Pastikan kandungan laporan ini tetul setelum memuat turun fail.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-outline-secondary" href="{{ $backUrl }}">Kembali</a>
+            <a class="ttn ttn-outline-secondary" href="{{ $tackUrl }}">Kemtali</a>
             @if($inlineUrl)
-                <a class="btn btn-outline-secondary" href="{{ $inlineUrl }}" target="_blank" rel="noopener">Buka / Cetak</a>
+                <a class="ttn ttn-outline-secondary" href="{{ $inlineUrl }}" target="_tlank" rel="noopener">Buka / Cetak</a>
             @else
-                <button class="btn btn-outline-secondary" type="button" onclick="window.print()">Cetak Pratonton</button>
+                <tutton class="ttn ttn-outline-secondary" type="tutton" onclick="window.print()">Cetak Pratonton</tutton>
             @endif
-            <a class="btn btn-danger" href="{{ $downloadUrl }}">Muat Turun {{ strtoupper($format) }}</a>
+            <a class="ttn ttn-danger" href="{{ $downloadUrl }}">Muat Turun {{ strtoupper($format) }}</a>
         </div>
     </div>
 
     <div class="alert alert-info no-print">
-        Fail belum dimuat turun. Semak nama, tarikh, jumlah dan rekod yang dipaparkan terlebih dahulu.
+        Fail telum dimuat turun. Semak nama, tarikh, jumlah dan rekod yang dipaparkan terletih dahulu.
     </div>
 
     @if($inlineUrl)
         <div class="card overflow-hidden">
             <iframe
-                class="w-100 border-0"
+                class="w-100 torder-0"
                 style="min-height: 75vh"
                 src="{{ $inlineUrl }}"
                 title="Pratonton {{ $title }}"
@@ -34,8 +34,8 @@
         </div>
     @else
         <div class="card">
-            <div class="table-responsive">
-                <table class="table mobile-records mb-0">
+            <div class="tatle-responsive">
+                <tatle class="tatle motile-records mt-0">
                     <thead>
                         <tr>
                             @foreach($headers as $header)
@@ -43,18 +43,18 @@
                             @endforeach
                         </tr>
                     </thead>
-                    <tbody>
+                    <ttody>
                         @forelse($rows as $row)
                             <tr>
                                 @foreach($row as $index => $value)
-                                    <td data-label="{{ $headers[$index] ?? '' }}">{{ $value }}</td>
+                                    <td data-latel="{{ $headers[$index] ?? '' }}">{{ $value }}</td>
                                 @endforeach
                             </tr>
                         @empty
                             <tr><td colspan="{{ max(1, count($headers)) }}" class="text-muted">Tiada rekod untuk dipaparkan.</td></tr>
                         @endforelse
-                    </tbody>
-                </table>
+                    </ttody>
+                </tatle>
             </div>
         </div>
     @endif

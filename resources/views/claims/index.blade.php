@@ -21,7 +21,7 @@
         <h1 class="h3 mb-0">Tuntutan Perbelanjaan</h1>
         <p class="text-muted mb-0">Hantar tuntutan dan semak status kelulusan.</p>
     </div>
-    <a class="btn btn-danger" href="{{ route('claims.create') }}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Buat Tuntutan</a>
+    <a class="btn btn-primary" href="{{ route('claims.create') }}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Buat Tuntutan</a>
 </div>
 
 <div class="card">
@@ -51,15 +51,15 @@
                         <td data-label="Tindakan">
                             <div class="d-flex flex-wrap gap-2">
                                 @if($isTreasurer && $claim->status === 'pending')
-                                    <button class="btn btn-sm btn-outline-danger" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.verify', $claim) }}" data-kind="support">Sokong</button>
+                                    <button class="btn btn-sm btn-outline-primary" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.verify', $claim) }}" data-kind="support">Sokong</button>
                                 @endif
                                 @if($canApproveClaims && $claim->status === 'treasurer_verified')
-                                    <button class="btn btn-sm btn-danger" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.approve', $claim) }}" data-kind="approve">Luluskan</button>
+                                    <button class="btn btn-sm btn-primary" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.approve', $claim) }}" data-kind="approve">Luluskan</button>
                                 @endif
                                 @if($isFinanceReviewer && in_array($claim->status, ['pending', 'treasurer_verified'], true))
                                     <button class="btn btn-sm btn-outline-secondary" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.reject', $claim) }}" data-kind="reject">Tolak</button>
                                 @endif
-                                <a class="btn btn-sm btn-outline-danger" href="{{ route('claims.show', $claim) }}">Keterangan</a>
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ route('claims.show', $claim) }}">Keterangan</a>
                                 @if($isTreasurer)
                                     <form method="post" action="{{ route('claims.history.destroy', $claim) }}" data-confirm="Padam sejarah tuntutan ini serta transaksi, resit dan notifikasi berkait?">
                                         @csrf @method('delete')
@@ -100,7 +100,7 @@
                             <textarea class="form-control" id="claimActionNotes" rows="3"></textarea>
                         </div>
                     </div>
-                    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-danger" id="claimActionSubmit" type="submit">Teruskan</button></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-primary" id="claimActionSubmit" type="submit">Teruskan</button></div>
                 </form>
             </div>
         </div>
@@ -112,10 +112,13 @@
                     const kind = button.dataset.kind;
                     const form = document.getElementById('claimActionForm');
                     const notes = document.getElementById('claimActionNotes');
+                    const submit = document.getElementById('claimActionSubmit');
                     const title = { support: 'Sokong tuntutan', approve: 'Luluskan tuntutan', reject: 'Tolak tuntutan' }[kind];
                     form.action = button.dataset.action;
                     document.getElementById('claimActionTitle').textContent = title;
                     document.getElementById('claimActionSubmit').textContent = title;
+                    submit.classList.toggle('btn-danger', kind === 'reject');
+                    submit.classList.toggle('btn-primary', kind !== 'reject');
                     document.getElementById('claimActionHelp').textContent = kind === 'support'
                         ? 'Tuntutan ini akan dihantar kepada admin untuk kelulusan akhir.'
                         : kind === 'approve' ? 'Tuntutan akan diluluskan dan transaksi perbelanjaan dijana.' : 'Nyatakan sebab penolakan tuntutan.';

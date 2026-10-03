@@ -107,13 +107,13 @@
                             <div class="settings-panel-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></div>
                             <div><h2>Keselamatan Akaun</h2><p>Kemas kini kata laluan anda secara berkala untuk melindungi akaun.</p></div>
                         </div>
-                        <a class="btn btn-outline-danger" href="{{ route('profile.password') }}">Tukar Kata Laluan</a>
+                        <a class="btn btn-outline-secondary" href="{{ route('profile.password') }}">Tukar Kata Laluan</a>
                     </div>
                 </section>
 
                 <div class="settings-savebar">
                     <span><i class="bi bi-info-circle me-2" aria-hidden="true"></i>Tetapan ini hanya digunakan untuk akaun anda.</span>
-                    <button class="btn btn-danger" type="submit"><i class="bi bi-check2 me-2" aria-hidden="true"></i>Simpan Tetapan</button>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-check2 me-2" aria-hidden="true"></i>Simpan Tetapan</button>
                 </div>
             </div>
         </div>

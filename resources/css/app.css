@@ -5997,3 +5997,155 @@ html[data-reduce-motion="true"] :is(
 ):is(:hover, :focus-visible) {
     transform: none;
 }
+
+/* Shared button palette and interactive states across the portal and public pages. */
+:root {
+    --button-primary: #4f8074;
+    --button-primary-hover: #355e55;
+    --button-danger: #bf6265;
+    --button-danger-hover: #a94f52;
+    --button-warning: #c28a4a;
+    --button-warning-hover: #a87335;
+}
+
+.btn {
+    opacity: 1;
+    transition: color var(--motion-quick), background-color var(--motion-quick), border-color var(--motion-quick), box-shadow var(--motion-quick), transform var(--motion-quick);
+}
+
+.btn:hover { opacity: 1; }
+.btn:active { opacity: 1; transform: translateY(0); }
+.btn:focus-visible { box-shadow: 0 0 0 .22rem rgba(79, 128, 116, .24); outline: 0; }
+
+.btn.btn-primary,
+.btn.btn-success,
+.btn.btn-info {
+    background-color: var(--button-primary);
+    border-color: var(--button-primary);
+    color: #fff;
+}
+
+.btn.btn-primary:is(:hover, :focus-visible, :active),
+.btn.btn-success:is(:hover, :focus-visible, :active),
+.btn.btn-info:is(:hover, :focus-visible, :active) {
+    background-color: var(--button-primary-hover);
+    border-color: var(--button-primary-hover);
+    color: #fff;
+}
+
+.btn.btn-primary:hover,
+.btn.btn-success:hover,
+.btn.btn-info:hover { transform: translateY(-1px); }
+
+.btn.btn-danger {
+    background-color: var(--button-danger);
+    border-color: var(--button-danger);
+    color: #fff;
+}
+
+.btn.btn-danger:is(:hover, :focus-visible, :active) {
+    background-color: var(--button-danger-hover);
+    border-color: var(--button-danger-hover);
+    color: #fff;
+}
+
+.btn.btn-danger:hover { transform: translateY(-1px); }
+.btn.btn-danger:focus-visible { box-shadow: 0 0 0 .22rem rgba(191, 98, 101, .24); }
+
+.btn.btn-outline-primary,
+.btn.btn-outline-success,
+.btn.btn-outline-info {
+    background-color: transparent;
+    border-color: var(--button-primary);
+    color: var(--button-primary);
+}
+
+.btn.btn-outline-primary:is(:hover, :focus-visible, :active),
+.btn.btn-outline-success:is(:hover, :focus-visible, :active),
+.btn.btn-outline-info:is(:hover, :focus-visible, :active) {
+    background-color: var(--button-primary);
+    border-color: var(--button-primary);
+    color: #fff;
+    opacity: 1;
+}
+
+.btn.btn-outline-primary:hover,
+.btn.btn-outline-success:hover,
+.btn.btn-outline-info:hover { transform: translateY(-1px); }
+
+.btn.btn-outline-danger {
+    background-color: transparent;
+    border-color: var(--button-danger);
+    color: var(--button-danger);
+}
+
+.btn.btn-outline-danger:is(:hover, :focus-visible, :active) {
+    background-color: var(--button-danger);
+    border-color: var(--button-danger);
+    color: #fff;
+    opacity: 1;
+}
+
+.btn.btn-outline-danger:hover { transform: translateY(-1px); }
+.btn.btn-outline-danger:focus-visible { box-shadow: 0 0 0 .22rem rgba(191, 98, 101, .24); }
+
+.btn.btn-outline-secondary {
+    background-color: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.btn.btn-outline-secondary:is(:hover, :focus-visible, :active) {
+    background-color: var(--color-secondary);
+    border-color: var(--color-primary);
+    color: var(--color-text);
+    opacity: 1;
+}
+
+.btn.btn-outline-secondary:hover { transform: translateY(-1px); }
+
+.btn.btn-warning,
+.btn.btn-outline-warning {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--button-warning);
+    --bs-btn-border-color: var(--button-warning);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--button-warning-hover);
+    --bs-btn-hover-border-color: var(--button-warning-hover);
+}
+
+.btn.btn-outline-warning {
+    background-color: transparent;
+    color: var(--button-warning);
+}
+
+.btn.btn-outline-warning:is(:hover, :focus-visible, :active) {
+    background-color: var(--button-warning);
+    border-color: var(--button-warning);
+    color: #fff;
+}
+
+.btn.btn-warning:is(:hover, :focus-visible, :active) {
+    background-color: var(--button-warning-hover);
+    border-color: var(--button-warning-hover);
+    color: #fff;
+}
+
+.btn.btn-light { color: var(--color-text); }
+.btn.btn-light:hover { background-color: var(--color-secondary); border-color: var(--color-border); color: var(--color-text); }
+.btn.btn-outline-light { border-color: rgba(255, 255, 255, .72); color: #fff; }
+.btn.btn-outline-light:hover { background-color: #fff; border-color: #fff; color: var(--button-primary-hover); }
+.btn.btn-link { background: transparent; border-color: transparent; color: var(--button-primary); text-decoration: none; }
+.btn.btn-link:hover { color: var(--button-primary-hover); text-decoration: underline; }
+.btn:disabled,
+.btn.disabled { cursor: not-allowed; opacity: .58; transform: none; }
+
+.activity-wizard-step.is-active,
+.activity-wizard-step.is-active span,
+.activity-wizard-step.is-complete span { background-color: var(--button-primary); border-color: var(--button-primary); color: #fff; }
+.activity-wizard-step.is-active { background: transparent; color: var(--button-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+    .btn,
+    .btn:hover { transition: none; transform: none; }
+}

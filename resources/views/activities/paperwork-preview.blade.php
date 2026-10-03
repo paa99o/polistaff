@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
     <div><p class="stat-label mb-1">Semak sebelum cetak</p><h1 class="h3 mb-1">Kertas Kerja Program</h1><p class="text-muted mb-0">{{ $activity->title }} · Versi {{ $version->version }} · Templat {{ $version->template_version }} · Dijana {{ $version->generated_at->format('d/m/Y H:i') }}</p></div>
-    <div class="d-flex gap-2 flex-wrap"><a class="btn btn-outline-secondary" href="{{ route('activities.status-list', $activity->status) }}">Kembali</a><a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="{{ route('activities.paperwork.pdf', [$activity, $version, 'render' => 1]) }}">Buka / Cetak</a>@if($activity->status === 'approved')<a class="btn btn-danger" href="{{ route('activities.paperwork.pdf', [$activity, $version]) }}">Muat Turun PDF</a>@endif</div>
+    <div class="d-flex gap-2 flex-wrap"><a class="btn btn-outline-secondary" href="{{ route('activities.status-list', $activity->status) }}">Kembali</a><a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="{{ route('activities.paperwork.pdf', [$activity, $version, 'render' => 1]) }}">Buka / Cetak</a>@if($activity->status === 'approved')<a class="btn btn-primary" href="{{ route('activities.paperwork.pdf', [$activity, $version]) }}">Muat Turun PDF</a>@endif</div>
 </div>
 <div class="alert alert-info">Pratonton dan PDF menggunakan susunan kertas kerja rujukan. {{ $activity->status === 'approved' ? 'Dokumen ini telah diluluskan dan boleh dimuat turun.' : 'Anda boleh semak ringkasan, impak, objektif dan penutup sebelum menyimpan versi baharu.' }}</div>
 @if($missingInformation)<div class="alert alert-warning"><h2 class="h6">Maklumat yang perlu dilengkapkan</h2><ul class="mb-0">@foreach($missingInformation as $item)<li>{{ $item }}</li>@endforeach</ul></div>@endif
@@ -17,7 +17,7 @@
         <label class="form-label" for="paperworkObjectives">Objektif Program <span class="text-muted">(satu objektif bagi setiap baris)</span></label><textarea class="form-control mb-3" id="paperworkObjectives" name="objectives_text" rows="5">{{ old('objectives_text', implode("\n", $version->content['objectives'] ?? [])) }}</textarea>
         <label class="form-label" for="paperworkImpact">Hasil / Impak Program</label><textarea class="form-control mb-3" id="paperworkImpact" name="impact" rows="5" required>{{ old('impact', $version->content['impact'] ?? '') }}</textarea>
         <label class="form-label" for="paperworkClosing">Penutup</label><textarea class="form-control mb-3" id="paperworkClosing" name="closing" rows="5" required>{{ old('closing', $version->content['closing'] ?? '') }}</textarea>
-        <div class="d-flex justify-content-end"><button class="btn btn-danger" type="submit">Simpan Versi Baharu</button></div>
+        <div class="d-flex justify-content-end"><button class="btn btn-primary" type="submit">Simpan Versi Baharu</button></div>
     </form>
 </div></div></div>
 <aside class="col-xl-4"><div class="card"><div class="card-body"><h2 class="h5">Versi dokumen</h2><p class="small text-muted">Setiap simpanan atau jana semula disimpan sebagai versi berasingan.</p>

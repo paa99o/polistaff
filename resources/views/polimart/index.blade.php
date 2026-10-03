@@ -9,7 +9,7 @@
             <h2>Beli. Jual. Cari.</h2>
             <p>Barang menarik, semuanya di sini.</p>
             @if(auth()->user()->hasRole('member', 'admin'))
-                <a class="btn btn-danger w-100" href="{{ route('polimart.create') }}">Mula Jual</a>
+                <a class="btn btn-primary w-100" href="{{ route('polimart.create') }}">Mula Jual</a>
             @endif
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.index', ['mine' => 1]) }}">
                 <i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Listing Saya
@@ -59,7 +59,7 @@
                     </select>
                     @if($mine)<input type="hidden" name="mine" value="1">@endif
                     @if($favorites)<input type="hidden" name="favorites" value="1">@endif
-                <button class="btn btn-danger" type="submit">Cari</button>
+                <button class="btn btn-primary" type="submit">Cari</button>
                 @if($search !== '' || $category !== '' || $mine || $favorites)
                     <a class="btn btn-outline-secondary" href="{{ route('polimart.index') }}">Reset</a>
                 @endif
@@ -114,7 +114,7 @@
                             @if($item->user_id === auth()->id() || auth()->user()->hasRole('admin'))
                                 <div class="d-flex gap-2 mt-3">
                                     <a class="btn btn-sm btn-outline-secondary flex-fill" href="{{ route('polimart.edit', $item) }}">Edit</a>
-                                    <a class="btn btn-sm btn-danger flex-fill" href="{{ route('polimart.show', $item) }}">Urus</a>
+                                    <a class="btn btn-sm btn-outline-secondary flex-fill" href="{{ route('polimart.show', $item) }}">Urus</a>
                                 </div>
                                 <form method="post" action="{{ route('polimart.destroy', $item) }}">
                                     @csrf
@@ -129,13 +129,13 @@
                         <i class="bi bi-shop" aria-hidden="true"></i>
                         @if($mine)
                             <p>Anda belum ada listing. Mula jual barang pertama anda.</p>
-                            <a class="btn btn-danger" href="{{ route('polimart.create') }}">Jual Barang</a>
+                            <a class="btn btn-primary" href="{{ route('polimart.create') }}">Jual Barang</a>
                         @elseif($favorites)
                             <p>Anda belum simpan mana-mana listing.</p>
-                            <a class="btn btn-outline-danger" href="{{ route('polimart.index') }}">Cari Barang</a>
+                            <a class="btn btn-outline-primary" href="{{ route('polimart.index') }}">Cari Barang</a>
                         @elseif($search !== '' || $category !== '')
                             <p>Tiada barang sepadan dengan carian anda.</p>
-                            <a class="btn btn-outline-danger" href="{{ route('polimart.index') }}">Lihat Semua Listing</a>
+                            <a class="btn btn-outline-primary" href="{{ route('polimart.index') }}">Lihat Semua Listing</a>
                         @else
                             <p>Belum ada produk. Jadilah seller pertama di PoliMart.</p>
                         @endif

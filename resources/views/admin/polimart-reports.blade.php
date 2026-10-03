@@ -8,7 +8,7 @@
             <h1>Laporan PoliMart</h1>
             <p>Semak listing yang dilaporkan oleh komuniti staf.</p>
         </div>
-        <a class="btn btn-outline-danger" href="{{ route('admin.index') }}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Kembali Admin</a>
+        <a class="btn btn-outline-secondary" href="{{ route('admin.index') }}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Kembali Admin</a>
     </div>
 
     <div class="card admin-panel">
@@ -36,7 +36,7 @@
                                             @csrf
                                             @method('patch')
                                             <input type="hidden" name="status" value="{{ $reportStatus }}">
-                                            <button class="btn btn-sm {{ $reportStatus === 'removed' ? 'btn-danger' : 'btn-outline-danger' }}" type="submit">{{ $label }}</button>
+                                            <button class="btn btn-sm {{ $reportStatus === 'removed' ? 'btn-danger' : 'btn-outline-secondary' }}" type="submit">{{ $label }}</button>
                                         </form>
                                     @endforeach
                                 </div>
