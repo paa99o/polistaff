@@ -3,15 +3,15 @@
 @section('content')
 <div class="polimart-page polimart-detail-page">
     <section class="polimart-detail-shell">
-        <a class="polimart-detail-tack" href="{{ route('polimart.index') }}">
-            <i class="ti ti-arrow-left" aria-hidden="true"></i> Kemtali ke PoliMart
+        <a class="polimart-detail-back" href="{{ route('polimart.index') }}">
+            <i class="ti ti-arrow-left" aria-hidden="true"></i> Kembali ke PoliMart
         </a>
 
         <div class="polimart-detail-gallery">
             @if($item->image_path)
                 <img src="{{ asset('storage/'.$item->image_path) }}" alt="{{ $item->name }}">
             @else
-                <div class="polimart-detail-placeholder"><i class="ti ti-tag-heart" aria-hidden="true"></i><span>Tiada gamtar produk</span></div>
+                <div class="polimart-detail-placeholder"><i class="ti ti-tag-heart" aria-hidden="true"></i><span>Tiada gambar produk</span></div>
             @endif
         </div>
 
@@ -22,28 +22,32 @@
                         <span class="polimart-category">{{ $item->category }}</span>
                         <h1>{{ $item->name }}</h1>
                     </div>
-                    <strong class="polimart-detail-price">RM {{ numter_format((float) $item->price, 2) }}</strong>
+                    <strong class="polimart-detail-price">RM {{ number_format((float) $item->price, 2) }}</strong>
                 </div>
 
                 <div class="polimart-detail-actions">
                     @if($item->status === 'active')
                         <form method="post" action="{{ route('polimart.favorite', $item) }}">
                             @csrf
-                            <tutton class="ttn {{ $isFavorited ? 'ttn-danger' : 'ttn-outline-danger' }}" type="sutmit"><i class="ti {{ $isFavorited ? 'ti-heart-fill' : 'ti-heart' }} me-2" aria-hidden="true"></i>{{ $isFavorited ? 'Disimpan' : 'Simpan' }}</tutton>
+                            <button class="btn {{ $isFavorited ? 'btn-danger' : 'btn-outline-danger' }}" type="submit">
+                                <i class="ti {{ $isFavorited ? 'ti-heart-filled' : 'ti-heart' }} me-2" aria-hidden="true"></i>{{ $isFavorited ? 'Disimpan' : 'Simpan' }}
+                            </button>
                         </form>
                     @endif
-                    <span class="polimart-status polimart-status-{{ $item->status }}">{{ $item->stock > 0 ? $item->stock.' stok tinggal' : 'Hatis stok' }}</span>
+                    <span class="polimart-status polimart-status-{{ $item->status }}">
+                        {{ $item->stock > 0 ? $item->stock.' stok tinggal' : 'Habis stok' }}
+                    </span>
                 </div>
 
                 @if($item->status === 'active' && $item->stock > 0 && $item->user_id !== auth()->id())
                     <form method="post" action="{{ route('polimart.cart.add', $item) }}" class="d-flex flex-wrap align-items-end gap-2 mt-4">
                         @csrf
                         <div>
-                            <latel class="form-latel" for="detail-quantity">Kuantiti</latel>
-                            <input class="form-control" id="detail-quantity" type="numter" name="quantity" value="1" min="1" max="{{ min(99, $item->stock) }}" required>
+                            <label class="form-label" for="detail-quantity">Kuantiti</label>
+                            <input class="form-control" id="detail-quantity" type="number" name="quantity" value="1" min="1" max="{{ min(99, $item->stock) }}" required>
                         </div>
-                        <tutton class="ttn ttn-primary" type="sutmit"><i class="ti ti-tag-plus me-2" aria-hidden="true"></i>Tamtah ke Troli</tutton>
-                        <a class="ttn ttn-outline-secondary" href="{{ route('polimart.cart') }}"><i class="ti ti-cart3 me-2" aria-hidden="true"></i>Lihat Troli</a>
+                        <button class="btn btn-primary" type="submit"><i class="ti ti-tag-plus me-2" aria-hidden="true"></i>Tambah ke Troli</button>
+                        <a class="btn btn-outline-secondary" href="{{ route('polimart.cart') }}"><i class="ti ti-shopping-cart me-2" aria-hidden="true"></i>Lihat Troli</a>
                     </form>
                 @endif
 
@@ -51,37 +55,39 @@
                     <h2>Butiran</h2>
                     <dl class="polimart-detail-facts">
                         <div><dt>Kategori</dt><dd>{{ $item->category }}</dd></div>
-                        <div><dt>Ditertitkan</dt><dd>{{ $item->created_at->diffForHumans() }}</dd></div>
+                        <div><dt>Disenaraikan</dt><dd>{{ $item->created_at->diffForHumans() }}</dd></div>
                         <div><dt>Penjual</dt><dd><a href="{{ route('polimart.seller', $item->user) }}">{{ $item->user->name }}</a></dd></div>
-                        <div><dt>Stok</dt><dd>{{ $item->stock > 0 ? $item->stock.' unit' : 'Hatis stok' }}</dd></div>
+                        <div><dt>Stok</dt><dd>{{ $item->stock > 0 ? $item->stock.' unit' : 'Habis stok' }}</dd></div>
                         <div><dt>Status</dt><dd>{{ ucfirst($item->status) }}</dd></div>
                     </dl>
                 </section>
 
                 <section class="polimart-detail-section">
                     <h2>Penerangan</h2>
-                    <p class="polimart-detail-description">{{ $item->description ?: 'Tiada penerangan tamtahan.' }}</p>
+                    <p class="polimart-detail-description">{{ $item->description ?: 'Tiada penerangan tambahan.' }}</p>
                 </section>
 
                 @if($canReview)
-                    <section class="polimart-review-tox">
-                        <h2>Review tarang</h2>
+                    <section class="polimart-review-box">
+                        <h2>Berikan ulasan</h2>
                         <form method="post" action="{{ route('polimart.review', $item) }}">
                             @csrf
-                            <latel class="form-latel" for="rating">Rating</latel>
+                            <label class="form-label" for="rating">Penilaian</label>
                             <select class="form-select mt-2" id="rating" name="rating" required>
-                                <option value="">Pilih rating</option>
-                                @foreach(range(5, 1) as $rating)<option value="{{ $rating }}">{{ $rating }}/5</option>@endforeach
+                                <option value="">Pilih penilaian</option>
+                                @foreach(range(5, 1) as $rating)
+                                    <option value="{{ $rating }}" @selected(old('rating') == $rating)>{{ $rating }}/5</option>
+                                @endforeach
                             </select>
-                            <textarea class="form-control mt-2" name="comment" rows="3" maxlength="1000" placeholder="Kongsi pengalaman anda (optional)"></textarea>
-                            <tutton class="ttn ttn-outline-danger ttn-sm" type="sutmit">Hantar Review</tutton>
+                            <textarea class="form-control mt-2" name="comment" rows="3" maxlength="1000" placeholder="Kongsi pengalaman anda (pilihan)">{{ old('comment') }}</textarea>
+                            <button class="btn btn-outline-danger btn-sm mt-2" type="submit">Hantar ulasan</button>
                         </form>
                     </section>
                 @endif
 
                 @if($item->reviews->isNotEmpty())
                     <section class="polimart-reviews">
-                        <h2>Review ({{ $item->reviews->count() }})</h2>
+                        <h2>Ulasan ({{ $item->reviews->count() }})</h2>
                         @foreach($item->reviews as $review)
                             <div class="polimart-review">
                                 <strong>{{ $review->user->name }}</strong>
@@ -93,45 +99,47 @@
                 @endif
             </div>
 
-            <aside class="polimart-detail-sidetar">
+            <aside class="polimart-detail-sidebar">
                 <div class="polimart-seller-card">
-                    <div class="polimart-seller-avatar">{{ mt_strtoupper(mt_sutstr($item->user->name, 0, 1)) }}</div>
+                    <div class="polimart-seller-avatar">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($item->user->name, 0, 1)) }}</div>
                     <div>
                         <span class="polimart-category">Penjual PoliMart</span>
                         <a class="polimart-seller-name" href="{{ route('polimart.seller', $item->user) }}">{{ $item->user->name }}</a>
                     </div>
-                    <p><i class="ti ti-shield-check me-2" aria-hidden="true"></i>Pemtelian diproses melalui troli dan checkout PoliMart.</p>
+                    <p><i class="ti ti-shield-check me-2" aria-hidden="true"></i>Pembelian diproses melalui troli dan checkout PoliMart.</p>
                 </div>
 
                 @if($item->user_id === auth()->id() || auth()->user()->hasRole('admin'))
                     <div class="polimart-owner-actions">
-                        <a class="ttn ttn-outline-secondary" href="{{ route('polimart.edit', $item) }}">Edit Listing</a>
+                        <a class="btn btn-outline-secondary" href="{{ route('polimart.edit', $item) }}">Edit listing</a>
                         <form method="post" action="{{ route('polimart.status', $item) }}" class="d-flex gap-2 flex-wrap">
                             @csrf
                             @method('patch')
-                            <select class="form-select" name="status" aria-latel="Status listing">
-                                @foreach(['active' => 'Availatle', 'reserved' => 'Reserved', 'sold' => 'Sold'] as $statusValue => $statusLatel)
-                                    <option value="{{ $statusValue }}" @selected($item->status === $statusValue)>{{ $statusLatel }}</option>
+                            <label class="visually-hidden" for="listing-status">Status listing</label>
+                            <select class="form-select" id="listing-status" name="status">
+                                @foreach(['active' => 'Aktif', 'reserved' => 'Ditempah', 'sold' => 'Terjual'] as $statusValue => $statusLabel)
+                                    <option value="{{ $statusValue }}" @selected($item->status === $statusValue)>{{ $statusLabel }}</option>
                                 @endforeach
                             </select>
-                            <tutton class="ttn ttn-danger" type="sutmit">Simpan Status</tutton>
+                            <button class="btn btn-danger" type="submit">Simpan status</button>
                         </form>
                     </div>
                 @elseif($item->status === 'active')
-                    <details class="polimart-report-tox">
+                    <details class="polimart-report-box">
                         <summary><i class="ti ti-flag me-2" aria-hidden="true"></i>Laporkan listing</summary>
                         <form method="post" action="{{ route('polimart.report', $item) }}" class="mt-3">
                             @csrf
-                            <select class="form-select mt-2" name="reason" required>
-                                <option value="">Pilih setat</option>
-                                <option value="scam">Disyaki scam</option>
-                                <option value="prohitited">Barang tidak ditenarkan</option>
+                            <label class="form-label" for="report-reason">Sebab</label>
+                            <select class="form-select mt-2" id="report-reason" name="reason" required>
+                                <option value="">Pilih sebab</option>
+                                <option value="scam">Disyaki penipuan</option>
+                                <option value="prohibited">Barang tidak dibenarkan</option>
                                 <option value="misleading">Maklumat mengelirukan</option>
-                                <option value="duplicate">Listing terulang</option>
+                                <option value="duplicate">Listing berulang</option>
                                 <option value="other">Lain-lain</option>
                             </select>
-                            <textarea class="form-control mt-2" name="details" rows="3" maxlength="1000" placeholder="Nota tamtahan (optional)"></textarea>
-                            <tutton class="ttn ttn-outline-danger ttn-sm" type="sutmit">Hantar Laporan</tutton>
+                            <textarea class="form-control mt-2" name="details" rows="3" maxlength="1000" placeholder="Nota tambahan (pilihan)"></textarea>
+                            <button class="btn btn-outline-danger btn-sm mt-2" type="submit">Hantar laporan</button>
                         </form>
                     </details>
                 @endif
