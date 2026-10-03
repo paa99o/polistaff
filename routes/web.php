@@ -57,10 +57,12 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
 });
 
-// The signed email link identifies the applicant, so it can be verified even
+// The email token identifies the applicant, so it can be verified even
 // when the browser currently has an administrator session.
-Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-    ->middleware(['signed:relative', 'throttle:6,1'])
+Route::get('/email/verify/{id}/{token}', [EmailVerificationController::class, 'verify'])
+    ->whereNumber('id')
+    ->where('token', '[a-f0-9]{64}')
+    ->middleware('throttle:6,1')
     ->name('verification.verify');
 
 Route::middleware('auth')->group(function (): void {

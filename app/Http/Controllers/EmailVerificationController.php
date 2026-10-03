@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Throwable;
 
@@ -20,14 +21,28 @@ class EmailVerificationController extends Controller
         return view('auth.verify-email');
     }
 
-    public function verify(Request $request, int $id, string $hash): RedirectResponse
+    public function verify(Request $request, int $id, string $token): RedirectResponse
     {
         $user = User::findOrFail($id);
-        abort_unless(hash_equals(sha1($user->getEmailForVerification()), $hash), 403);
+        $verification = DB::table('email_verification_tokens')
+            ->where('user_id', $user->id)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (! $verification || ! hash_equals($verification->token_hash, hash('sha256', $token))) {
+            $destination = $request->user()
+                ? route('verification.notice')
+                : route('login');
+
+            return redirect($destination)->with('status', 'Pautan pengesahan tidak sah atau telah tamat tempoh. Minta pautan baharu untuk meneruskan.');
+        }
 
         $alreadyVerified = $user->hasVerifiedEmail();
         if (! $alreadyVerified) {
+            DB::table('email_verification_tokens')->where('user_id', $user->id)->delete();
             $user->markEmailAsVerified();
+        } else {
+            DB::table('email_verification_tokens')->where('user_id', $user->id)->delete();
         }
 
         if (! $alreadyVerified) {
