@@ -270,7 +270,6 @@ class ActivityController extends Controller
                 }
             }
 
-            $activity->feedbacks()->delete();
             $activity->delete();
         });
 
