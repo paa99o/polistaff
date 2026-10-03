@@ -6149,3 +6149,19 @@ html[data-reduce-motion="true"] :is(
     .btn,
     .btn:hover { transition: none; transform: none; }
 }
+
+/* The public navigation CTA uses its own class instead of Bootstrap .btn. */
+.public-links .public-nav-button,
+.homepage-shell .public-links .public-nav-button {
+    background: var(--button-primary);
+    border: 1px solid var(--button-primary);
+    color: #fff;
+    transition: background-color var(--motion-quick), border-color var(--motion-quick), box-shadow var(--motion-quick), transform var(--motion-quick);
+}
+
+.public-links .public-nav-button:hover,
+.homepage-shell .public-links .public-nav-button:hover {
+    background: var(--button-primary-hover);
+    border-color: var(--button-primary-hover);
+    color: #fff;
+}
