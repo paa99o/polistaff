@@ -60,7 +60,7 @@ Route::middleware('guest')->group(function (): void {
 // The signed email link identifies the applicant, so it can be verified even
 // when the browser currently has an administrator session.
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-    ->middleware(['signed', 'throttle:6,1'])
+    ->middleware(['signed:relative', 'throttle:6,1'])
     ->name('verification.verify');
 
 Route::middleware('auth')->group(function (): void {
