@@ -149,11 +149,11 @@ class ActivityController extends Controller
         $user = auth()->user();
         $canManageAttendance = $user?->hasRole('admin', 'treasurer') ?? false;
         $canGenerateQr = $user?->hasRole('treasurer') ?? false;
-
         abort_unless($activity->status === 'approved' || $activity->created_by === $user?->id || $user?->hasRole('admin', 'treasurer'), 404);
 
         $activity->loadCount(['attendances', 'activeRegistrations', 'waitlistedRegistrations']);
         $registration = $user ? $activity->registrations()->where('user_id', $user->id)->first() : null;
+        $canUploadEvidence = $activity->created_by === $user?->id;
 
         if ($canManageAttendance) {
             $activity->load('attendances.user', 'activeRegistrations.user', 'waitlistedRegistrations.user', 'guestRegistrations', 'evidencePhotos.user');
@@ -166,6 +166,7 @@ class ActivityController extends Controller
             'registration' => $registration,
             'canManageAttendance' => $canManageAttendance,
             'canGenerateQr' => $canGenerateQr,
+            'canUploadEvidence' => $canUploadEvidence,
             'timelineLogs' => $this->timelineLogs($activity),
         ]);
     }
@@ -283,8 +284,7 @@ class ActivityController extends Controller
 
     public function uploadEvidencePhotos(Request $request, Activity $activity): RedirectResponse
     {
-        $isRegistered = $activity->registrations()->where('user_id', $request->user()->id)->where('status', 'registered')->exists();
-        abort_unless($isRegistered || $request->user()->hasRole('treasurer', 'admin'), 403);
+        abort_unless($activity->created_by === $request->user()->id, 403);
         abort_unless($activity->status === 'approved' && $activity->isFinished(), 422, 'Gambar bukti hanya boleh dimuat naik selepas aktiviti tamat.');
 
         $data = $request->validate(['photos' => ['required', 'array', 'min:1', 'max:10'], 'photos.*' => ['required', 'image', 'max:8192']], [

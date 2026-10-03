@@ -65,6 +65,18 @@
                         @endforeach
                     </div>
                 @endif
+                @if($activity->status === 'approved' && $activity->isFinished() && $canUploadEvidence)
+                    <div class="card bg-light border-0 mb-4"><div class="card-body">
+                        <h2 class="h6"><i class="bi bi-camera me-2" aria-hidden="true"></i>{{ $activity->evidencePhotos->isNotEmpty() ? 'Tambah gambar aktiviti' : 'Tambah gambar aktiviti lepas' }}</h2>
+                        <p class="small text-muted">Pilih sehingga 10 gambar, maksimum 8 MB bagi setiap gambar.</p>
+                        <form method="post" action="{{ route('activities.evidence-photos', $activity) }}" enctype="multipart/form-data">
+                            @csrf
+                            <input class="form-control" type="file" name="photos[]" accept="image/*" multiple required>
+                            @include('partials.errors', ['name' => 'photos'])
+                            <button class="btn btn-sm btn-primary mt-2" type="submit"><i class="bi bi-upload me-1" aria-hidden="true"></i>Muat Naik Gambar</button>
+                        </form>
+                    </div></div>
+                @endif
 
                 <div class="row g-3 my-3">
                     <div class="col-md-4"><div class="technical-summary"><div class="stat-label">Status</div><strong>{{ \App\Support\PolistaffLabels::status($activity->status) }}</strong></div></div>
@@ -105,19 +117,6 @@
                 <div class="small text-muted mb-3">
                     Pendaftaran: {{ $activity->registration_opens_at?->format('d/m/Y h:i A') ?? 'Bila-bila masa' }} - {{ $activity->registration_closes_at?->format('d/m/Y h:i A') ?? 'Sehingga aktiviti' }}<br>
                 </div>
-
-                @if($activity->isFinished() && $isRegistered)
-                    <div class="card bg-light border-0 mb-3"><div class="card-body">
-                        <h2 class="h6">Bukti aktiviti</h2>
-                        <p class="small text-muted">Muat naik gambar semasa aktiviti telah selesai.</p>
-                        <form method="post" action="{{ route('activities.evidence-photos', $activity) }}" enctype="multipart/form-data">
-                            @csrf
-                            <input class="form-control" type="file" name="photos[]" accept="image/*" multiple required>
-                            @include('partials.errors', ['name' => 'photos'])
-                                <button class="btn btn-sm btn-primary mt-2">Muat Naik Gambar</button>
-                        </form>
-                    </div></div>
-                @endif
 
                 @if($activity->registrationIsOpen())
                     @if($isRegistered)
