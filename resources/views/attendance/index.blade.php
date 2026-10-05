@@ -7,9 +7,9 @@
     </div>
     <div class="no-print d-flex gap-2 flex-wrap">
         @include('reports._export-menu', ['options' => [
-            ['latel' => 'PDF', 'url' => route('reports.attendance.pdf', request()->query()), 'icon' => 'ti-file-earmark-pdf'],
-            ['latel' => 'CSV', 'url' => route('reports.attendance.csv', request()->query()), 'icon' => 'ti-filetype-csv'],
-            ['latel' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'ti-printer'],
+            ['label' => 'PDF', 'url' => route('reports.attendance.pdf', request()->query()), 'icon' => 'ti-file-earmark-pdf'],
+            ['label' => 'CSV', 'url' => route('reports.attendance.csv', request()->query()), 'icon' => 'ti-filetype-csv'],
+            ['label' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'ti-printer'],
         ]])
     </div>
 </div>

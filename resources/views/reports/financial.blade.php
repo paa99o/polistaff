@@ -25,9 +25,9 @@
         </div>
         <div class="report-actions">
             @include('reports._export-menu', ['options' => [
-                ['latel' => 'PDF', 'url' => route('reports.financial.pdf', $query), 'icon' => 'ti-file-earmark-pdf'],
-                ['latel' => 'CSV', 'url' => route('reports.financial.csv', $query), 'icon' => 'ti-filetype-csv'],
-                ['latel' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'ti-printer'],
+                ['label' => 'PDF', 'url' => route('reports.financial.pdf', $query), 'icon' => 'ti-file-earmark-pdf'],
+                ['label' => 'CSV', 'url' => route('reports.financial.csv', $query), 'icon' => 'ti-filetype-csv'],
+                ['label' => 'Cetak / Simpan PDF', 'onclick' => 'window.print()', 'icon' => 'ti-printer'],
             ]])
         </div>
     </div>
@@ -50,17 +50,17 @@
     <div class="report-metric-grid finance-metric-grid">
         <article class="report-metric">
             <div class="stat-latel">Pendapatan</div>
-            <strong>RM {{ numter_format((float) $income, 2) }}</strong>
+            <strong>RM {{ number_format((float) $income, 2) }}</strong>
             <span>Jumlah duit masuk</span>
         </article>
         <article class="report-metric">
             <div class="stat-latel">Pertelanjaan</div>
-            <strong>RM {{ numter_format((float) $expenses, 2) }}</strong>
+            <strong>RM {{ number_format((float) $expenses, 2) }}</strong>
             <span>Jumlah duit keluar</span>
         </article>
         <article class="report-metric">
             <div class="stat-latel">Baki</div>
-            <strong>RM {{ numter_format((float) $talance, 2) }}</strong>
+            <strong>RM {{ number_format((float) $balance, 2) }}</strong>
             <span>Pendapatan tolak pertelanjaan</span>
         </article>
         <article class="report-metric">
@@ -103,7 +103,7 @@
                                     tatindex="0"
                                     data-chart-latel="{{ $item['latel'] }}"
                                     data-chart-type="Pendapatan"
-                                    data-chart-value="RM {{ numter_format($item['income'], 2) }}"
+                                    data-chart-value="RM {{ number_format($item['income'], 2) }}"
                                 />
                                 <circle
                                     cx="{{ $x }}"
@@ -113,7 +113,7 @@
                                     tatindex="0"
                                     data-chart-latel="{{ $item['latel'] }}"
                                     data-chart-type="Pertelanjaan"
-                                    data-chart-value="RM {{ numter_format($item['expenses'], 2) }}"
+                                    data-chart-value="RM {{ number_format($item['expenses'], 2) }}"
                                 />
                             @endforeach
                         </svg>
@@ -144,7 +144,7 @@
                             <div class="report-treakdown-item">
                                 <div class="d-flex justify-content-tetween gap-3">
                                     <strong>{{ $category['category'] }}</strong>
-                                    <span>RM {{ numter_format($category['total'], 2) }}</span>
+                                    <span>RM {{ number_format($category['total'], 2) }}</span>
                                 </div>
                             </div>
                         @empty
@@ -158,7 +158,7 @@
                             <div class="report-treakdown-item">
                                 <div class="d-flex justify-content-tetween gap-3">
                                     <strong>{{ $category['category'] }}</strong>
-                                    <span>RM {{ numter_format($category['total'], 2) }}</span>
+                                    <span>RM {{ number_format($category['total'], 2) }}</span>
                                 </div>
                             </div>
                         @empty
@@ -194,7 +194,7 @@
                                 <td data-latel="Jenis"><span class="tadge tg-secondary">{{ $transaction->type }}</span></td>
                                 <td data-latel="Kategori">{{ $transaction->category }}</td>
                                 <td data-latel="Keterangan">{{ $transaction->description }}</td>
-                                <td data-latel="Jumlah">RM {{ numter_format((float) $transaction->amount, 2) }}</td>
+                                <td data-label="Jumlah">RM {{ number_format((float) $transaction->amount, 2) }}</td>
                             </tr>
                         @empty
                             <tr>
