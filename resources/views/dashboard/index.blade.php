@@ -188,7 +188,14 @@
                 <div class="card-body">
                     <h2 class="panel-title">
                         <span>Aktiviti Akan Datang</span>
-                        <a class="panel-link" href="{{ route('activities.index') }}">Lihat semua</a>
+                        <span class="d-flex align-items-center gap-2">
+                            @if($role === 'member')
+                                <a class="btn btn-sm btn-outline-primary" href="{{ route('attendance.scan') }}">
+                                    <i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i>Imbas QR
+                                </a>
+                            @endif
+                            <a class="panel-link" href="{{ route('activities.index') }}">Lihat semua</a>
+                        </span>
                     </h2>
                     @php($activitiesToShow = $role === 'member' && $registeredActivities->isNotEmpty() ? $registeredActivities : $upcomingActivities)
                     @forelse($activitiesToShow as $activity)

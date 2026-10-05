@@ -96,13 +96,16 @@
                         </div>
                     @endif
 
-                    <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('attendance.index') ? 'active' : '' }}">
+                    <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('attendance.*') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Pengurusan</button>
                         <div class="mega-menu mega-menu-wide">
                             <a class="mega-menu-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.show') }}">
                                 <i class="bi bi-person" aria-hidden="true"></i><span>Profil Saya</span>
                             </a>
                             @if($canUseMemberFeatures)
+                                <a class="mega-menu-link {{ request()->routeIs('attendance.scan') ? 'active' : '' }}" href="{{ route('attendance.scan') }}">
+                                    <i class="bi bi-qr-code-scan" aria-hidden="true"></i><span>Imbas QR Kehadiran</span>
+                                </a>
                                 <a class="mega-menu-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
                                     <i class="bi bi-bell" aria-hidden="true"></i><span>Notifikasi</span>
                                 </a>
