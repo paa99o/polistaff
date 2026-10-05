@@ -96,6 +96,8 @@ class PaymentSubmissionController extends Controller
 
     public function statement(Request $request, MonthlyFeeService $monthlyFeeService): View
     {
+        abort_unless($request->user()->hasRole('member'), 403);
+
         $user = $request->user();
         $monthlyFeeService->ensureThrough($user);
 
@@ -258,6 +260,7 @@ class PaymentSubmissionController extends Controller
 
     public function resubmit(Request $request, PaymentSubmission $payment): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('member'), 403);
         abort_unless($payment->user_id === $request->user()->id, 403);
         abort_unless($payment->status === 'rejected', 422, 'Hanya bayaran yang ditolak boleh dihantar semula.');
 
@@ -308,6 +311,7 @@ class PaymentSubmissionController extends Controller
 
     public function cancel(Request $request, PaymentSubmission $payment): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('member'), 403);
         abort_unless($payment->user_id === $request->user()->id, 403);
         abort_unless($payment->status === 'pending', 422, 'Hanya bayaran yang masih menunggu semakan boleh dibatalkan.');
 

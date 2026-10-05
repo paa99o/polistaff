@@ -66,6 +66,8 @@ class ActivityRegistrationController extends Controller
 
     public function store(Request $request, Activity $activity): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('member'), 403);
+
         [$registration, $status] = DB::transaction(function () use ($activity, $request): array {
             $lockedActivity = Activity::query()->lockForUpdate()->findOrFail($activity->id);
             abort_unless($lockedActivity->registrationIsOpen(), 422, 'Pendaftaran aktiviti belum dibuka atau sudah ditutup.');
@@ -88,6 +90,8 @@ class ActivityRegistrationController extends Controller
 
     public function destroy(Request $request, Activity $activity): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('member'), 403);
+
         [$registration, $promoted] = DB::transaction(function () use ($request, $activity): array {
             $lockedActivity = Activity::query()->lockForUpdate()->findOrFail($activity->id);
             $registration = ActivityRegistration::where('user_id', $request->user()->id)

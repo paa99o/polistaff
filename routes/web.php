@@ -142,11 +142,11 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:treasurer')->name('activities.refresh-qr');
     Route::post('/activities/{activity}/evidence-photos', [ActivityController::class, 'uploadEvidencePhotos'])->name('activities.evidence-photos');
     Route::get('/activities/{activity}/attendance-status', [ActivityController::class, 'attendanceStatus'])->middleware('role:admin,treasurer')->name('activities.attendance-status');
-    Route::post('/activities/{activity}/register', [ActivityRegistrationController::class, 'store'])->name('activities.register');
-    Route::delete('/activities/{activity}/register', [ActivityRegistrationController::class, 'destroy'])->name('activities.unregister');
+    Route::post('/activities/{activity}/register', [ActivityRegistrationController::class, 'store'])->middleware('role:member')->name('activities.register');
+    Route::delete('/activities/{activity}/register', [ActivityRegistrationController::class, 'destroy'])->middleware('role:member')->name('activities.unregister');
     Route::get('/attendance', [AttendanceController::class, 'index'])->middleware('role:admin,treasurer')->name('attendance.index');
-    Route::get('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
-    Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
+    Route::get('/attendance/scan', [AttendanceController::class, 'scan'])->middleware('role:member')->name('attendance.scan');
+    Route::post('/attendance/store', [AttendanceController::class, 'store'])->middleware('role:member')->name('attendance.store');
     Route::post('/activities/{activity}/attendance/{registration}', [AttendanceController::class, 'storeForRegistration'])->middleware('role:admin,treasurer')->name('activities.attendance.store');
 
     Route::resource('transactions', TransactionController::class)
@@ -179,13 +179,13 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/claims/{claim}/history', [ExpenseClaimController::class, 'destroyHistory'])->middleware('role:treasurer')->name('claims.history.destroy');
 
     Route::get('/payments', [PaymentSubmissionController::class, 'index'])->name('payments.index');
-    Route::get('/payments/statement', [PaymentSubmissionController::class, 'statement'])->name('payments.statement');
-    Route::get('/payments/create', [PaymentSubmissionController::class, 'create'])->name('payments.create');
-    Route::post('/payments', [PaymentSubmissionController::class, 'store'])->name('payments.store');
+    Route::get('/payments/statement', [PaymentSubmissionController::class, 'statement'])->middleware('role:member')->name('payments.statement');
+    Route::get('/payments/create', [PaymentSubmissionController::class, 'create'])->middleware('role:member')->name('payments.create');
+    Route::post('/payments', [PaymentSubmissionController::class, 'store'])->middleware('role:member')->name('payments.store');
     Route::get('/payments/{payment}', [PaymentSubmissionController::class, 'show'])->name('payments.show');
     Route::get('/payments/{payment}/proof', [PaymentSubmissionController::class, 'proof'])->name('payments.proof');
-    Route::post('/payments/{payment}/resubmit', [PaymentSubmissionController::class, 'resubmit'])->name('payments.resubmit');
-    Route::delete('/payments/{payment}/cancel', [PaymentSubmissionController::class, 'cancel'])->name('payments.cancel');
+    Route::post('/payments/{payment}/resubmit', [PaymentSubmissionController::class, 'resubmit'])->middleware('role:member')->name('payments.resubmit');
+    Route::delete('/payments/{payment}/cancel', [PaymentSubmissionController::class, 'cancel'])->middleware('role:member')->name('payments.cancel');
     Route::patch('/payments/{payment}/approve', [PaymentSubmissionController::class, 'approve'])->middleware('role:treasurer,admin')->name('payments.approve');
     Route::patch('/payments/{payment}/reject', [PaymentSubmissionController::class, 'reject'])->middleware('role:treasurer,admin')->name('payments.reject');
     Route::delete('/payments/{payment}/history', [PaymentSubmissionController::class, 'destroyHistory'])->middleware('role:treasurer')->name('payments.history.destroy');

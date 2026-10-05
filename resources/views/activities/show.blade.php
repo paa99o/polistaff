@@ -118,31 +118,33 @@
                     Pendaftaran: {{ $activity->registration_opens_at?->format('d/m/Y h:i A') ?? 'Bila-bila masa' }} - {{ $activity->registration_closes_at?->format('d/m/Y h:i A') ?? 'Sehingga aktiviti' }}<br>
                 </div>
 
-                @if($activity->registrationIsOpen())
-                    @if($isRegistered)
-                        <div class="alert alert-success">Anda sudah berdaftar untuk aktiviti ini.</div>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <form method="post" action="{{ route('activities.unregister', $activity) }}" data-confirm="Batalkan pendaftaran aktiviti ini?">
+                @if(auth()->user()->hasRole('member'))
+                    @if($activity->registrationIsOpen())
+                        @if($isRegistered)
+                            <div class="alert alert-success">Anda sudah berdaftar untuk aktiviti ini.</div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <form method="post" action="{{ route('activities.unregister', $activity) }}" data-confirm="Batalkan pendaftaran aktiviti ini?">
+                                    @csrf
+                                    @method('delete')
+                                    <button class="btn btn-outline-secondary">Batalkan Pendaftaran</button>
+                                </form>
+                            </div>
+                        @elseif($isWaitlisted)
+                            <div class="alert alert-info">Anda berada dalam senarai menunggu. Anda akan dimaklumkan jika terdapat kekosongan.</div>
+                            <form method="post" action="{{ route('activities.unregister', $activity) }}" data-confirm="Keluar daripada senarai menunggu aktiviti ini?">
                                 @csrf
                                 @method('delete')
-                                <button class="btn btn-outline-secondary">Batalkan Pendaftaran</button>
+                                <button class="btn btn-outline-secondary">Keluar Senarai Menunggu</button>
                             </form>
-                        </div>
-                    @elseif($isWaitlisted)
-                        <div class="alert alert-info">Anda berada dalam senarai menunggu. Anda akan dimaklumkan jika terdapat kekosongan.</div>
-                        <form method="post" action="{{ route('activities.unregister', $activity) }}" data-confirm="Keluar daripada senarai menunggu aktiviti ini?">
-                            @csrf
-                            @method('delete')
-                            <button class="btn btn-outline-secondary">Keluar Senarai Menunggu</button>
-                        </form>
+                        @else
+                            <form method="post" action="{{ route('activities.register', $activity) }}">
+                                @csrf
+                                <button class="btn btn-primary">{{ $activity->hasCapacity() ? 'Daftar Aktiviti' : 'Sertai Senarai Menunggu' }}</button>
+                            </form>
+                        @endif
                     @else
-                        <form method="post" action="{{ route('activities.register', $activity) }}">
-                            @csrf
-                            <button class="btn btn-primary">{{ $activity->hasCapacity() ? 'Daftar Aktiviti' : 'Sertai Senarai Menunggu' }}</button>
-                        </form>
+                        <div class="alert alert-danger mb-0">Pendaftaran belum dibuka atau sudah ditutup.</div>
                     @endif
-                @else
-                    <div class="alert alert-danger mb-0">Pendaftaran belum dibuka atau sudah ditutup.</div>
                 @endif
             </div>
         </div>

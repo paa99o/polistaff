@@ -25,13 +25,17 @@ class AttendanceController extends Controller
         return view('attendance.index', ['attendances' => $attendances]);
     }
 
-    public function scan(): View
+    public function scan(Request $request): View
     {
+        abort_unless($request->user()->hasRole('member'), 403);
+
         return view('attendance.scan');
     }
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('member'), 403);
+
         $data = $request->validate(['token' => ['required', 'string']]);
         $activity = Activity::where('qr_code_token', $data['token'])->firstOrFail();
 
@@ -44,7 +48,7 @@ class AttendanceController extends Controller
             ->where('status', 'registered')
             ->exists();
 
-        if (! $isRegistered && ! $request->user()->hasRole('admin', 'treasurer')) {
+        if (! $isRegistered) {
             return redirect()->route('activities.show', $activity)->withErrors(['token' => 'Sila daftar aktiviti dahulu sebelum rekod kehadiran.']);
         }
 
