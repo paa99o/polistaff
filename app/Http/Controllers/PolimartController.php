@@ -51,6 +51,8 @@ class PolimartController extends Controller
         $mine = $request->boolean('mine');
         $favorites = $request->boolean('favorites');
 
+        abort_unless(! $mine || $request->user()?->hasRole('admin'), 403);
+
         $itemsQuery = PolimartItem::with('user')
             ->when(! $mine, fn ($query) => $query->where('status', 'active'))
             ->when($mine, fn ($query) => $query->where('user_id', $request->user()->id))
@@ -374,6 +376,8 @@ class PolimartController extends Controller
 
     public function paymentSettings(Request $request): View
     {
+        abort_unless($request->user()->hasRole('admin'), 403);
+
         return view('polimart.payment-settings', [
             'paymentProfile' => $request->user()->polimartSellerPaymentProfile,
         ]);
@@ -381,6 +385,8 @@ class PolimartController extends Controller
 
     public function updatePaymentSettings(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('admin'), 403);
+
         $profile = $request->user()->polimartSellerPaymentProfile;
         $data = $request->validate([
             'qr_code' => ['nullable', 'image', 'max:4096'],
@@ -509,6 +515,8 @@ class PolimartController extends Controller
 
     public function create(): View
     {
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
+
         return view('polimart.create');
     }
 
@@ -574,6 +582,8 @@ class PolimartController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('admin'), 403);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:120'],
@@ -678,7 +688,7 @@ class PolimartController extends Controller
 
     private function authorizeListing(PolimartItem $polimartItem): void
     {
-        abort_unless($polimartItem->user_id === auth()->id() || auth()->user()->hasRole('admin'), 403);
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
     }
 
     private function buyerCanReview(User $user, PolimartItem $item): bool

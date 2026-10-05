@@ -109,7 +109,7 @@
                     <p><i class="ti ti-shield-check me-2" aria-hidden="true"></i>Pembelian diproses melalui troli dan checkout PoliMart.</p>
                 </div>
 
-                @if($item->user_id === auth()->id() || auth()->user()->hasRole('admin'))
+                @if(auth()->user()->hasRole('admin'))
                     <div class="polimart-owner-actions">
                         <a class="btn btn-outline-secondary" href="{{ route('polimart.edit', $item) }}">Edit listing</a>
                         <form method="post" action="{{ route('polimart.status', $item) }}" class="d-flex gap-2 flex-wrap">

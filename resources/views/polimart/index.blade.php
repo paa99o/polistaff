@@ -6,18 +6,18 @@
         <aside class="polimart-start-card">
             <span class="stat-icon"><i class="bi bi-bag-plus" aria-hidden="true"></i></span>
             <p class="polimart-start-kicker">POLIMART</p>
-            <h2>Beli. Jual. Cari.</h2>
+            <h2>{{ auth()->user()->hasRole('admin') ? 'Beli. Jual. Cari.' : 'Beli. Cari.' }}</h2>
             <p>Barang menarik, semuanya di sini.</p>
-            @if(auth()->user()->hasRole('member', 'admin'))
+            @if(auth()->user()->hasRole('admin'))
                 <a class="btn btn-primary w-100" href="{{ route('polimart.create') }}">Mula Jual</a>
+                <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.index', ['mine' => 1]) }}">
+                    <i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Listing Saya
+                </a>
             @endif
-            <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.index', ['mine' => 1]) }}">
-                <i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Listing Saya
-            </a>
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.favorites') }}">
                 <i class="bi bi-heart me-2" aria-hidden="true"></i>Favorite Saya
             </a>
-            @if(auth()->user()->hasRole('member', 'admin'))
+            @if(auth()->user()->hasRole('admin'))
                 <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.payment-settings') }}">
                     <i class="bi bi-credit-card me-2" aria-hidden="true"></i>Maklumat Bayaran Saya
                 </a>
@@ -111,7 +111,7 @@
                                 <a href="{{ route('polimart.seller', $item->user) }}"><i class="bi bi-person" aria-hidden="true"></i>{{ $item->user->name }}</a>
                                 <span><i class="bi bi-telephone" aria-hidden="true"></i>{{ $item->contact }}</span>
                             </div>
-                            @if($item->user_id === auth()->id() || auth()->user()->hasRole('admin'))
+                            @if(auth()->user()->hasRole('admin'))
                                 <div class="d-flex gap-2 mt-3">
                                     <a class="btn btn-sm btn-outline-secondary flex-fill" href="{{ route('polimart.edit', $item) }}">Edit</a>
                                     <a class="btn btn-sm btn-outline-secondary flex-fill" href="{{ route('polimart.show', $item) }}">Urus</a>
@@ -128,8 +128,10 @@
                     <div class="polimart-empty">
                         <i class="bi bi-shop" aria-hidden="true"></i>
                         @if($mine)
-                            <p>Anda belum ada listing. Mula jual barang pertama anda.</p>
-                            <a class="btn btn-primary" href="{{ route('polimart.create') }}">Jual Barang</a>
+                            <p>Anda belum ada listing.</p>
+                            @if(auth()->user()->hasRole('admin'))
+                                <a class="btn btn-primary" href="{{ route('polimart.create') }}">Jual Barang</a>
+                            @endif
                         @elseif($favorites)
                             <p>Anda belum simpan mana-mana listing.</p>
                             <a class="btn btn-outline-primary" href="{{ route('polimart.index') }}">Cari Barang</a>

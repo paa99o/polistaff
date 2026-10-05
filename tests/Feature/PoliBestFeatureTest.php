@@ -1242,12 +1242,58 @@ class PoliBestFeatureTest extends TestCase
         $this->assertDatabaseHas('payment_submissions', ['id' => $payment->id, 'status' => 'cancelled']);
     }
 
-    public function test_staff_can_create_polimart_listing(): void
+    public function test_staff_cannot_create_polimart_listing_or_access_seller_controls(): void
     {
         Storage::fake('public');
         $user = User::factory()->create(['phone' => '0123456789']);
 
-        $this->actingAs($user)->post(route('polimart.store'), [
+        $this->actingAs($user)->get(route('polimart.index'))
+            ->assertOk()
+            ->assertDontSee('Mula Jual')
+            ->assertDontSee('Listing Saya')
+            ->assertDontSee('Maklumat Bayaran Saya')
+            ->assertDontSee('Urus Pesanan Saya');
+        $this->get(route('admin.polimart.orders'))->assertForbidden();
+        $this->get(route('polimart.index', ['mine' => 1]))->assertForbidden();
+        $this->get(route('polimart.create'))->assertForbidden();
+        $this->get(route('polimart.payment-settings'))->assertForbidden();
+        $this->put(route('polimart.payment-settings.update'), [])->assertForbidden();
+        $this->get(route('admin.polimart.orders'))->assertForbidden();
+        $this->post(route('polimart.store'), [
+            'name' => 'Kuih Raya',
+            'category' => 'Makanan',
+            'price' => 25,
+            'stock' => 1,
+            'contact' => '0123456789',
+            'description' => 'Balang sederhana untuk pickup di pejabat.',
+            'image' => UploadedFile::fake()->image('kuih-raya.jpg'),
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('polimart_items', ['name' => 'Kuih Raya']);
+
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $this->actingAs($treasurer)->get(route('polimart.index'))
+            ->assertOk()
+            ->assertDontSee('Mula Jual')
+            ->assertDontSee('Listing Saya')
+            ->assertDontSee('Maklumat Bayaran Saya');
+        $this->get(route('polimart.create'))->assertForbidden();
+        $this->get(route('polimart.payment-settings'))->assertForbidden();
+        $this->post(route('polimart.store'), [])->assertForbidden();
+    }
+
+    public function test_admin_can_create_polimart_listing(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get(route('polimart.index'))
+            ->assertOk()
+            ->assertSee('Mula Jual')
+            ->assertSee('Listing Saya')
+            ->assertSee('Maklumat Bayaran Saya');
+        $this->get(route('polimart.create'))->assertOk();
+        $this->post(route('polimart.store'), [
             'name' => 'Kuih Raya',
             'category' => 'Makanan',
             'price' => 25,
@@ -1257,9 +1303,8 @@ class PoliBestFeatureTest extends TestCase
             'image' => UploadedFile::fake()->image('kuih-raya.jpg'),
         ])->assertRedirect();
 
-        $item = PolimartItem::where('name', 'Kuih Raya')->first();
-        $this->assertNotNull($item);
-        $this->assertSame($user->id, $item->user_id);
+        $item = PolimartItem::where('name', 'Kuih Raya')->firstOrFail();
+        $this->assertSame($admin->id, $item->user_id);
         Storage::disk('public')->assertExists($item->image_path);
     }
 
@@ -1502,7 +1547,7 @@ class PoliBestFeatureTest extends TestCase
     public function test_seller_can_save_payment_qr_and_bank_details(): void
     {
         Storage::fake('public');
-        $seller = User::factory()->create();
+        $seller = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($seller)->put(route('polimart.payment-settings.update'), [
             'qr_code' => UploadedFile::fake()->image('bayaran.png'),
@@ -1530,13 +1575,14 @@ class PoliBestFeatureTest extends TestCase
 
     public function test_only_listing_owner_or_admin_can_edit_or_delete_polimart_listing(): void
     {
-        $seller = User::factory()->create();
+        $seller = User::factory()->create(['role' => 'admin']);
         $other = User::factory()->create();
         $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'contact' => '0123456789', 'status' => 'active']);
 
         $this->actingAs($other)->get(route('polimart.edit', $item))->assertForbidden();
         $this->actingAs($other)->put(route('polimart.update', $item), [])->assertForbidden();
         $this->actingAs($other)->delete(route('polimart.destroy', $item))->assertForbidden();
+        $this->actingAs($other)->patch(route('polimart.status', $item), ['status' => 'sold'])->assertForbidden();
         $this->actingAs($seller)->get(route('polimart.edit', $item))->assertOk();
     }
 
@@ -1552,7 +1598,7 @@ class PoliBestFeatureTest extends TestCase
     public function test_seller_can_replace_and_delete_polimart_listing_image(): void
     {
         Storage::fake('public');
-        $seller = User::factory()->create();
+        $seller = User::factory()->create(['role' => 'admin']);
         $oldPath = UploadedFile::fake()->image('old.jpg')->store('polimart-items', 'public');
         $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'contact' => '0123456789', 'image_path' => $oldPath, 'status' => 'active']);
 
