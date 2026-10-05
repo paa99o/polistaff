@@ -19,7 +19,7 @@
                     <dt class="col-sm-4">Dokumen</dt><dd class="col-sm-8"><a href="{{ route('claims.receipt', $claim) }}" target="_blank">Lihat Dokumen</a></dd>
                     <dt class="col-sm-4">Transaksi</dt><dd class="col-sm-8">@if($claim->transaction)<a href="{{ route('transactions.show', $claim->transaction) }}">{{ $claim->transaction->receipt_number }}</a>@else - @endif</dd>
                 </dl>
-                @if(auth()->id() === $claim->user_id && $claim->status === 'pending')
+                @if(auth()->user()->hasRole('member') && auth()->id() === $claim->user_id && $claim->status === 'pending')
                     <div class="d-flex gap-2 flex-wrap">
                     <a class="btn btn-outline-secondary" href="{{ route('claims.edit', $claim) }}">Ubah Tuntutan</a>
                         <form method="post" action="{{ route('claims.destroy', $claim) }}" data-confirm="Batalkan tuntutan ini? Rekod tuntutan akan dipadam.">
@@ -28,7 +28,7 @@
                             <button class="btn btn-outline-secondary" type="submit">Padam Tuntutan</button>
                         </form>
                     </div>
-                @elseif(auth()->id() === $claim->user_id && $claim->status === 'rejected')
+                @elseif(auth()->user()->hasRole('member') && auth()->id() === $claim->user_id && $claim->status === 'rejected')
                     <a class="btn btn-primary" href="{{ route('claims.resubmit.form', $claim) }}">Hantar Semula Tuntutan</a>
                 @endif
             </div>

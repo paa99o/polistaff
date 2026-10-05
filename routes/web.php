@@ -163,15 +163,19 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/reports/activities/{activity}/attendance.csv', [ReportController::class, 'activityAttendanceCsv'])->name('reports.activities.attendance.csv');
     Route::get('/reports/activities/{activity}/report.pdf', [ReportController::class, 'activityReportPdf'])->name('reports.activities.pdf');
 
-    Route::resource('claims', ExpenseClaimController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
-    Route::resource('donations', DonationController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('claims', ExpenseClaimController::class)
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'])
+        ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'role:member');
+    Route::resource('donations', DonationController::class)
+        ->only(['index', 'create', 'store', 'show'])
+        ->middlewareFor(['create', 'store'], 'role:member');
     Route::get('/donations/{donation}/paperwork', [DonationController::class, 'paperwork'])->name('donations.paperwork');
     Route::patch('/donations/{donation}/verify', [DonationController::class, 'verify'])->middleware('role:treasurer,admin')->name('donations.verify');
     Route::patch('/donations/{donation}/approve', [DonationController::class, 'approve'])->middleware('role:admin')->name('donations.approve');
     Route::patch('/donations/{donation}/reject', [DonationController::class, 'reject'])->middleware('role:admin')->name('donations.reject');
     Route::delete('/donations/{donation}/history', [DonationController::class, 'destroyHistory'])->middleware('role:treasurer')->name('donations.history.destroy');
-    Route::get('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmitForm'])->name('claims.resubmit.form');
-    Route::post('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmit'])->name('claims.resubmit');
+    Route::get('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmitForm'])->middleware('role:member')->name('claims.resubmit.form');
+    Route::post('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmit'])->middleware('role:member')->name('claims.resubmit');
     Route::get('/claims/{claim}/receipt', [ExpenseClaimController::class, 'receipt'])->name('claims.receipt');
     Route::patch('/claims/{claim}/verify', [ExpenseClaimController::class, 'verify'])->middleware('role:treasurer,admin')->name('claims.verify');
     Route::patch('/claims/{claim}/approve', [ExpenseClaimController::class, 'approve'])->middleware('role:admin')->name('claims.approve');

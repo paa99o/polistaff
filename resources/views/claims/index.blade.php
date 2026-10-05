@@ -21,7 +21,9 @@
         <h1 class="h3 mb-0">Tuntutan Perbelanjaan</h1>
         <p class="text-muted mb-0">Hantar tuntutan dan semak status kelulusan.</p>
     </div>
-    <a class="btn btn-primary" href="{{ route('claims.create') }}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Buat Tuntutan</a>
+    @if($user->hasRole('member'))
+        <a class="btn btn-primary" href="{{ route('claims.create') }}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Buat Tuntutan</a>
+    @endif
 </div>
 
 <div class="card">

@@ -10,7 +10,9 @@
 @endphp
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div><p class="dashboard-kicker mb-1">Kewangan kelab</p><h1 class="h3 mb-0">Sumbangan</h1><p class="text-muted mb-0">Mohon bantuan sumbangan dan semak status kelulusan.</p></div>
-    <a class="btn btn-primary" href="{{ route('donations.create') }}"><i class="bi bi-heart me-2" aria-hidden="true"></i>Mohon Sumbangan</a>
+    @if($user->hasRole('member'))
+        <a class="btn btn-primary" href="{{ route('donations.create') }}"><i class="bi bi-heart me-2" aria-hidden="true"></i>Mohon Sumbangan</a>
+    @endif
 </div>
 <div class="card"><div class="table-responsive"><table class="table mobile-records align-middle mb-0"><thead><tr><th>Jenis Sumbangan</th><th>Ahli</th><th>Had Bendahari</th><th>Amaun Diluluskan</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
 @forelse($donations as $donation)<tr><td data-label="Jenis"><strong>{{ $donation->category }}</strong><div class="small text-muted">{{ $donation->request_date->format('d/m/Y') }}</div></td><td data-label="Ahli">{{ $donation->user->name }}</td><td data-label="Had">{{ $donation->limit_amount !== null ? 'RM '.number_format((float) $donation->limit_amount, 2) : '-' }}</td><td data-label="Amaun">{{ $donation->amount !== null ? 'RM '.number_format((float) $donation->amount, 2) : '-' }}</td><td data-label="Status"><span class="badge bg-secondary">{{ $labels[$donation->status] ?? $donation->status }}</span></td><td data-label="Tindakan"><div class="d-flex flex-wrap gap-2">

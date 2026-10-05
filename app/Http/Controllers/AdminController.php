@@ -28,7 +28,7 @@ class AdminController extends Controller
             'pendingClaims' => ExpenseClaim::whereIn('status', ['pending', 'treasurer_verified'])->count(),
             'pendingActivities' => Activity::whereIn('status', ['pending_approval', 'treasurer_verified'])->count(),
             'incompleteProfiles' => User::profileIncomplete()->count(),
-            'outstandingFees' => User::where('membership_status', 'active')->sum('fee_balance'),
+            'outstandingFees' => User::where('role', 'member')->where('membership_status', 'active')->sum('fee_balance'),
             'upcomingActivities' => Activity::where('status', 'approved')->where('date_time', '>=', now())->orderBy('date_time')->limit(4)->get(),
             'recentAuditLogs' => AuditLog::with('user')->latest()->limit(5)->get(),
             'queuedJobs' => DB::table('jobs')->count(),
@@ -150,7 +150,6 @@ class AdminController extends Controller
             ->merge(DB::table('payment_submissions')->where('user_id', $user->id)->pluck('proof_path'))
             ->merge(DB::table('expense_claims')->where('user_id', $user->id)->pluck('receipt_path'))
             ->merge(DB::table('donations')->where('user_id', $user->id)->pluck('paperwork_path'))
-            ->merge(DB::table('member_documents')->where('user_id', $user->id)->pluck('file_path'))
             ->filter()
             ->unique()
             ->values()

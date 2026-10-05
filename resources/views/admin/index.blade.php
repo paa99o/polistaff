@@ -33,7 +33,7 @@
             <strong>{{ $pendingPayments }}</strong>
             <span>Bukti bayaran perlu disemak</span>
         </a>
-        <a class="admin-stat-card" href="{{ route('payments.statement') }}">
+        <a class="admin-stat-card" href="{{ route('finance.fees.index') }}">
             <span class="admin-stat-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
             <span class="stat-label">Tunggakan Yuran</span>
             <strong>RM {{ number_format((float) $outstandingFees, 2) }}</strong>
