@@ -51,6 +51,15 @@
                         @include('partials.errors', ['name' => 'treasurer_notes'])
                         <button class="btn btn-primary w-100">Sahkan sebagai Bendahari</button>
                     </form>
+
+                    <form method="post" action="{{ route('claims.reject', $claim) }}" data-confirm="Tolak tuntutan ini? Emel akan dihantar kepada ahli.">
+                        @csrf
+                        @method('patch')
+                        <label class="form-label" for="treasurer_reject_review_notes">Sebab Ditolak</label>
+                        <textarea class="form-control @error('review_notes') is-invalid @enderror mb-2" id="treasurer_reject_review_notes" name="review_notes" rows="3" required placeholder="Sebab tuntutan ditolak">{{ old('review_notes') }}</textarea>
+                        @include('partials.errors', ['name' => 'review_notes'])
+                        <button class="btn btn-outline-secondary w-100">Tolak Tuntutan</button>
+                    </form>
                 @endif
 
                 @if(auth()->user()->hasRole('admin') && $claim->status === 'treasurer_verified')

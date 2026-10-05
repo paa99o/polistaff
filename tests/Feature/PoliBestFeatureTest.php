@@ -1817,6 +1817,27 @@ class PoliBestFeatureTest extends TestCase
         ]);
     }
 
+    public function test_treasurer_claim_details_offer_both_verification_and_rejection_actions(): void
+    {
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $member = User::factory()->create();
+        $claim = ExpenseClaim::create([
+            'user_id' => $member->id,
+            'title' => 'Tuntutan semakan bendahari',
+            'amount' => 30,
+            'category' => 'Aktiviti',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/test.pdf',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($treasurer)->get(route('claims.show', $claim))
+            ->assertOk()
+            ->assertSee('Sahkan sebagai Bendahari')
+            ->assertSee('Tolak Tuntutan')
+            ->assertSee('Sebab Ditolak');
+    }
+
     public function test_chairman_can_reject_expense_claim_and_email_member(): void
     {
         Mail::fake();
