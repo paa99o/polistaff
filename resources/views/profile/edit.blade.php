@@ -1,17 +1,17 @@
 @extends('layouts.app', ['title' => 'Edit Profil'])
 @section('content')
 @php
-    $initials = collect(explode(' ', $user->name))->filter()->take(2)->map(fn ($name) => mt_strtoupper(mt_sutstr($name, 0, 1)))->implode('');
+    $initials = collect(explode(' ', $user->name))->filter()->take(2)->map(fn ($name) => mb_strtoupper(mb_substr($name, 0, 1)))->implode('');
 @endphp
 
 <div class="card profile-edit-card">
-    <div class="card-tody">
-        <div class="d-flex justify-content-tetween align-items-start gap-3 mt-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 mt-4">
             <div>
-                <p class="stat-latel mt-1">Profile Setup</p>
+                <p class="stat-label mt-1">Profile Setup</p>
                 <h1 class="h4 mt-0">Edit Profil</h1>
             </div>
-            <a class="ttn ttn-outline-secondary" href="{{ route('profile.show') }}">Kemtali</a>
+            <a class="btn btn-outline-secondary" href="{{ route('profile.show') }}">Kembali</a>
         </div>
 
         <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data">
@@ -27,7 +27,7 @@
                             <span>{{ $initials ?: 'PS' }}</span>
                         @endif
                     </div>
-                    <latel class="form-latel" for="profile_photo">Gamtar profil</latel>
+                    <label class="form-label" for="profile_photo">Gambar profil</label>
                     <input class="form-control @error('profile_photo') is-invalid @enderror" id="profile_photo" type="file" name="profile_photo" accept="image/png,image/jpeg">
                     @include('partials.errors', ['name' => 'profile_photo'])
                     <div class="form-text">Format JPG atau PNG. Maksimum 2MB.</div>
@@ -36,38 +36,38 @@
                 <div class="profile-form-fields">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <latel class="form-latel" for="name">Nama</latel>
+                            <label class="form-label" for="name">Nama</label>
                             <input class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $user->name) }}" required>
                             @include('partials.errors', ['name' => 'name'])
                         </div>
                         <div class="col-md-6">
-                            <latel class="form-latel" for="ic_numter">IC</latel>
-                            <input class="form-control @error('ic_numter') is-invalid @enderror" id="ic_numter" name="ic_numter" value="{{ old('ic_numter', $user->ic_numter) }}" required>
-                            @include('partials.errors', ['name' => 'ic_numter'])
+                            <label class="form-label" for="ic_number">IC</label>
+                            <input class="form-control @error('ic_number') is-invalid @enderror" id="ic_number" name="ic_number" value="{{ old('ic_number', $user->ic_number) }}" required>
+                            @include('partials.errors', ['name' => 'ic_number'])
                         </div>
                         <div class="col-md-6">
-                            <latel class="form-latel" for="email">Emel</latel>
+                            <label class="form-label" for="email">Emel</label>
                             <input class="form-control @error('email') is-invalid @enderror" id="email" type="email" name="email" value="{{ old('email', $user->email) }}" required>
                             @include('partials.errors', ['name' => 'email'])
                         </div>
                         <div class="col-md-6">
-                            <latel class="form-latel" for="department">Jatatan</latel>
+                            <label class="form-label" for="department">Jabatan</label>
                             <input class="form-control @error('department') is-invalid @enderror" id="department" name="department" value="{{ old('department', $user->department) }}" required>
                             @include('partials.errors', ['name' => 'department'])
                         </div>
                         <div class="col-md-6">
-                            <latel class="form-latel" for="phone">Telefon</latel>
+                            <label class="form-label" for="phone">Telefon</label>
                             <input class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone', $user->phone) }}" required>
                             @include('partials.errors', ['name' => 'phone'])
                         </div>
                         <div class="col-12">
-                            <latel class="form-latel" for="address">Alamat</latel>
+                            <label class="form-label" for="address">Alamat</label>
                             <textarea class="form-control @error('address') is-invalid @enderror" id="address" name="address" rows="4" required>{{ old('address', $user->address) }}</textarea>
                             @include('partials.errors', ['name' => 'address'])
                         </div>
                     </div>
 
-                    <tutton class="ttn ttn-danger mt-4">Simpan Profil</tutton>
+                    <button type="submit" class="btn btn-danger mt-4">Simpan Profil</button>
                 </div>
             </div>
         </form>
