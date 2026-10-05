@@ -17,6 +17,9 @@
             <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.favorites') }}">
                 <i class="bi bi-heart me-2" aria-hidden="true"></i>Favorite Saya
             </a>
+            <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.my-orders') }}">
+                <i class="bi bi-bag-check me-2" aria-hidden="true"></i>Belian Saya
+            </a>
             @if(auth()->user()->hasRole('admin'))
                 <a class="btn btn-outline-secondary w-100 mt-2" href="{{ route('polimart.payment-settings') }}">
                     <i class="bi bi-credit-card me-2" aria-hidden="true"></i>Maklumat Bayaran Saya

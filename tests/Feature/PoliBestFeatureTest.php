@@ -1320,6 +1320,18 @@ class PoliBestFeatureTest extends TestCase
             ->assertDontSee('Lampu Meja');
     }
 
+    public function test_belian_saya_link_is_inside_the_polimart_card_only(): void
+    {
+        $member = User::factory()->create();
+
+        $response = $this->actingAs($member)->get(route('polimart.index'))
+            ->assertOk()
+            ->assertSee('Belian Saya')
+            ->assertSee(route('polimart.my-orders'));
+
+        $this->assertSame(1, substr_count($response->getContent(), route('polimart.my-orders')));
+    }
+
     public function test_staff_can_favorite_and_report_an_active_listing(): void
     {
         $seller = User::factory()->create();
