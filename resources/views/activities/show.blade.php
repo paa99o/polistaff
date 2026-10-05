@@ -221,6 +221,14 @@
                             </form>
                         @endif
                     </div>
+                    @if(auth()->user()->hasRole('member') && $isRegistered && ! $activity->isFinished())
+                        <a class="btn btn-primary mb-2" href="{{ route('attendance.scan') }}">
+                            <i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i>Imbas QR Kehadiran
+                        </a>
+                        @unless($activity->attendanceIsOpen())
+                            <p class="small text-muted">Imbas selepas aktiviti bermula dan QR dijana oleh bendahari.</p>
+                        @endunless
+                    @endif
                     @if(now()->between($activity->date_time, $activity->end_time ?? $activity->date_time) && $activity->qr_code_token)
                         <div class="bg-white p-3 d-inline-block mb-2">{!! QrCode::size(180)->generate(route('attendance.scan', ['token' => $activity->qr_code_token])) !!}</div>
                         <p class="small text-muted">QR aktif sehingga aktiviti tamat.</p>
