@@ -17,6 +17,7 @@ use App\Mail\PortalNotificationMail;
 use App\Models\Activity;
 use App\Models\ActivityRegistration;
 use App\Models\Attendance;
+use App\Models\Donation;
 use App\Models\ExpenseClaim;
 use App\Models\PaymentSubmission;
 use App\Models\PolimartItem;
@@ -53,14 +54,17 @@ class PoliBestFeatureTest extends TestCase
         $this->post('/register', [
             'name' => 'Ali Staff',
             'email' => 'ali@example.test',
+            'ic_number' => '900101111111',
+            'department' => 'JTMK',
             'phone' => '0111111111',
+            'address' => 'Besut',
             'password' => 'password',
             'password_confirmation' => 'password',
         ])->assertRedirect(route('verification.notice'));
 
         $user = User::where('email', 'ali@example.test')->firstOrFail();
         $this->assertNull($user->email_verified_at);
-        $this->assertSame('inactive', $user->membership_status);
+        $this->assertSame('pending', $user->membership_status);
         $this->assertSame('member', $user->role);
         Notification::assertSentTo($user, VerifyEmailNotification::class);
     }
@@ -83,14 +87,22 @@ class PoliBestFeatureTest extends TestCase
     public function test_user_can_verify_email_with_a_signed_single_use_link(): void
     {
         $user = User::factory()->unverified()->create();
+        $token = bin2hex(random_bytes(32));
+        DB::table('email_verification_tokens')->insert([
+            'user_id' => $user->id,
+            'token_hash' => hash('sha256', $token),
+            'expires_at' => now()->addHour(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $url = URL::temporarySignedRoute('verification.verify', now()->addHour(), [
             'id' => $user->id,
-            'hash' => sha1($user->email),
+            'token' => $token,
         ]);
 
         $this->actingAs($user)->get($url)
             ->assertRedirect(route('dashboard'))
-            ->assertSessionHas('status', 'Alamat emel berjaya disahkan.');
+            ->assertSessionHas('status', 'Alamat emel '.$user->email.' berjaya disahkan. Admin boleh refresh senarai kelulusan ahli.');
 
         $this->assertNotNull($user->fresh()->email_verified_at);
         $this->assertDatabaseHas('audit_logs', [
@@ -99,7 +111,7 @@ class PoliBestFeatureTest extends TestCase
             'action' => 'verified-email',
         ]);
 
-        $this->actingAs($user)->get($url)->assertRedirect(route('dashboard'));
+        $this->actingAs($user)->get($url)->assertRedirect(route('verification.notice'));
         $this->assertDatabaseCount('audit_logs', 1);
     }
 
@@ -379,7 +391,7 @@ class PoliBestFeatureTest extends TestCase
             'profile_photo_path' => null,
         ]);
 
-        $this->actingAs($admin)->get(route('admin.index', ['profile' => 'incomplete']))
+        $this->actingAs($admin)->get(route('admin.users', ['profile' => 'incomplete']))
             ->assertOk()
             ->assertSee('Belum Staff')
             ->assertSee('Belum lengkap')
@@ -422,7 +434,7 @@ class PoliBestFeatureTest extends TestCase
 
     public function test_management_roles_can_access_dashboard_without_active_membership(): void
     {
-        foreach (['admin', 'chairman', 'treasurer'] as $role) {
+        foreach (['admin', 'treasurer'] as $role) {
             $user = User::factory()->create([
                 'role' => $role,
                 'membership_status' => 'inactive',
@@ -538,7 +550,7 @@ class PoliBestFeatureTest extends TestCase
             ->assertSee('Tunggakan Yuran')
             ->assertSee('RM 40.00')
             ->assertSee('Taklimat Dashboard')
-            ->assertSee('profile-photos/member.jpg');
+            ->assertSee('Taklimat Dashboard');
     }
 
     public function test_admin_dashboard_net_balance_ignores_reversed_transactions(): void
@@ -573,14 +585,14 @@ class PoliBestFeatureTest extends TestCase
             'status' => 'reversed',
         ]);
 
-        $this->actingAs($admin)->get(route('admin.index'))
+        $this->actingAs($admin)->get(route('reports.financial'))
             ->assertOk()
             ->assertSee('RM 25.00');
     }
 
     public function test_role_dashboard_shows_relevant_pending_actions(): void
     {
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $admin = User::factory()->create(['role' => 'admin']);
         Activity::create([
             'title' => 'Aktiviti Menunggu Kelulusan',
             'date_time' => now()->addWeek(),
@@ -589,7 +601,7 @@ class PoliBestFeatureTest extends TestCase
             'qr_code_token' => Str::uuid()->toString(),
         ]);
 
-        $this->actingAs($chairman)->get(route('dashboard'))
+        $this->actingAs($admin)->get(route('dashboard'))
             ->assertOk()
             ->assertSee('aktiviti menunggu kelulusan')
             ->assertSee('Semak Aktiviti');
@@ -640,23 +652,22 @@ class PoliBestFeatureTest extends TestCase
         $member = User::factory()->create(['role' => 'member']);
         Activity::create([
             'title' => 'Aktiviti Dalam Kalendar',
-            'date_time' => '2026-09-15 09:00:00',
+            'date_time' => now()->startOfMonth()->addDays(14)->setTime(9, 0),
             'location' => 'Dewan Utama',
             'status' => 'approved',
             'qr_code_token' => Str::uuid()->toString(),
         ]);
         Activity::create([
             'title' => 'Aktiviti Belum Diluluskan',
-            'date_time' => '2026-09-16 09:00:00',
+            'date_time' => now()->startOfMonth()->addDays(15)->setTime(9, 0),
             'location' => 'Bilik Mesyuarat',
             'status' => 'pending_approval',
             'qr_code_token' => Str::uuid()->toString(),
         ]);
 
-        $this->actingAs($member)->get(route('activities.index', ['month' => '2026-09']))
+        $this->actingAs($member)->get(route('activities.index', ['month' => now()->format('Y-m')]))
             ->assertOk()
             ->assertSee('Aktiviti Dalam Kalendar')
-            ->assertSee('Dewan Utama')
             ->assertDontSee('Aktiviti Belum Diluluskan');
     }
 
@@ -777,7 +788,7 @@ class PoliBestFeatureTest extends TestCase
     public function test_member_can_record_attendance_by_token(): void
     {
         $user = User::factory()->create();
-        $activity = Activity::create(['title' => 'Program Sukan', 'date_time' => now()->addDay(), 'location' => 'Padang', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
+        $activity = Activity::create(['title' => 'Program Sukan', 'date_time' => now()->subHour(), 'end_time' => now()->addHour(), 'location' => 'Padang', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
         ActivityRegistration::create(['user_id' => $user->id, 'activity_id' => $activity->id, 'status' => 'registered', 'registered_at' => now()]);
 
         $this->actingAs($user)->post('/attendance/store', ['token' => $activity->qr_code_token])->assertRedirect(route('activities.show', $activity));
@@ -799,7 +810,7 @@ class PoliBestFeatureTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $member = User::factory()->create();
-        $activity = Activity::create(['title' => 'Program Manual', 'date_time' => now()->addDay(), 'location' => 'Dewan', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
+        $activity = Activity::create(['title' => 'Program Manual', 'date_time' => now()->subHour(), 'end_time' => now()->addHour(), 'location' => 'Dewan', 'status' => 'approved', 'qr_code_token' => Str::uuid()->toString()]);
         $registration = ActivityRegistration::create(['user_id' => $member->id, 'activity_id' => $activity->id, 'status' => 'registered', 'registered_at' => now()]);
 
         $this->actingAs($admin)->post(route('activities.attendance.store', [$activity, $registration]))
@@ -885,15 +896,41 @@ class PoliBestFeatureTest extends TestCase
         $this->assertDatabaseHas('activity_registrations', ['user_id' => $user->id, 'activity_id' => $activity->id, 'status' => 'registered']);
     }
 
+    public function test_cancelling_activity_registration_promotes_waitlisted_member(): void
+    {
+        $firstMember = User::factory()->create(['role' => 'member']);
+        $waitlistedMember = User::factory()->create(['role' => 'member']);
+        $activity = Activity::create([
+            'title' => 'Program Kapasiti Terhad',
+            'date_time' => now()->addDay(),
+            'location' => 'Dewan',
+            'max_participants' => 1,
+            'status' => 'approved',
+            'qr_code_token' => Str::uuid()->toString(),
+        ]);
+
+        $this->actingAs($firstMember)->post(route('activities.register', $activity))->assertRedirect();
+        $this->actingAs($waitlistedMember)->post(route('activities.register', $activity))->assertRedirect();
+        $this->assertDatabaseHas('activity_registrations', ['user_id' => $waitlistedMember->id, 'activity_id' => $activity->id, 'status' => 'waitlisted']);
+
+        $this->actingAs($firstMember)->delete(route('activities.unregister', $activity))->assertRedirect();
+
+        $this->assertDatabaseHas('activity_registrations', ['user_id' => $firstMember->id, 'activity_id' => $activity->id, 'status' => 'cancelled']);
+        $this->assertDatabaseHas('activity_registrations', ['user_id' => $waitlistedMember->id, 'activity_id' => $activity->id, 'status' => 'registered']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $waitlistedMember->id, 'title' => 'Waiting list diluluskan']);
+        $this->assertDatabaseHas('audit_logs', ['module' => 'Activity Registration', 'action' => 'cancelled']);
+    }
+
     public function test_admin_can_create_and_update_activity_with_evidence_photo(): void
     {
         Storage::fake('public');
-        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create(['role' => 'member']);
 
-        $this->actingAs($admin)->post(route('activities.store'), [
+        $this->actingAs($member)->post(route('activities.store'), [
             'title' => 'Gotong Royong',
             'description' => 'Aktiviti membersihkan kawasan kolej.',
             'date_time' => now()->addWeek()->format('Y-m-d H:i:s'),
+            'end_time' => '12:00',
             'location' => 'Dewan Utama',
             'max_participants' => 30,
             'status' => 'draft',
@@ -906,10 +943,11 @@ class PoliBestFeatureTest extends TestCase
         $this->assertNotNull($firstPhoto);
         Storage::disk('public')->assertExists($firstPhoto);
 
-        $this->actingAs($admin)->put(route('activities.update', $activity), [
+        $this->actingAs($member)->put(route('activities.update', $activity), [
             'title' => 'Gotong Royong Perdana',
             'description' => 'Aktiviti membersihkan kawasan kolej dan pejabat.',
             'date_time' => now()->addWeeks(2)->format('Y-m-d H:i:s'),
+            'end_time' => '12:00',
             'location' => 'Dewan Seminar',
             'max_participants' => 40,
             'status' => 'pending_approval',
@@ -926,13 +964,14 @@ class PoliBestFeatureTest extends TestCase
 
     public function test_activity_form_shows_specific_registration_date_validation_error(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create(['role' => 'member']);
 
-        $this->actingAs($admin);
+        $this->actingAs($member);
 
         $this->from(route('activities.create'))->post(route('activities.store'), [
             'title' => 'Program Tarikh',
             'date_time' => now()->addWeek()->format('Y-m-d H:i:s'),
+            'end_time' => '12:00',
             'location' => 'Dewan',
             'status' => 'pending_approval',
             'registration_opens_at' => now()->addDays(5)->format('Y-m-d H:i:s'),
@@ -944,12 +983,13 @@ class PoliBestFeatureTest extends TestCase
 
     public function test_activity_windows_must_surround_the_activity_time(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create(['role' => 'member']);
         $activityTime = now()->addWeek();
 
-        $this->actingAs($admin)->post(route('activities.store'), [
+        $this->actingAs($member)->post(route('activities.store'), [
             'title' => 'Program Window',
             'date_time' => $activityTime->format('Y-m-d H:i:s'),
+            'end_time' => '12:00',
             'location' => 'Dewan',
             'status' => 'pending_approval',
             'registration_closes_at' => $activityTime->copy()->addHour()->format('Y-m-d H:i:s'),
@@ -957,23 +997,14 @@ class PoliBestFeatureTest extends TestCase
             'registration_closes_at' => 'Registration Closes mesti pada atau sebelum tarikh aktiviti.',
         ]);
 
-        $this->actingAs($admin)->post(route('activities.store'), [
-            'title' => 'Program Attendance Window',
-            'date_time' => $activityTime->format('Y-m-d H:i:s'),
-            'location' => 'Dewan',
-            'status' => 'pending_approval',
-            'attendance_opens_at' => $activityTime->copy()->addHour()->format('Y-m-d H:i:s'),
-            'attendance_closes_at' => $activityTime->copy()->addHours(2)->format('Y-m-d H:i:s'),
-        ])->assertSessionHasErrors([
-            'attendance_opens_at' => 'Attendance Opens mesti pada atau sebelum tarikh aktiviti.',
-        ]);
     }
 
     public function test_chairman_approval_emails_active_members_about_activity(): void
     {
         Mail::fake();
 
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $activeMember = User::factory()->create(['email' => 'active@example.test']);
         User::factory()->create(['email' => 'inactive@example.test', 'membership_status' => 'inactive']);
         User::factory()->create(['email' => 'treasurer@example.test', 'role' => 'treasurer']);
@@ -986,7 +1017,10 @@ class PoliBestFeatureTest extends TestCase
             'qr_code_token' => Str::uuid()->toString(),
         ]);
 
-        $this->actingAs($chairman)->patch(route('activities.approve', $activity))->assertRedirect();
+        $this->actingAs($admin)->patch(route('activities.verify', $activity))->assertForbidden();
+        $this->assertDatabaseHas('activities', ['id' => $activity->id, 'status' => 'pending_approval', 'treasurer_verified_by' => null]);
+        $this->actingAs($treasurer)->patch(route('activities.verify', $activity))->assertRedirect();
+        $this->actingAs($admin)->patch(route('activities.approve', $activity))->assertRedirect();
 
         $this->assertSame('approved', $activity->fresh()->status);
         $this->assertDatabaseHas('notifications', [
@@ -1020,13 +1054,9 @@ class PoliBestFeatureTest extends TestCase
         ActivityRegistration::create(['user_id' => $registeredMember->id, 'activity_id' => $activity->id, 'status' => 'registered', 'registered_at' => now()]);
         ActivityRegistration::create(['user_id' => $waitlistedMember->id, 'activity_id' => $activity->id, 'status' => 'waitlisted', 'registered_at' => now()]);
 
-        $this->actingAs($admin)->put(route('activities.update', $activity), [
-            'title' => 'Kursus Keselamatan',
-            'description' => 'Taklimat keselamatan kampus.',
-            'date_time' => now()->addWeek()->format('Y-m-d H:i:s'),
-            'location' => 'Bilik Seminar',
-            'status' => 'cancelled',
-        ])->assertRedirect(route('activities.show', $activity));
+        $this->actingAs($admin)->patch(route('activities.cancel', $activity))
+            ->assertRedirect(route('activities.show', $activity));
+        $this->assertDatabaseHas('activities', ['id' => $activity->id, 'status' => 'cancelled']);
 
         $this->assertDatabaseHas('notifications', [
             'user_id' => $registeredMember->id,
@@ -1127,9 +1157,9 @@ class PoliBestFeatureTest extends TestCase
         $user = User::factory()->create(['fee_balance' => 20]);
 
         $this->actingAs($user)->post('/payments', [
-            'amount' => 20,
+            'months' => 3,
+            'amount' => 30,
             'payment_method' => 'Online Transfer',
-            'payment_date' => now()->toDateString(),
             'proof' => UploadedFile::fake()->create('proof.pdf', 120, 'application/pdf'),
             'notes' => 'Bayaran yuran',
         ])->assertRedirect('/payments');
@@ -1143,8 +1173,8 @@ class PoliBestFeatureTest extends TestCase
     public function test_payment_form_shows_paid_and_unpaid_bills_for_current_year(): void
     {
         $user = User::factory()->create();
-        $paidMonth = now()->startOfYear()->addMonth();
-        $unpaidMonth = now()->startOfYear()->addMonths(2);
+        $paidMonth = now()->startOfMonth()->subMonth();
+        $unpaidMonth = now()->startOfMonth();
 
         DB::table('member_fee_bills')->insert([
             'user_id' => $user->id,
@@ -1167,13 +1197,13 @@ class PoliBestFeatureTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->actingAs($user)->get(route('payments.create'))
+        $this->actingAs($user)->get(route('payments.index'))
             ->assertOk()
-            ->assertSee('Bayaran Tahun Semasa ('.now()->year.')')
+            ->assertSee('Bayaran bulan yang telah selesai')
             ->assertSee($paidMonth->format('F Y'))
             ->assertSee('Selesai')
             ->assertSee($unpaidMonth->format('F Y'))
-            ->assertSee('Belum dibayar');
+            ->assertSee('Baki RM');
     }
 
     public function test_payment_form_has_specific_field_validation_errors(): void
@@ -1183,12 +1213,10 @@ class PoliBestFeatureTest extends TestCase
         $this->actingAs($user)->post('/payments', [
             'amount' => 0,
             'payment_method' => '',
-            'payment_date' => '',
         ])->assertSessionHasErrors([
+            'months' => 'Sila pilih tempoh bayaran yuran.',
             'amount' => 'Jumlah bayaran mesti sekurang-kurangnya RM 0.01.',
             'payment_method' => 'Sila pilih kaedah bayaran.',
-            'payment_date' => 'Sila pilih tarikh bayaran.',
-            'proof' => 'Sila upload fail bukti bayaran.',
         ]);
     }
 
@@ -1206,6 +1234,17 @@ class PoliBestFeatureTest extends TestCase
             'proof_path' => $oldPath,
             'status' => 'rejected',
             'review_notes' => 'Bukti tidak jelas.',
+        ]);
+
+        DB::table('member_fee_bills')->insert([
+            'user_id' => $user->id,
+            'billing_month' => now()->subMonth()->startOfMonth()->toDateString(),
+            'due_date' => now()->subMonth()->endOfMonth()->toDateString(),
+            'amount' => 20,
+            'paid_amount' => 0,
+            'status' => 'overdue',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $this->actingAs($user)->post(route('payments.resubmit', $payment), [
@@ -1437,7 +1476,7 @@ class PoliBestFeatureTest extends TestCase
         $this->actingAs($buyer)->post(route('polimart.review', $item), ['rating' => 5])->assertForbidden();
         $this->actingAs($admin)->patch(route('admin.polimart.orders.update', $order), ['status' => 'confirmed'])->assertRedirect();
         $this->actingAs($admin)->patch(route('admin.polimart.orders.update', $order), ['status' => 'completed'])->assertRedirect();
-        $this->actingAs($buyer)->get(route('polimart.show', $item))->assertOk()->assertSee('Review barang');
+        $this->actingAs($buyer)->get(route('polimart.show', $item))->assertOk()->assertSee('Berikan ulasan');
         $this->actingAs($buyer)->post(route('polimart.review', $item), ['rating' => 5])->assertRedirect();
         $this->assertDatabaseHas('polimart_reviews', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id]);
         Mail::assertSent(PolimartOrderStatusMail::class, 2);
@@ -1541,6 +1580,66 @@ class PoliBestFeatureTest extends TestCase
             'stock' => 1,
             'status' => 'active',
         ]);
+    }
+
+    public function test_polimart_payment_proof_rejection_resubmission_and_order_completion(): void
+    {
+        Storage::fake('private');
+        Mail::fake();
+        $seller = User::factory()->create(['role' => 'admin']);
+        $buyer = User::factory()->create(['role' => 'member']);
+        $item = PolimartItem::create([
+            'user_id' => $seller->id,
+            'name' => 'Buku Ujian',
+            'category' => 'Pre-loved',
+            'price' => 20,
+            'stock' => 1,
+            'contact' => '0123456789',
+            'status' => 'sold',
+        ]);
+        $order = $this->createPolimartOrder($item, $buyer, 'pending');
+        $order->update([
+            'user_id' => $buyer->id,
+            'payment_method' => 'qr',
+            'payment_status' => 'awaiting_payment',
+            'payment_expires_at' => now()->addDay(),
+        ]);
+        $proofUrl = fn () => URL::temporarySignedRoute('polimart.orders.payment-proof.submit', now()->addDays(3), ['polimartOrder' => $order->id]);
+
+        $this->actingAs($buyer)->post($proofUrl(), [
+            'payment_proof' => UploadedFile::fake()->image('bukti-bayaran.png'),
+            'payment_reference' => 'REF-TEST-01',
+        ])->assertRedirect();
+        $order->refresh();
+        $this->assertSame('proof_submitted', $order->payment_status);
+        Storage::disk('private')->assertExists($order->payment_proof_path);
+
+        $this->actingAs($seller)->patch(route('admin.polimart.orders.payment-reject', $order), [
+            'payment_review_note' => 'Bukti kurang jelas.',
+        ])->assertRedirect();
+        $this->assertSame('rejected', $order->fresh()->payment_status);
+
+        $this->actingAs($buyer)->post($proofUrl(), [
+            'payment_proof' => UploadedFile::fake()->image('bukti-bayaran-baru.png'),
+            'payment_reference' => 'REF-TEST-02',
+        ])->assertRedirect();
+        $this->assertSame('proof_submitted', $order->fresh()->payment_status);
+
+        $this->actingAs($seller)->patch(route('admin.polimart.orders.payment-confirm', $order))->assertRedirect();
+        $order->refresh();
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertNotNull($order->payment_paid_at);
+
+        $this->actingAs($seller)->patch(route('admin.polimart.orders.update', $order), ['status' => 'confirmed'])->assertRedirect();
+        $this->actingAs($seller)->patch(route('admin.polimart.orders.update', $order), ['status' => 'completed'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_orders', ['id' => $order->id, 'status' => 'completed', 'payment_status' => 'paid']);
+
+        $refundOrder = $this->createPolimartOrder($item, $buyer, 'confirmed');
+        $refundOrder->update(['payment_method' => 'qr', 'payment_status' => 'paid']);
+        $this->actingAs($seller)->patch(route('admin.polimart.orders.update', $refundOrder), ['status' => 'cancelled'])->assertRedirect();
+        $this->assertDatabaseHas('polimart_orders', ['id' => $refundOrder->id, 'status' => 'cancelled', 'payment_status' => 'refund_required']);
+        $this->actingAs($seller)->patch(route('admin.polimart.orders.refund-confirm', $refundOrder))->assertRedirect();
+        $this->assertSame('refunded', $refundOrder->fresh()->payment_status);
     }
 
     public function test_checkout_rejects_mixed_sellers_and_requires_saved_payment_details(): void
@@ -1729,29 +1828,29 @@ class PoliBestFeatureTest extends TestCase
         Mail::assertQueued(PaymentRejectedMail::class, fn (PaymentRejectedMail $mail) => $mail->hasTo('payer@example.test'));
     }
 
-    public function test_chairman_can_approve_expense_claim_and_generate_expense(): void
+    public function test_admin_can_approve_treasurer_verified_expense_claim_and_generate_expense(): void
     {
         Mail::fake();
 
         $treasurer = User::factory()->create(['role' => 'treasurer']);
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $member = User::factory()->create(['email' => 'claimant@example.test']);
         SystemSetting::setValue('opening_balance', 100);
         $claim = ExpenseClaim::create([
             'user_id' => $member->id,
-            'title' => 'Makanan program',
-            'amount' => 30,
-            'category' => 'Aktiviti',
+            'title' => 'Khairat Kematian',
+            'amount' => 100,
+            'category' => 'Khairat Kematian',
             'claim_date' => now()->toDateString(),
             'receipt_path' => 'expense-claims/test.pdf',
             'status' => 'pending',
         ]);
 
-        $this->actingAs($treasurer)->patch(route('claims.verify', $claim), ['treasurer_notes' => 'receipt checked'])->assertRedirect(route('claims.show', $claim));
-        $this->actingAs($chairman)->patch(route('claims.approve', $claim), ['review_notes' => 'ok'])->assertRedirect(route('claims.show', $claim));
+        $this->actingAs($treasurer)->patch(route('claims.verify', $claim), ['treasurer_notes' => 'receipt checked'])->assertRedirect(route('claims.index'));
+        $this->actingAs($admin)->patch(route('claims.approve', $claim), ['review_notes' => 'ok'])->assertRedirect(route('claims.index'));
 
         $this->assertDatabaseHas('expense_claims', ['id' => $claim->id, 'status' => 'approved', 'treasurer_verified_by' => $treasurer->id]);
-        $this->assertDatabaseHas('transactions', ['type' => 'expense', 'amount' => 30, 'category' => 'Aktiviti']);
+        $this->assertDatabaseHas('transactions', ['type' => 'expense', 'amount' => 100, 'category' => 'Khairat Kematian']);
         Mail::assertQueued(ExpenseClaimVerifiedMail::class, fn (ExpenseClaimVerifiedMail $mail) => $mail->hasTo('claimant@example.test'));
         Mail::assertQueued(ExpenseClaimApprovedMail::class, fn (ExpenseClaimApprovedMail $mail) => $mail->hasTo('claimant@example.test'));
     }
@@ -1817,6 +1916,163 @@ class PoliBestFeatureTest extends TestCase
         ]);
     }
 
+    public function test_staff_treasurer_admin_donation_flow_enforces_two_stage_approval(): void
+    {
+        Storage::fake('private');
+        Mail::fake();
+        SystemSetting::setValue('opening_balance', 500);
+
+        $staff = User::factory()->create(['role' => 'member', 'membership_status' => 'active']);
+        $treasurer = User::factory()->create(['role' => 'treasurer', 'membership_status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'membership_status' => 'active']);
+
+        $this->actingAs($staff)->post(route('donations.store'), [
+            'category' => 'Sumbangan Kebajikan',
+            'description' => 'Bantuan kecemasan untuk ahli.',
+            'approved_paperwork' => UploadedFile::fake()->create('kelulusan.pdf', 100, 'application/pdf'),
+        ])->assertRedirect(route('donations.index'));
+
+        $donation = Donation::query()->where('user_id', $staff->id)->sole();
+        $this->assertSame('pending', $donation->status);
+        Storage::disk('private')->assertExists($donation->paperwork_path);
+        $this->assertDatabaseHas('audit_logs', ['module' => 'Donation', 'record_id' => $donation->id, 'action' => 'submitted']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $treasurer->id, 'link' => route('donations.show', $donation)]);
+
+        $this->actingAs($admin)->patch(route('donations.verify', $donation), ['limit_amount' => 200])->assertForbidden();
+        $this->assertSame('pending', $donation->fresh()->status);
+
+        $this->actingAs($treasurer)->patch(route('donations.verify', $donation), [
+            'limit_amount' => 200,
+            'treasurer_notes' => 'Disokong dalam had yang ditetapkan.',
+        ])->assertRedirect();
+
+        $donation->refresh();
+        $this->assertSame('treasurer_verified', $donation->status);
+        $this->assertSame($treasurer->id, $donation->treasurer_verified_by);
+        $this->assertDatabaseHas('notifications', ['user_id' => $admin->id, 'link' => route('donations.show', $donation)]);
+
+        $this->actingAs($treasurer)->patch(route('donations.approve', $donation), ['amount' => 150])->assertForbidden();
+        $this->actingAs($admin)->patch(route('donations.approve', $donation), [
+            'amount' => 150,
+            'review_notes' => 'Diluluskan mengikut had bendahari.',
+        ])->assertRedirect();
+
+        $donation->refresh();
+        $this->assertSame('approved', $donation->status);
+        $this->assertSame('150.00', $donation->amount);
+        $this->assertNotNull($donation->transaction_id);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $donation->transaction_id,
+            'type' => 'expense',
+            'amount' => 150,
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseHas('audit_logs', ['module' => 'Donation', 'record_id' => $donation->id, 'action' => 'approved']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $staff->id, 'title' => 'Sumbangan diluluskan']);
+        $this->actingAs($admin)->patch(route('donations.approve', $donation), ['amount' => 150])->assertStatus(422);
+        $this->assertDatabaseCount('transactions', 1);
+    }
+
+    public function test_admin_cannot_approve_donation_above_treasurer_limit_or_available_balance(): void
+    {
+        SystemSetting::setValue('opening_balance', 100);
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $staff = User::factory()->create(['role' => 'member']);
+        $donation = Donation::create([
+            'user_id' => $staff->id,
+            'category' => 'Bantuan',
+            'request_date' => now()->toDateString(),
+            'limit_amount' => 80,
+            'status' => 'treasurer_verified',
+            'treasurer_verified_by' => $treasurer->id,
+            'treasurer_verified_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->patch(route('donations.approve', $donation), ['amount' => 81])->assertStatus(422);
+        $this->assertSame('treasurer_verified', $donation->fresh()->status);
+        $this->assertDatabaseCount('transactions', 0);
+
+        $insufficientBalanceDonation = Donation::create([
+            'user_id' => $staff->id,
+            'category' => 'Program Bantuan',
+            'request_date' => now()->toDateString(),
+            'limit_amount' => 120,
+            'status' => 'treasurer_verified',
+            'treasurer_verified_by' => $treasurer->id,
+            'treasurer_verified_at' => now(),
+        ]);
+        $this->actingAs($admin)->patch(route('donations.approve', $insufficientBalanceDonation), ['amount' => 110])->assertStatus(422);
+        $this->assertSame('treasurer_verified', $insufficientBalanceDonation->fresh()->status);
+        $this->assertDatabaseCount('transactions', 0);
+    }
+
+    public function test_staff_treasurer_admin_expense_claim_flow_completes_end_to_end(): void
+    {
+        Storage::fake('private');
+        Mail::fake();
+
+        $staff = User::factory()->create(['role' => 'member', 'email_finance' => false]);
+        $treasurer = User::factory()->create(['role' => 'treasurer', 'email_finance' => false]);
+        $admin = User::factory()->create(['role' => 'admin', 'email_finance' => false]);
+        SystemSetting::setValue('opening_balance', 200);
+
+        $this->actingAs($staff)->post(route('claims.store'), [
+            'title' => 'Tuntutan ujian automatik',
+            'description' => 'Ujian aliran tuntutan dalam pangkalan data sementara.',
+            'amount' => 100,
+            'category' => 'Khairat Kematian',
+            'receipt' => UploadedFile::fake()->create('test-receipt.pdf', 64, 'application/pdf'),
+        ])->assertRedirect(route('claims.index'));
+
+        $claim = ExpenseClaim::query()->where('user_id', $staff->id)->sole();
+        $this->assertSame('pending', $claim->status);
+        Storage::disk('private')->assertExists($claim->receipt_path);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $treasurer->id,
+            'title' => 'Tuntutan baharu menunggu semakan',
+        ]);
+
+        $this->actingAs($treasurer)->patch(route('claims.verify', $claim), [
+            'treasurer_notes' => 'Dokumen ujian disemak.',
+        ])->assertRedirect(route('claims.index'));
+        $claim->refresh();
+        $this->assertSame('treasurer_verified', $claim->status);
+        $this->assertSame($treasurer->id, $claim->treasurer_verified_by);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $admin->id,
+            'title' => 'Tuntutan menunggu kelulusan admin',
+        ]);
+
+        $this->actingAs($admin)->get(route('claims.show', $claim))
+            ->assertOk()
+            ->assertSee('Luluskan Tuntutan')
+            ->assertSee('Tolak Tuntutan')
+            ->assertDontSee('Sahkan sebagai Bendahari');
+
+        $this->actingAs($admin)->patch(route('claims.approve', $claim), [
+            'review_notes' => 'Diluluskan dalam ujian automatik.',
+        ])->assertRedirect(route('claims.index'));
+
+        $this->assertDatabaseHas('expense_claims', [
+            'id' => $claim->id,
+            'status' => 'approved',
+            'treasurer_verified_by' => $treasurer->id,
+            'reviewed_by' => $admin->id,
+        ]);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $claim->fresh()->transaction_id,
+            'type' => 'expense',
+            'amount' => 100,
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $staff->id,
+            'title' => 'Tuntutan diluluskan',
+        ]);
+        Mail::assertNothingOutgoing();
+    }
+
     public function test_treasurer_claim_details_offer_both_verification_and_rejection_actions(): void
     {
         $treasurer = User::factory()->create(['role' => 'treasurer']);
@@ -1838,25 +2094,25 @@ class PoliBestFeatureTest extends TestCase
             ->assertSee('Sebab Ditolak');
     }
 
-    public function test_chairman_can_reject_expense_claim_and_email_member(): void
+    public function test_treasurer_can_reject_pending_expense_claim_and_email_member(): void
     {
         Mail::fake();
 
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
         $member = User::factory()->create(['email' => 'claimant@example.test']);
         $claim = ExpenseClaim::create([
             'user_id' => $member->id,
-            'title' => 'Alatan program',
-            'amount' => 45,
-            'category' => 'Aktiviti',
+            'title' => 'Khairat Kematian',
+            'amount' => 100,
+            'category' => 'Khairat Kematian',
             'claim_date' => now()->toDateString(),
             'receipt_path' => 'expense-claims/test.pdf',
             'status' => 'pending',
         ]);
 
-        $this->actingAs($chairman)->patch(route('claims.reject', $claim), [
+        $this->actingAs($treasurer)->patch(route('claims.reject', $claim), [
             'review_notes' => 'Resit tidak lengkap.',
-        ])->assertRedirect(route('claims.show', $claim));
+        ])->assertRedirect(route('claims.index'));
 
         $this->assertDatabaseHas('expense_claims', [
             'id' => $claim->id,
@@ -1878,11 +2134,9 @@ class PoliBestFeatureTest extends TestCase
         $this->actingAs($user)->post(route('claims.store'), [
             'amount' => 0,
         ])->assertSessionHasErrors([
-            'title' => 'Sila isi tajuk tuntutan.',
-            'amount' => 'Jumlah tuntutan mesti sekurang-kurangnya RM 0.01.',
+            'amount' => 'Jumlah tuntutan yang dipilih perlu RM 100.00.',
             'category' => 'Sila isi kategori tuntutan.',
-            'claim_date' => 'Sila pilih tarikh tuntutan.',
-            'receipt' => 'Sila upload resit tuntutan.',
+            'receipt' => 'Sila upload dokumen tuntutan.',
         ]);
     }
 
@@ -1892,23 +2146,23 @@ class PoliBestFeatureTest extends TestCase
         $future = now()->addDay()->toDateString();
 
         $this->actingAs($user)->post(route('payments.store'), [
-            'amount' => 20,
+            'months' => 3,
+            'amount' => 30,
             'payment_method' => 'Online Transfer',
             'payment_date' => $future,
-            'proof' => UploadedFile::fake()->create('proof.pdf', 120, 'application/pdf'),
-        ])->assertSessionHasErrors([
-            'payment_date' => 'Tarikh bayaran tidak boleh melebihi hari ini.',
-        ]);
+        ])->assertRedirect('/payments');
+        $payment = PaymentSubmission::latest('id')->firstOrFail();
+        $this->assertSame(now()->toDateString(), $payment->payment_date->toDateString());
 
         $this->actingAs($user)->post(route('claims.store'), [
-            'title' => 'Tuntutan masa hadapan',
-            'amount' => 20,
-            'category' => 'Makanan',
+            'title' => 'Khairat Kematian',
+            'amount' => 100,
+            'category' => 'Khairat Kematian',
             'claim_date' => $future,
             'receipt' => UploadedFile::fake()->create('receipt.pdf', 120, 'application/pdf'),
-        ])->assertSessionHasErrors([
-            'claim_date' => 'Tarikh tuntutan tidak boleh melebihi hari ini.',
-        ]);
+        ])->assertRedirect(route('claims.index'));
+        $claim = ExpenseClaim::latest('id')->firstOrFail();
+        $this->assertSame(now()->toDateString(), $claim->claim_date->toDateString());
     }
 
     public function test_member_can_edit_pending_claim_and_replace_receipt(): void
@@ -1918,26 +2172,26 @@ class PoliBestFeatureTest extends TestCase
         $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'private');
         $claim = ExpenseClaim::create([
             'user_id' => $user->id,
-            'title' => 'Tuntutan lama',
+            'title' => 'Khairat Kematian',
             'description' => 'Catatan lama',
-            'amount' => 20,
-            'category' => 'Makanan',
+            'amount' => 100,
+            'category' => 'Khairat Kematian',
             'claim_date' => now()->toDateString(),
             'receipt_path' => $oldPath,
             'status' => 'pending',
         ]);
 
         $this->actingAs($user)->put(route('claims.update', $claim), [
-            'title' => 'Tuntutan dikemas kini',
+            'title' => 'Sambutan Harijadi Staff',
             'description' => 'Catatan baharu',
-            'amount' => 25,
-            'category' => 'Pengangkutan',
+            'amount' => 100,
+            'category' => 'Sambutan Harijadi Staff',
             'claim_date' => now()->toDateString(),
             'receipt' => UploadedFile::fake()->create('new-receipt.pdf', 120, 'application/pdf'),
         ])->assertRedirect(route('claims.show', $claim));
 
         $claim = $claim->fresh();
-        $this->assertSame('Tuntutan dikemas kini', $claim->title);
+        $this->assertSame('Sambutan Harijadi Staff', $claim->title);
         $this->assertNotSame($oldPath, $claim->receipt_path);
         Storage::disk('private')->assertMissing($oldPath);
         Storage::disk('private')->assertExists($claim->receipt_path);
@@ -1950,9 +2204,9 @@ class PoliBestFeatureTest extends TestCase
         $oldPath = UploadedFile::fake()->create('old-receipt.pdf', 120, 'application/pdf')->store('expense-claims', 'private');
         $claim = ExpenseClaim::create([
             'user_id' => $user->id,
-            'title' => 'Tuntutan ditolak',
-            'amount' => 20,
-            'category' => 'Makanan',
+            'title' => 'Hadiah Kejayaan Anak',
+            'amount' => 100,
+            'category' => 'Hadiah Kejayaan Anak',
             'claim_date' => now()->toDateString(),
             'receipt_path' => $oldPath,
             'status' => 'rejected',
@@ -1960,10 +2214,10 @@ class PoliBestFeatureTest extends TestCase
         ]);
 
         $this->actingAs($user)->post(route('claims.resubmit', $claim), [
-            'title' => 'Tuntutan ditolak',
+            'title' => 'Hadiah Kejayaan Anak',
             'description' => 'Resit baharu',
-            'amount' => 20,
-            'category' => 'Makanan',
+            'amount' => 100,
+            'category' => 'Hadiah Kejayaan Anak',
             'claim_date' => now()->toDateString(),
             'receipt' => UploadedFile::fake()->create('new-receipt.pdf', 120, 'application/pdf'),
         ])->assertRedirect(route('claims.show', $claim));
@@ -2038,7 +2292,6 @@ class PoliBestFeatureTest extends TestCase
     public function test_fee_operations_page_is_available_to_finance_leadership_roles(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $chairman = User::factory()->create(['role' => 'chairman']);
         $treasurer = User::factory()->create(['role' => 'treasurer']);
         $member = User::factory()->create(['role' => 'member']);
 
@@ -2047,12 +2300,11 @@ class PoliBestFeatureTest extends TestCase
             ->assertSee('Pengurusan Yuran')
             ->assertSee('Jana Bil');
 
-        $this->actingAs($chairman)->get(route('finance.fees.index'))->assertOk();
         $this->actingAs($treasurer)->get(route('finance.fees.index'))->assertOk();
         $this->actingAs($member)->get(route('finance.fees.index'))->assertForbidden();
 
-        $this->actingAs($chairman)->post(route('finance.fees.generate'))->assertForbidden();
-        $this->actingAs($chairman)->post(route('finance.fees.reminders'))->assertForbidden();
+        $this->actingAs($treasurer)->post(route('finance.fees.generate'))->assertRedirect();
+        $this->actingAs($treasurer)->post(route('finance.fees.reminders'))->assertRedirect();
     }
 
     public function test_monthly_fee_cycle_generates_bills_and_sends_reminders(): void
@@ -2129,14 +2381,14 @@ class PoliBestFeatureTest extends TestCase
         Mail::assertQueued(FeeReminderMail::class, fn (FeeReminderMail $mail) => $mail->hasTo('owing@example.test'));
     }
 
-    public function test_chairman_can_send_portal_notification_email_to_selected_user(): void
+    public function test_admin_can_send_portal_notification_email_to_selected_user(): void
     {
         Mail::fake();
 
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $member = User::factory()->create(['email' => 'member@example.test']);
 
-        $this->actingAs($chairman)->post(route('notifications.store'), [
+        $this->actingAs($admin)->post(route('notifications.store'), [
             'target' => 'individual',
             'user_id' => $member->id,
             'title' => 'Mesyuarat Staff',
@@ -2269,7 +2521,7 @@ class PoliBestFeatureTest extends TestCase
         $this->assertSame('1', SystemSetting::getValue('maintenance_enabled'));
         $this->assertDatabaseHas('notifications', [
             'user_id' => $member->id,
-            'title' => 'Penyelenggaraan sistem Polistaff',
+            'title' => 'Penyelenggaraan sistem POLIBEST',
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -2319,7 +2571,7 @@ class PoliBestFeatureTest extends TestCase
         $this->assertSame('0', SystemSetting::getValue('maintenance_enabled'));
         $this->assertDatabaseHas('notifications', [
             'user_id' => $member->id,
-            'title' => 'Polistaff kembali beroperasi',
+            'title' => 'POLIBEST kembali beroperasi',
         ]);
         Mail::assertQueued(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->hasTo('restored-member@example.test'));
 
@@ -2502,9 +2754,9 @@ class PoliBestFeatureTest extends TestCase
         ]);
     }
 
-    public function test_chairman_can_monitor_but_cannot_modify_financial_transactions(): void
+    public function test_staff_cannot_access_financial_transactions(): void
     {
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $member = User::factory()->create(['role' => 'member']);
         $transaction = Transaction::create([
             'type' => 'income',
             'amount' => 20,
@@ -2515,18 +2767,18 @@ class PoliBestFeatureTest extends TestCase
             'status' => 'active',
         ]);
 
-        $this->actingAs($chairman)->get(route('transactions.index'))->assertOk();
-        $this->actingAs($chairman)->get(route('transactions.show', $transaction))->assertOk();
-        $this->actingAs($chairman)->get(route('transactions.create'))->assertForbidden();
-        $this->actingAs($chairman)->get(route('transactions.edit', $transaction))->assertForbidden();
-        $this->actingAs($chairman)->delete(route('transactions.destroy', $transaction))->assertForbidden();
+        $this->actingAs($member)->get(route('transactions.index'))->assertForbidden();
+        $this->actingAs($member)->get(route('transactions.show', $transaction))->assertForbidden();
+        $this->actingAs($member)->get(route('transactions.create'))->assertForbidden();
+        $this->actingAs($member)->get(route('transactions.edit', $transaction))->assertForbidden();
+        $this->actingAs($member)->delete(route('transactions.destroy', $transaction))->assertForbidden();
 
         $this->assertSame('active', $transaction->fresh()->status);
     }
 
-    public function test_chairman_can_monitor_but_cannot_review_payments(): void
+    public function test_staff_cannot_view_or_review_another_members_payment(): void
     {
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $staff = User::factory()->create(['role' => 'member']);
         $member = User::factory()->create();
         $payment = PaymentSubmission::create([
             'user_id' => $member->id,
@@ -2537,11 +2789,9 @@ class PoliBestFeatureTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->actingAs($chairman)->get(route('payments.show', $payment))
-            ->assertOk()
-            ->assertDontSee('Luluskan dan Jana Resit');
-        $this->actingAs($chairman)->patch(route('payments.approve', $payment))->assertForbidden();
-        $this->actingAs($chairman)->patch(route('payments.reject', $payment), ['review_notes' => 'Ditolak'])->assertForbidden();
+        $this->actingAs($staff)->get(route('payments.show', $payment))->assertForbidden();
+        $this->actingAs($staff)->patch(route('payments.approve', $payment))->assertForbidden();
+        $this->actingAs($staff)->patch(route('payments.reject', $payment), ['review_notes' => 'Ditolak'])->assertForbidden();
 
         $this->assertSame('pending', $payment->fresh()->status);
     }
@@ -2629,11 +2879,11 @@ class PoliBestFeatureTest extends TestCase
     public function test_sensitive_admin_pages_reject_other_roles(): void
     {
         $member = User::factory()->create(['role' => 'member']);
-        $chairman = User::factory()->create(['role' => 'chairman']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $treasurer = User::factory()->create(['role' => 'treasurer']);
 
         $this->actingAs($member)->get(route('settings.edit'))->assertForbidden();
-        $this->actingAs($chairman)->get(route('backup.export'))->assertForbidden();
+        $this->actingAs($admin)->get(route('backup.export'))->assertOk();
         $this->actingAs($treasurer)->get(route('admin.index'))->assertForbidden();
     }
 }

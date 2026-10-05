@@ -139,8 +139,9 @@ Route::middleware(['auth', ResolveStalePortalNotifications::class])->group(funct
     Route::put('/activities/{activity}/paperwork/{version}', [ActivityPaperworkController::class, 'save'])->name('activities.paperwork.save');
     Route::get('/activities/{activity}/paperwork/{version}/pdf', [ActivityPaperworkController::class, 'download'])->name('activities.paperwork.pdf');
     Route::patch('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('role:admin')->name('activities.approve');
+    Route::patch('/activities/{activity}/cancel', [ActivityController::class, 'cancel'])->middleware('role:admin')->name('activities.cancel');
     Route::patch('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('role:treasurer,admin')->name('activities.reject');
-    Route::patch('/activities/{activity}/verify', [ActivityController::class, 'verify'])->middleware('role:treasurer,admin')->name('activities.verify');
+    Route::patch('/activities/{activity}/verify', [ActivityController::class, 'verify'])->middleware('role:treasurer')->name('activities.verify');
     Route::patch('/activities/{activity}/refresh-qr', [ActivityController::class, 'refreshQrToken'])->middleware('role:treasurer')->name('activities.refresh-qr');
     Route::post('/activities/{activity}/evidence-photos', [ActivityController::class, 'uploadEvidencePhotos'])->name('activities.evidence-photos');
     Route::get('/activities/{activity}/attendance-status', [ActivityController::class, 'attendanceStatus'])->middleware('role:admin,treasurer')->name('activities.attendance-status');
@@ -172,7 +173,7 @@ Route::middleware(['auth', ResolveStalePortalNotifications::class])->group(funct
         ->only(['index', 'create', 'store', 'show'])
         ->middlewareFor(['create', 'store'], 'role:member');
     Route::get('/donations/{donation}/paperwork', [DonationController::class, 'paperwork'])->name('donations.paperwork');
-    Route::patch('/donations/{donation}/verify', [DonationController::class, 'verify'])->middleware('role:treasurer,admin')->name('donations.verify');
+    Route::patch('/donations/{donation}/verify', [DonationController::class, 'verify'])->middleware('role:treasurer')->name('donations.verify');
     Route::patch('/donations/{donation}/approve', [DonationController::class, 'approve'])->middleware('role:admin')->name('donations.approve');
     Route::patch('/donations/{donation}/reject', [DonationController::class, 'reject'])->middleware('role:admin')->name('donations.reject');
     Route::delete('/donations/{donation}/history', [DonationController::class, 'destroyHistory'])->middleware('role:treasurer')->name('donations.history.destroy');

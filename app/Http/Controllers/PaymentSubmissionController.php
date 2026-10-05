@@ -33,7 +33,7 @@ class PaymentSubmissionController extends Controller
     {
         $query = PaymentSubmission::with('user', 'reviewer', 'transaction')->latest();
 
-        $canViewAllPayments = $request->user()->hasRole('treasurer', 'admin', 'chairman');
+        $canViewAllPayments = $request->user()->hasRole('treasurer', 'admin');
         if (! $canViewAllPayments) {
             $query->where('user_id', $request->user()->id);
         } elseif ($canViewAllPayments && $request->filled('user_id')) {
@@ -511,7 +511,7 @@ class PaymentSubmissionController extends Controller
     private function authorizePaymentAccess(PaymentSubmission $payment): void
     {
         abort_unless(
-            auth()->user()->hasRole('treasurer', 'admin', 'chairman') || $payment->user_id === auth()->id(),
+            auth()->user()->hasRole('treasurer', 'admin') || $payment->user_id === auth()->id(),
             403
         );
     }

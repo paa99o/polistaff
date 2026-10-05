@@ -301,6 +301,7 @@ class ExpenseClaimController extends Controller
         ], [
             'title.required' => 'Sila isi tajuk tuntutan.',
             'amount.required' => 'Sila isi jumlah tuntutan.',
+            'amount.in' => 'Jumlah tuntutan yang dipilih perlu RM 100.00.',
             'amount.min' => 'Jumlah tuntutan mesti sekurang-kurangnya RM 0.01.',
             'category.required' => 'Sila isi kategori tuntutan.',
             'receipt.required' => 'Sila upload dokumen tuntutan.',

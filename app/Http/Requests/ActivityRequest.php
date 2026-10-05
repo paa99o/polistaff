@@ -76,6 +76,7 @@ class ActivityRequest extends FormRequest
                 'speakers.*.institution' => ['nullable', 'string', 'max:200'],
                 'funding_sources' => ['nullable', 'array'],
                 'funding_sources.*' => ['string', 'max:100'],
+                'evidence_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:8192'],
                 'registration_opens_at' => ['nullable', 'date'],
                 'registration_closes_at' => $registrationCloseRules,
             ];
@@ -91,6 +92,7 @@ class ActivityRequest extends FormRequest
             'max_participants' => ['nullable', 'integer', 'min:1'],
             'registration_opens_at' => ['nullable', 'date'],
             'registration_closes_at' => ['nullable', 'date', 'after_or_equal:registration_opens_at', 'before_or_equal:date_time'],
+            'evidence_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:8192'],
             'status' => ['required', 'in:draft,pending_approval,approved,cancelled'],
         ];
     }

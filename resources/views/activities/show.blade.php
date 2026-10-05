@@ -36,6 +36,7 @@
                             <a class="btn btn-sm btn-outline-secondary" href="{{ route('activities.edit', $activity) }}">Ubah</a>
                         @endif
                         @if(auth()->user()->hasRole('admin') && $activity->status === 'approved')
+                            <form method="post" action="{{ route('activities.cancel', $activity) }}" data-confirm="Batalkan aktiviti ini? Peserta berdaftar dan senarai menunggu akan dimaklumkan.">@csrf @method('patch')<button class="btn btn-sm btn-outline-warning" type="submit">Batalkan Aktiviti</button></form>
                             <form method="post" action="{{ route('activities.destroy', $activity) }}" data-confirm="Padam aktiviti ini secara kekal? Semua pendaftaran, kehadiran, maklum balas, gambar, rekod dokumen, notifikasi dan log berkaitannya akan dipadam.">
                                 @csrf
                                 @method('delete')

@@ -130,6 +130,10 @@ class ActivityController extends Controller
         $isWizard = ($data['wizard'] ?? null) === '1';
         $isDraft = $isWizard && ($data['intent'] ?? 'submit') === 'draft';
         $activityData = $isWizard ? $this->wizardActivityData($data) : $data;
+        if ($request->hasFile('evidence_photo')) {
+            $activityData['evidence_photo_path'] = $request->file('evidence_photo')->store('activity-evidence', 'public');
+        }
+        unset($activityData['evidence_photo']);
         $activityData['status'] = $isDraft ? 'draft' : 'pending_approval';
         $activityData['created_by'] = $request->user()->id;
         $activityData['qr_code_token'] = null;
@@ -185,12 +189,20 @@ class ActivityController extends Controller
         abort_unless($activity->created_by === auth()->id() && in_array($activity->status, ['draft', 'pending_approval'], true), 403);
 
         $beforeStatus = $activity->status;
+        $previousEvidencePhoto = $activity->evidence_photo_path;
         $data = $request->validated();
         $isWizard = ($data['wizard'] ?? null) === '1';
         $isDraft = $isWizard && ($data['intent'] ?? 'submit') === 'draft';
         $activityData = $isWizard ? $this->wizardActivityData($data, $activity) : $data;
+        if ($request->hasFile('evidence_photo')) {
+            $activityData['evidence_photo_path'] = $request->file('evidence_photo')->store('activity-evidence', 'public');
+        }
+        unset($activityData['evidence_photo']);
         $activityData['status'] = $isDraft && $beforeStatus === 'draft' ? 'draft' : 'pending_approval';
         $activity->update($activityData);
+        if ($activity->evidence_photo_path && $activity->evidence_photo_path !== $previousEvidencePhoto) {
+            Storage::disk('public')->delete($previousEvidencePhoto);
+        }
 
         if ($beforeStatus === 'draft' && $activity->status === 'pending_approval') {
             $this->notifyTreasurers($activity);
@@ -351,6 +363,48 @@ class ActivityController extends Controller
         ]);
 
         return back()->with('status', 'Aktiviti diluluskan.');
+    }
+
+    public function cancel(Request $request, Activity $activity): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('admin'), 403);
+        abort_unless($activity->status === 'approved', 422, 'Hanya aktiviti yang telah diluluskan boleh dibatalkan.');
+
+        DB::transaction(function () use ($request, $activity): void {
+            $activity->update([
+                'status' => 'cancelled',
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ]);
+
+            foreach ($activity->registrations()->whereIn('status', ['registered', 'waitlisted'])->with('user')->get() as $registration) {
+                PortalNotification::create([
+                    'user_id' => $registration->user_id,
+                    'title' => 'Aktiviti dibatalkan',
+                    'message' => 'Aktiviti '.$activity->title.' telah dibatalkan oleh admin.',
+                    'type' => 'warning',
+                    'link' => route('activities.show', $activity),
+                ]);
+
+                if ($registration->user?->email && $registration->user->wantsEmail('activities')) {
+                    $this->emailDeliveryService->send($registration->user, 'activity cancelled', new ActivityCancelledMail($activity), $activity);
+                    $this->emailAuditService->sent($registration->user, 'activity cancelled', $activity);
+                }
+            }
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'cancelled',
+                'module' => 'Activity',
+                'record_type' => Activity::class,
+                'record_id' => $activity->id,
+                'description' => 'Cancelled activity '.$activity->title.'.',
+                'changes' => ['status' => 'cancelled'],
+                'ip_address' => $request->ip(),
+            ]);
+        });
+
+        return redirect()->route('activities.show', $activity)->with('status', 'Aktiviti dibatalkan dan peserta berdaftar telah dimaklumkan.');
     }
 
     public function reject(Request $request, Activity $activity): RedirectResponse
