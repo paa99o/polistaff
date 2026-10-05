@@ -52,7 +52,7 @@ class MembershipApplicationController extends Controller
             'title' => 'Permohonan ahli dihantar semula',
             'message' => $user->name.' telah menghantar semula permohonan keahlian untuk semakan.',
             'type' => 'info',
-            'link' => route('admin.members.pending'),
+            'link' => route('admin.members.pending', ['applicant' => $user->id]),
         ]));
 
         return redirect()->route('dashboard')->with('status', 'Permohonan ahli kelab staf berjaya dihantar dan menunggu semakan admin.');

@@ -18,9 +18,15 @@ class AdminMemberController extends Controller
 {
     public function __construct(private EmailAuditService $emailAuditService, private EmailDeliveryService $emailDeliveryService) {}
 
-    public function pending(): View
+    public function pending(Request $request): View
     {
-        return view('admin.members.pending', ['members' => User::where('membership_status', 'pending')->latest()->paginate(15)]);
+        $members = User::where('membership_status', 'pending')
+            ->when($request->filled('applicant'), fn ($query) => $query->whereKey($request->integer('applicant')))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('admin.members.pending', ['members' => $members]);
     }
 
     public function approve(User $user): RedirectResponse

@@ -44,7 +44,7 @@ class AuthController extends Controller
             'title' => 'Permohonan ahli baharu',
             'message' => $user->name.' telah menghantar permohonan keahlian dan menunggu semakan.',
             'type' => 'info',
-            'link' => route('admin.members.pending'),
+            'link' => route('admin.members.pending', ['applicant' => $user->id]),
         ]));
 
         Auth::login($user);
