@@ -96,6 +96,12 @@
                         </div>
                     @endif
 
+                    <div class="mega-nav-item {{ request()->routeIs('polimart.my-orders') ? 'active' : '' }}">
+                        <a class="mega-nav-title" href="{{ route('polimart.my-orders') }}">
+                            <i class="bi bi-bag-check me-2" aria-hidden="true"></i><span>Belian Saya</span>
+                        </a>
+                    </div>
+
                     <div class="mega-nav-item {{ request()->routeIs('profile.*') || request()->routeIs('preferences.*') || request()->routeIs('notifications.*') || request()->routeIs('attendance.index') ? 'active' : '' }}">
                         <button class="mega-nav-title" type="button">Pengurusan</button>
                         <div class="mega-menu mega-menu-wide">

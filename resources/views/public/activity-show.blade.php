@@ -22,9 +22,9 @@
             <span class="public-detail-status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ $activity->date_time->isPast() ? 'Telah dijalankan' : 'Akan datang' }}</span>
         </div>
         @if($activity->evidencePhotos->isNotEmpty())
-            <div class="public-detail-gallery">
+            <div class="activity-evidence-gallery {{ $activity->evidencePhotos->count() === 1 ? 'is-single' : '' }}">
                 @foreach($activity->evidencePhotos as $photo)
-                    <img src="{{ asset('storage/'.$photo->path) }}" alt="Gambar {{ $activity->title }}">
+                    <figure class="activity-evidence-photo"><img src="{{ asset('storage/'.$photo->path) }}" alt="Gambar {{ $activity->title }}"></figure>
                 @endforeach
             </div>
         @endif

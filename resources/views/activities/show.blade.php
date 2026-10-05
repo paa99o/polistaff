@@ -59,9 +59,9 @@
                 <hr>
 
                 @if($activity->evidencePhotos->isNotEmpty())
-                    <div class="row g-2 mb-4">
+                    <div class="activity-evidence-gallery {{ $activity->evidencePhotos->count() === 1 ? 'is-single' : '' }}">
                         @foreach($activity->evidencePhotos as $photo)
-                            <div class="col-6 col-md-4"><img class="img-fluid rounded" src="{{ asset('storage/'.$photo->path) }}" alt="Bukti aktiviti oleh {{ $photo->user->name }}"></div>
+                            <figure class="activity-evidence-photo"><img src="{{ asset('storage/'.$photo->path) }}" alt="Bukti aktiviti oleh {{ $photo->user->name }}"></figure>
                         @endforeach
                     </div>
                 @endif

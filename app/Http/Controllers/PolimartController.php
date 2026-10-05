@@ -10,6 +10,7 @@ use App\Models\PolimartSellerPaymentProfile;
 use App\Models\PolimartReview;
 use App\Models\User;
 use App\Mail\PolimartOrderStatusMail;
+use App\Services\PolimartOrderExpiryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,8 @@ use Throwable;
 
 class PolimartController extends Controller
 {
+    public function __construct(private PolimartOrderExpiryService $orderExpiryService) {}
+
     private const FPX_BANKS = ['Maybank', 'CIMB', 'Bank Islam', 'RHB', 'Public Bank', 'Hong Leong Bank', 'AmBank', 'BSN', 'OCBC', 'Alliance Bank'];
     private const BANK_HOME_PAGES = [
         'Maybank' => 'https://www.maybank2u.com.my/maybank2u/malaysia/en/personal/index.page',
@@ -41,6 +44,8 @@ class PolimartController extends Controller
 
     public function index(Request $request): View
     {
+        $this->orderExpiryService->expireDueOrders();
+
         $search = trim((string) $request->query('q', ''));
         $category = trim((string) $request->query('category', ''));
         $mine = $request->boolean('mine');
@@ -78,6 +83,8 @@ class PolimartController extends Controller
             return $this->index($request);
         }
 
+        $this->orderExpiryService->expireDueOrders();
+
         $search = trim((string) $request->query('q', ''));
         $category = trim((string) $request->query('category', ''));
         $itemsQuery = PolimartItem::with('user')
@@ -97,6 +104,9 @@ class PolimartController extends Controller
 
     public function publicShow(PolimartItem $polimartItem): View
     {
+        $this->orderExpiryService->expireDueOrders();
+        $polimartItem->refresh();
+
         if (auth()->check()) {
             return $this->show($polimartItem);
         }
@@ -108,11 +118,16 @@ class PolimartController extends Controller
 
     public function cart(Request $request): View
     {
+        $this->orderExpiryService->expireDueOrders();
+
         return view('public.polimart-cart', $this->cartData($request));
     }
 
     public function addToCart(Request $request, PolimartItem $polimartItem): RedirectResponse
     {
+        $this->orderExpiryService->expireDueOrders();
+        $polimartItem->refresh();
+
         abort_unless($polimartItem->status === 'active' && $polimartItem->stock > 0, 422, 'Produk ini sudah habis stok.');
         $data = $request->validate(['quantity' => ['nullable', 'integer', 'min:1', 'max:99']]);
         $cart = $request->session()->get('polimart_cart', []);
@@ -133,6 +148,8 @@ class PolimartController extends Controller
 
     public function updateCart(Request $request): RedirectResponse
     {
+        $this->orderExpiryService->expireDueOrders();
+
         $quantities = $request->validate(['quantities' => ['array']])['quantities'] ?? [];
         $removeId = (int) $request->input('remove', 0);
         $availableItems = PolimartItem::whereIn('id', array_keys($quantities))
@@ -170,6 +187,8 @@ class PolimartController extends Controller
 
     public function checkout(Request $request): View|RedirectResponse
     {
+        $this->orderExpiryService->expireDueOrders();
+
         $cart = $this->cartData($request);
         if ($cart['items']->isEmpty()) {
             return redirect()->route('polimart.index')->with('status', 'Troli anda masih kosong.');
@@ -183,6 +202,8 @@ class PolimartController extends Controller
 
     public function placeOrder(Request $request): View|RedirectResponse
     {
+        $this->orderExpiryService->expireDueOrders();
+
         $data = $request->validate([
             'customer_name' => ['required', 'string', 'max:120'],
             'customer_email' => ['required', 'email', 'max:180'],
@@ -242,6 +263,7 @@ class PolimartController extends Controller
 
             return PolimartOrder::create([
                 ...$data,
+                'user_id' => $request->user()?->id,
                 'order_number' => 'PM-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
                 'items' => $orderItems,
                 'subtotal' => $subtotal,
@@ -280,6 +302,9 @@ class PolimartController extends Controller
 
     public function trackOrder(PolimartOrder $polimartOrder): View
     {
+        $this->orderExpiryService->expireDueOrders();
+        $polimartOrder->refresh();
+
         return view('public.polimart-order-tracking', [
             'order' => $polimartOrder,
             'sellerContacts' => $this->sellerContactLinks($polimartOrder),
@@ -390,6 +415,8 @@ class PolimartController extends Controller
 
     public function orders(Request $request): View
     {
+        $this->orderExpiryService->expireDueOrders();
+
         $orders = PolimartOrder::latest();
         if (! $request->user()->hasRole('admin')) {
             $sellerItemIds = PolimartItem::where('user_id', $request->user()->id)->pluck('id')->all();
@@ -402,6 +429,20 @@ class PolimartController extends Controller
         }
 
         return view('admin.polimart-orders', ['orders' => $orders->paginate(20)]);
+    }
+
+    public function myOrders(Request $request): View
+    {
+        $this->orderExpiryService->expireDueOrders();
+        $orders = PolimartOrder::query()
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->paginate(15);
+        $trackingUrls = $orders->getCollection()->mapWithKeys(fn (PolimartOrder $order): array => [
+            $order->id => $this->orderTrackingUrl($order),
+        ]);
+
+        return view('polimart.my-orders', compact('orders', 'trackingUrls'));
     }
 
     public function updateOrderStatus(Request $request, PolimartOrder $polimartOrder): RedirectResponse

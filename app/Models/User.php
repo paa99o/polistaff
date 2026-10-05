@@ -70,6 +70,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasMany(PolimartItem::class);
     }
 
+    public function polimartOrders(): HasMany
+    {
+        return $this->hasMany(PolimartOrder::class);
+    }
+
     public function polimartSellerPaymentProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(PolimartSellerPaymentProfile::class);

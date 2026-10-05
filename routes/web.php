@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/preferences', [UserPreferenceController::class, 'update'])->name('preferences.update');
     Route::get('/polimart/create', [PolimartController::class, 'create'])->middleware('role:member,admin')->name('polimart.create');
     Route::get('/polimart/favorites', [PolimartController::class, 'favorites'])->name('polimart.favorites');
+    Route::get('/polimart/my-orders', [PolimartController::class, 'myOrders'])->name('polimart.my-orders');
     Route::get('/polimart/payment-settings', [PolimartController::class, 'paymentSettings'])->middleware('role:member,admin')->name('polimart.payment-settings');
     Route::put('/polimart/payment-settings', [PolimartController::class, 'updatePaymentSettings'])->middleware('role:member,admin')->name('polimart.payment-settings.update');
     Route::post('/polimart', [PolimartController::class, 'store'])->middleware('role:member,admin')->name('polimart.store');

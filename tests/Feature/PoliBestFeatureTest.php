@@ -1350,7 +1350,7 @@ class PoliBestFeatureTest extends TestCase
 
         $this->actingAs($buyer)->get(route('polimart.show', $item))
             ->assertOk()
-            ->assertSee('Review barang');
+            ->assertSee('Berikan ulasan');
         $this->actingAs($buyer)->post(route('polimart.review', $item), ['rating' => 5, 'comment' => 'Urusan mudah.'])->assertRedirect();
         $this->assertDatabaseHas('polimart_reviews', ['user_id' => $buyer->id, 'polimart_item_id' => $item->id, 'rating' => 5]);
         $this->assertInstanceOf(PolimartReview::class, $item->reviews()->first());
@@ -1405,24 +1405,85 @@ class PoliBestFeatureTest extends TestCase
         Mail::fake();
         $seller = User::factory()->create();
         $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 2, 'contact' => '0123456789', 'status' => 'active']);
-        PolimartSellerPaymentProfile::create(['user_id' => $seller->id, 'bank_name' => 'Bank Ujian', 'account_name' => 'Seller Ujian', 'account_number' => '1234567890']);
+        PolimartSellerPaymentProfile::create(['user_id' => $seller->id, 'qr_code_path' => 'polimart-payment-qr/ujian.png', 'bank_name' => 'Bank Ujian', 'account_name' => 'Seller Ujian', 'account_number' => '1234567890']);
         $checkout = [
             'customer_name' => 'Pembeli Ujian', 'customer_email' => 'checkout@example.test',
             'customer_phone' => '0123456789', 'address_line_1' => '1 Jalan Staf',
             'city' => 'Kuala Lumpur', 'postcode' => '50000', 'state' => 'Kuala Lumpur',
-            'payment_method' => 'bank_transfer', 'terms' => '1',
+            'payment_method' => 'qr', 'terms' => '1',
         ];
 
         $this->post(route('polimart.cart.add', $item), ['quantity' => 1])->assertRedirect();
         $this->post(route('polimart.checkout.store'), $checkout)->assertOk()->assertSee('Semak Status Pesanan');
         $this->assertDatabaseHas('polimart_items', ['id' => $item->id, 'stock' => 1, 'status' => 'active']);
-        $this->assertDatabaseHas('polimart_orders', ['customer_email' => 'checkout@example.test', 'payment_method' => 'bank_transfer']);
-        $this->assertSame('Bank Ujian', PolimartOrder::where('customer_email', 'checkout@example.test')->firstOrFail()->payment_instructions['bank_name']);
+        $this->assertDatabaseHas('polimart_orders', ['customer_email' => 'checkout@example.test', 'payment_method' => 'qr']);
+        $this->assertSame('qr', PolimartOrder::where('customer_email', 'checkout@example.test')->firstOrFail()->payment_instructions['method']);
         Mail::assertSent(PolimartOrderStatusMail::class, fn (PolimartOrderStatusMail $mail): bool => $mail->hasTo('checkout@example.test'));
 
         $this->post(route('polimart.cart.add', $item), ['quantity' => 1])->assertRedirect();
         $this->post(route('polimart.checkout.store'), $checkout)->assertOk();
         $this->assertDatabaseHas('polimart_items', ['id' => $item->id, 'stock' => 0, 'status' => 'sold']);
+    }
+
+    public function test_logged_in_buyer_sees_only_orders_linked_to_their_account(): void
+    {
+        Mail::fake();
+        $buyer = User::factory()->create(['role' => 'member']);
+        $otherBuyer = User::factory()->create(['role' => 'member']);
+        $seller = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 2, 'contact' => '0123456789', 'status' => 'active']);
+        PolimartSellerPaymentProfile::create([
+            'user_id' => $seller->id,
+            'qr_code_path' => 'polimart-payment-qr/test.png',
+            'account_name' => 'Seller Ujian',
+        ]);
+        $otherOrder = $this->createPolimartOrder($item, $otherBuyer, 'pending');
+        $otherOrder->update(['user_id' => $otherBuyer->id]);
+
+        $this->actingAs($buyer)->post(route('polimart.cart.add', $item), ['quantity' => 1])->assertRedirect();
+        $this->post(route('polimart.checkout.store'), [
+            'customer_name' => $buyer->name,
+            'customer_email' => $buyer->email,
+            'customer_phone' => '0123456789',
+            'address_line_1' => '1 Jalan Staf',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'state' => 'Kuala Lumpur',
+            'payment_method' => 'qr',
+            'terms' => '1',
+        ])->assertOk()->assertSee('Semak Status Pesanan');
+
+        $buyerOrder = PolimartOrder::where('user_id', $buyer->id)->firstOrFail();
+        $this->assertSame('awaiting_payment', $buyerOrder->payment_status);
+        $this->actingAs($buyer)->get(route('polimart.my-orders'))
+            ->assertOk()
+            ->assertSee($buyerOrder->order_number)
+            ->assertDontSee($otherOrder->order_number);
+    }
+
+    public function test_polimart_pages_expire_due_orders_and_release_reserved_stock(): void
+    {
+        $seller = User::factory()->create();
+        $buyer = User::factory()->create();
+        $item = PolimartItem::create(['user_id' => $seller->id, 'name' => 'Buku', 'category' => 'Pre-loved', 'price' => 12, 'stock' => 0, 'contact' => '0123456789', 'status' => 'sold']);
+        $order = $this->createPolimartOrder($item, $buyer, 'pending');
+        $order->update([
+            'payment_status' => 'awaiting_payment',
+            'payment_expires_at' => now()->subMinute(),
+        ]);
+
+        $this->get(route('polimart.index'))->assertOk();
+
+        $this->assertDatabaseHas('polimart_orders', [
+            'id' => $order->id,
+            'status' => 'cancelled',
+            'payment_status' => 'expired',
+        ]);
+        $this->assertDatabaseHas('polimart_items', [
+            'id' => $item->id,
+            'stock' => 1,
+            'status' => 'active',
+        ]);
     }
 
     public function test_checkout_rejects_mixed_sellers_and_requires_saved_payment_details(): void
