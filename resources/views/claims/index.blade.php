@@ -5,6 +5,7 @@
     $user = auth()->user();
     $isTreasurer = $user->hasRole('treasurer');
     $isFinanceReviewer = $user->hasRole('treasurer', 'admin');
+    $isAdmin = $user->hasRole('admin');
     $canApproveClaims = $user->hasRole('admin');
     $statusLabels = [
         'pending' => 'Menunggu semakan',
@@ -58,7 +59,7 @@
                                 @if($canApproveClaims && $claim->status === 'treasurer_verified')
                                     <button class="btn btn-sm btn-primary" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.approve', $claim) }}" data-kind="approve">Luluskan</button>
                                 @endif
-                                @if($isFinanceReviewer && in_array($claim->status, ['pending', 'treasurer_verified'], true))
+                                @if(($isTreasurer && $claim->status === 'pending') || ($isAdmin && $claim->status === 'treasurer_verified'))
                                     <button class="btn btn-sm btn-outline-secondary" type="button" data-review-action data-bs-toggle="modal" data-bs-target="#claimActionModal" data-action="{{ route('claims.reject', $claim) }}" data-kind="reject">Tolak</button>
                                 @endif
                                 <a class="btn btn-sm btn-outline-secondary" href="{{ route('claims.show', $claim) }}">Keterangan</a>

@@ -199,8 +199,7 @@ class ExpenseClaimController extends Controller
 
     public function verify(Request $request, ExpenseClaim $claim): RedirectResponse
     {
-        Gate::authorize('manage-finances');
-        abort_unless($claim->status === 'pending', 422);
+        Gate::authorize('verify', $claim);
 
         $data = $request->validate(['treasurer_notes' => ['nullable', 'string', 'max:1000']], [
             'treasurer_notes.max' => 'Catatan bendahari tidak boleh melebihi 1000 aksara.',
@@ -252,8 +251,7 @@ class ExpenseClaimController extends Controller
 
     public function reject(Request $request, ExpenseClaim $claim): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('treasurer', 'admin'), 403);
-        abort_unless(in_array($claim->status, ['pending', 'treasurer_verified'], true), 422);
+        Gate::authorize('reject', $claim);
 
         $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']], [
             'review_notes.required' => 'Sila isi sebab tuntutan ditolak.',

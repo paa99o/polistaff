@@ -42,7 +42,7 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="h5 soft-panel-title">Kelulusan</h2>
-                @if(auth()->user()->hasRole('treasurer','admin') && $claim->status === 'pending')
+                @if(auth()->user()->hasRole('treasurer') && $claim->status === 'pending')
                     <form method="post" action="{{ route('claims.verify', $claim) }}" class="mb-3" data-confirm="Sahkan tuntutan ini sebagai bendahari?">
                         @csrf
                         @method('patch')
@@ -64,7 +64,7 @@
                     </form>
                 @endif
 
-                @if(auth()->user()->hasRole('admin') && in_array($claim->status, ['pending','treasurer_verified'], true))
+                @if(auth()->user()->hasRole('admin') && $claim->status === 'treasurer_verified')
                     <form method="post" action="{{ route('claims.reject', $claim) }}" data-confirm="Tolak tuntutan ini? Emel akan dihantar kepada ahli.">
                         @csrf
                         @method('patch')
@@ -75,9 +75,13 @@
                     </form>
                 @endif
 
-                @unless(in_array($claim->status, ['pending','treasurer_verified'], true))
+                @if(auth()->user()->hasRole('admin') && $claim->status === 'pending')
+                    <p class="text-muted">Tuntutan ini menunggu semakan Bendahari.</p>
+                @elseif(auth()->user()->hasRole('treasurer') && $claim->status === 'treasurer_verified')
+                    <p class="text-muted">Tuntutan ini telah disahkan dan menunggu keputusan Admin.</p>
+                @elseif(!in_array($claim->status, ['pending','treasurer_verified'], true))
                     <p class="text-muted">Tiada tindakan tersedia.</p>
-                @endunless
+                @endif
             </div>
         </div>
     </div>

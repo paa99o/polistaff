@@ -1756,6 +1756,67 @@ class PoliBestFeatureTest extends TestCase
         Mail::assertQueued(ExpenseClaimApprovedMail::class, fn (ExpenseClaimApprovedMail $mail) => $mail->hasTo('claimant@example.test'));
     }
 
+    public function test_only_treasurer_can_review_pending_claim_before_admin_decision(): void
+    {
+        Mail::fake();
+
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create();
+        $claim = ExpenseClaim::create([
+            'user_id' => $member->id,
+            'title' => 'Tuntutan ujian aliran',
+            'amount' => 30,
+            'category' => 'Aktiviti',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/test.pdf',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)->get(route('claims.show', $claim))
+            ->assertOk()
+            ->assertSee('Tuntutan ini menunggu semakan Bendahari.')
+            ->assertDontSee('Sahkan sebagai Bendahari')
+            ->assertDontSee('Tolak Tuntutan');
+        $this->actingAs($admin)->get(route('claims.index'))
+            ->assertOk()
+            ->assertDontSee('data-kind="support"', false)
+            ->assertDontSee('data-kind="reject"', false);
+
+        $this->actingAs($admin)->patch(route('claims.verify', $claim), ['treasurer_notes' => 'Cuba pintas'])
+            ->assertForbidden();
+        $this->actingAs($admin)->patch(route('claims.reject', $claim), ['review_notes' => 'Cuba pintas'])
+            ->assertForbidden();
+        $this->assertDatabaseHas('expense_claims', ['id' => $claim->id, 'status' => 'pending', 'treasurer_verified_by' => null]);
+
+        $this->actingAs($treasurer)->patch(route('claims.verify', $claim), ['treasurer_notes' => 'Dokumen disemak'])
+            ->assertRedirect(route('claims.index'));
+        $this->assertDatabaseHas('expense_claims', [
+            'id' => $claim->id,
+            'status' => 'treasurer_verified',
+            'treasurer_verified_by' => $treasurer->id,
+        ]);
+
+        $this->actingAs($admin)->get(route('claims.show', $claim))
+            ->assertOk()
+            ->assertSee('Luluskan Tuntutan')
+            ->assertSee('Tolak Tuntutan')
+            ->assertDontSee('Sahkan sebagai Bendahari');
+        $this->actingAs($admin)->get(route('claims.index'))
+            ->assertOk()
+            ->assertSee('data-kind="approve"', false)
+            ->assertSee('data-kind="reject"', false)
+            ->assertDontSee('data-kind="support"', false);
+
+        $this->actingAs($admin)->patch(route('claims.reject', $claim), ['review_notes' => 'Tidak memenuhi syarat'])
+            ->assertRedirect(route('claims.index'));
+        $this->assertDatabaseHas('expense_claims', [
+            'id' => $claim->id,
+            'status' => 'rejected',
+            'reviewed_by' => $admin->id,
+        ]);
+    }
+
     public function test_chairman_can_reject_expense_claim_and_email_member(): void
     {
         Mail::fake();

@@ -179,9 +179,9 @@ Route::middleware(['auth', ResolveStalePortalNotifications::class])->group(funct
     Route::get('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmitForm'])->middleware('role:member')->name('claims.resubmit.form');
     Route::post('/claims/{claim}/resubmit', [ExpenseClaimController::class, 'resubmit'])->middleware('role:member')->name('claims.resubmit');
     Route::get('/claims/{claim}/receipt', [ExpenseClaimController::class, 'receipt'])->name('claims.receipt');
-    Route::patch('/claims/{claim}/verify', [ExpenseClaimController::class, 'verify'])->middleware('role:treasurer,admin')->name('claims.verify');
+    Route::patch('/claims/{claim}/verify', [ExpenseClaimController::class, 'verify'])->middleware('role:treasurer')->name('claims.verify');
     Route::patch('/claims/{claim}/approve', [ExpenseClaimController::class, 'approve'])->middleware('role:admin')->name('claims.approve');
-    Route::patch('/claims/{claim}/reject', [ExpenseClaimController::class, 'reject'])->middleware('role:admin')->name('claims.reject');
+    Route::patch('/claims/{claim}/reject', [ExpenseClaimController::class, 'reject'])->middleware('role:treasurer,admin')->name('claims.reject');
     Route::delete('/claims/{claim}/history', [ExpenseClaimController::class, 'destroyHistory'])->middleware('role:treasurer')->name('claims.history.destroy');
 
     Route::get('/payments', [PaymentSubmissionController::class, 'index'])->name('payments.index');
