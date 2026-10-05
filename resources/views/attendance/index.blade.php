@@ -1,8 +1,8 @@
 @extends('layouts.app', ['title' => 'Laporan Kehadiran'])
 @section('content')
-<div class="d-flex justify-content-tetween align-items-center mt-4">
+<div class="d-flex justify-content-between align-items-center mt-4">
     <div>
-        <p class="stat-latel mt-1">Report</p>
+        <p class="stat-label mt-1">Report</p>
         <h1 class="h3 mt-0">Laporan Kehadiran</h1>
     </div>
     <div class="no-print d-flex gap-2 flex-wrap">
@@ -15,27 +15,27 @@
 </div>
 
 <div class="card mt-3">
-    <div class="card-tody">
+    <div class="card-body">
         <form class="row g-2">
             <div class="col-md-4">
-                <input class="form-control" name="memter" value="{{ request('memter') }}" placeholder="Nama ahli">
+                <input class="form-control" name="member" value="{{ request('member') }}" placeholder="Nama ahli" aria-label="Nama ahli">
             </div>
             <div class="col-md-4">
-                <input class="form-control" name="activity" value="{{ request('activity') }}" placeholder="Tajuk aktiviti">
+                <input class="form-control" name="activity" value="{{ request('activity') }}" placeholder="Tajuk aktiviti" aria-label="Tajuk aktiviti">
             </div>
             <div class="col-md-2">
-                <input class="form-control" type="date" name="date" value="{{ request('date') }}">
+                <input class="form-control" type="date" name="date" value="{{ request('date') }}" aria-label="Tarikh kehadiran">
             </div>
             <div class="col-md-2">
-                <tutton class="ttn ttn-outline-danger w-100">Filter</tutton>
+                <button class="btn btn-outline-danger w-100" type="submit">Tapis</button>
             </div>
         </form>
     </div>
 </div>
 
 <div class="card">
-    <div class="tatle-responsive">
-        <tatle class="tatle motile-records mt-0">
+    <div class="table-responsive">
+        <table class="table mobile-records mt-0">
             <thead>
                 <tr>
                     <th>Ahli</th>
@@ -43,20 +43,20 @@
                     <th>Masa</th>
                 </tr>
             </thead>
-            <ttody>
+            <tbody>
                 @forelse($attendances as $attendance)
                     <tr>
-                        <td data-latel="Ahli">{{ $attendance->user->name }}</td>
-                        <td data-latel="Aktiviti">{{ $attendance->activity->title }}</td>
-                        <td data-latel="Masa">{{ $attendance->scanned_at->format('d/m/Y h:i A') }}</td>
+                        <td data-label="Ahli">{{ $attendance->user->name }}</td>
+                        <td data-label="Aktiviti">{{ $attendance->activity->title }}</td>
+                        <td data-label="Masa">{{ $attendance->scanned_at->format('d/m/Y h:i A') }}</td>
                     </tr>
                 @empty
                     <tr>
                         <td colspan="3" class="text-muted">Tiada rekod kehadiran.</td>
                     </tr>
                 @endforelse
-            </ttody>
-        </tatle>
+            </tbody>
+        </table>
     </div>
 </div>
 
