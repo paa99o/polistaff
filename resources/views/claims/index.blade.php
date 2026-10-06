@@ -27,6 +27,13 @@
     @endif
 </div>
 
+@if(session('claim_error'))
+    <div class="alert alert-danger" role="alert">{{ session('claim_error') }}</div>
+@endif
+@if(session('claim_notice'))
+    <div class="alert alert-info" role="status">{{ session('claim_notice') }}</div>
+@endif
+
 <div class="card">
     <div class="table-responsive">
         <table class="table mobile-records align-middle mb-0">
@@ -118,8 +125,10 @@
                     const submit = document.getElementById('claimActionSubmit');
                     const title = { support: 'Sokong tuntutan', approve: 'Luluskan tuntutan', reject: 'Tolak tuntutan' }[kind];
                     form.action = button.dataset.action;
+                    form.dataset.submitting = 'false';
+                    submit.disabled = false;
                     document.getElementById('claimActionTitle').textContent = title;
-                    document.getElementById('claimActionSubmit').textContent = title;
+                    submit.textContent = title;
                     submit.classList.toggle('btn-danger', kind === 'reject');
                     submit.classList.toggle('btn-primary', kind !== 'reject');
                     document.getElementById('claimActionHelp').textContent = kind === 'support'
@@ -130,6 +139,19 @@
                     notes.required = kind === 'reject';
                     notes.value = '';
                 });
+            });
+
+            document.getElementById('claimActionForm')?.addEventListener('submit', (event) => {
+                const form = event.currentTarget;
+                const submit = document.getElementById('claimActionSubmit');
+                if (form.dataset.submitting === 'true') {
+                    event.preventDefault();
+                    return;
+                }
+
+                form.dataset.submitting = 'true';
+                submit.disabled = true;
+                submit.textContent = 'Sedang diproses…';
             });
         </script>
     @endpush

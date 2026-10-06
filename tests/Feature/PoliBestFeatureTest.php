@@ -1855,6 +1855,79 @@ class PoliBestFeatureTest extends TestCase
         Mail::assertQueued(ExpenseClaimApprovedMail::class, fn (ExpenseClaimApprovedMail $mail) => $mail->hasTo('claimant@example.test'));
     }
 
+    public function test_admin_is_redirected_with_clear_message_when_claim_has_not_been_verified_by_treasurer(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create();
+        $claim = ExpenseClaim::create([
+            'user_id' => $member->id,
+            'title' => 'Tuntutan belum disemak',
+            'amount' => 30,
+            'category' => 'Aktiviti',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/test.pdf',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)->patch(route('claims.approve', $claim), ['review_notes' => 'Semakan admin'])
+            ->assertRedirect(route('claims.index'))
+            ->assertSessionHas('claim_error', 'Tuntutan ini perlu disahkan Bendahari sebelum Admin boleh meluluskannya.');
+
+        $this->assertDatabaseHas('expense_claims', ['id' => $claim->id, 'status' => 'pending', 'transaction_id' => null]);
+        $this->assertDatabaseCount('transactions', 0);
+    }
+
+    public function test_admin_is_redirected_with_clear_message_when_claim_exceeds_available_balance(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $member = User::factory()->create();
+        SystemSetting::setValue('opening_balance', 10);
+        $claim = ExpenseClaim::create([
+            'user_id' => $member->id,
+            'title' => 'Tuntutan melebihi baki',
+            'amount' => 30,
+            'category' => 'Aktiviti',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/test.pdf',
+            'status' => 'treasurer_verified',
+            'treasurer_verified_by' => $treasurer->id,
+            'treasurer_verified_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->patch(route('claims.approve', $claim), ['review_notes' => 'Semakan admin'])
+            ->assertRedirect(route('claims.index'))
+            ->assertSessionHas('claim_error', 'Baki kelab tidak mencukupi untuk meluluskan tuntutan ini.');
+
+        $this->assertDatabaseHas('expense_claims', ['id' => $claim->id, 'status' => 'treasurer_verified', 'transaction_id' => null]);
+        $this->assertDatabaseCount('transactions', 0);
+    }
+
+    public function test_repeated_treasurer_verification_returns_to_list_without_duplicate_processing(): void
+    {
+        $treasurer = User::factory()->create(['role' => 'treasurer']);
+        $member = User::factory()->create();
+        $claim = ExpenseClaim::create([
+            'user_id' => $member->id,
+            'title' => 'Tuntutan sudah disokong',
+            'amount' => 30,
+            'category' => 'Aktiviti',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/test.pdf',
+            'status' => 'treasurer_verified',
+            'treasurer_verified_by' => $treasurer->id,
+            'treasurer_verified_at' => now(),
+        ]);
+
+        $this->actingAs($treasurer)->patch(route('claims.verify', $claim), ['treasurer_notes' => 'Ulangan'])
+            ->assertRedirect(route('claims.index'))
+            ->assertSessionHas('claim_notice');
+
+        $this->assertDatabaseHas('expense_claims', ['id' => $claim->id, 'status' => 'treasurer_verified', 'treasurer_notes' => null]);
+        $this->assertDatabaseCount('notifications', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
     public function test_only_treasurer_can_review_pending_claim_before_admin_decision(): void
     {
         Mail::fake();

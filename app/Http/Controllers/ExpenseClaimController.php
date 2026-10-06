@@ -199,6 +199,16 @@ class ExpenseClaimController extends Controller
 
     public function verify(Request $request, ExpenseClaim $claim): RedirectResponse
     {
+        // A stale page or a repeated form submission can arrive after another
+        // request has already moved the claim to the admin review stage.
+        // Keep the role boundary, but return the Treasurer to the list instead
+        // of rendering a 403 for an already-processed claim.
+        abort_unless($request->user()->hasRole('treasurer'), 403);
+
+        if ($claim->status !== 'pending') {
+            return redirect()->route('claims.index')->with('claim_notice', 'Tuntutan ini telah diproses atau bukan lagi menunggu semakan Bendahari.');
+        }
+
         Gate::authorize('verify', $claim);
 
         $data = $request->validate(['treasurer_notes' => ['nullable', 'string', 'max:1000']], [
@@ -228,8 +238,18 @@ class ExpenseClaimController extends Controller
     public function approve(Request $request, ExpenseClaim $claim): RedirectResponse
     {
         Gate::authorize('approve-expenses');
-        abort_unless($claim->status === 'treasurer_verified', 422, 'Tuntutan perlu disahkan bendahari dahulu.');
-        abort_if($this->availableBalance() < (float) $claim->amount, 422, 'Baki kelab tidak mencukupi untuk meluluskan tuntutan ini.');
+
+        if ($claim->status !== 'treasurer_verified') {
+            $message = $claim->status === 'pending'
+                ? 'Tuntutan ini perlu disahkan Bendahari sebelum Admin boleh meluluskannya.'
+                : 'Tuntutan ini telah diproses atau tidak tersedia untuk kelulusan.';
+
+            return redirect()->route('claims.index')->with('claim_error', $message);
+        }
+
+        if ($this->availableBalance() < (float) $claim->amount) {
+            return redirect()->route('claims.index')->with('claim_error', 'Baki kelab tidak mencukupi untuk meluluskan tuntutan ini.');
+        }
 
         $data = $request->validate(['review_notes' => ['nullable', 'string', 'max:1000']], [
             'review_notes.max' => 'Catatan kelulusan tidak boleh melebihi 1000 aksara.',
