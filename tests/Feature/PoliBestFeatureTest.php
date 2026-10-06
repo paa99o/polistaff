@@ -1170,6 +1170,23 @@ class PoliBestFeatureTest extends TestCase
         $this->assertSame('pending', $payment->status);
     }
 
+    public function test_payment_period_selection_is_inside_the_submission_form(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('payments.create'))->assertOk();
+        $html = $response->getContent();
+        $formStart = strpos($html, '<form id="payment-submission-form"');
+        $formEnd = $formStart === false ? false : strpos($html, '</form>', $formStart);
+        $monthsField = strpos($html, 'id="months-selection"');
+
+        $this->assertNotFalse($formStart, 'The payment form should be rendered.');
+        $this->assertNotFalse($formEnd, 'The payment form should be closed.');
+        $this->assertNotFalse($monthsField, 'The payment period selector should be rendered.');
+        $this->assertGreaterThan($formStart, $monthsField, 'The payment period selector must be inside the form.');
+        $this->assertLessThan($formEnd, $monthsField, 'The payment period selector must be inside the form.');
+    }
+
     public function test_payment_form_shows_paid_and_unpaid_bills_for_current_year(): void
     {
         $user = User::factory()->create();

@@ -7,6 +7,8 @@
             <div class="card-body">
                 <h1 class="h4 soft-panel-title">Muat Naik Bukti Bayaran</h1>
                 <p class="text-muted">Bayaran mesti diselesaikan mengikut turutan bulan paling lama dahulu. Bendahari akan semak dan sistem akan jana resit selepas diluluskan.</p>
+                <form id="payment-submission-form" method="post" action="{{ route('payments.store') }}" enctype="multipart/form-data">
+                    @csrf
                 @if($bills->isNotEmpty())
                     <div class="alert alert-warning">
                         <strong>Jumlah tunggakan: RM {{ number_format($outstanding, 2) }}</strong>
@@ -65,8 +67,6 @@
                     </div>
                 @endif
 
-                <form id="payment-submission-form" method="post" action="{{ route('payments.store') }}" enctype="multipart/form-data">
-                    @csrf
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="amount">Jumlah Bayaran</label>
