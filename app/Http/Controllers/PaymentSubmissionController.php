@@ -361,7 +361,10 @@ class PaymentSubmissionController extends Controller
                     ->get();
 
                 $remaining = (float) $payment->allocated_amount;
-                if ($remaining <= 0) {
+                // Only legacy approved payments without bill links need the
+                // historical fallback. A linked payment with zero allocation
+                // must not reverse another payment's bill allocation.
+                if ($remaining <= 0 && $billIds === []) {
                     $remaining = (float) $payment->amount;
                 }
 
