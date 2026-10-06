@@ -1928,6 +1928,29 @@ class PoliBestFeatureTest extends TestCase
         $this->assertDatabaseCount('audit_logs', 0);
     }
 
+    public function test_rejecting_a_claim_that_has_already_been_processed_returns_a_notice(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create();
+        $claim = ExpenseClaim::create([
+            'user_id' => $member->id,
+            'title' => 'Tuntutan sudah diproses',
+            'amount' => 30,
+            'category' => 'Aktiviti',
+            'claim_date' => now()->toDateString(),
+            'receipt_path' => 'expense-claims/test.pdf',
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($admin)->patch(route('claims.reject', $claim), ['review_notes' => 'Tindakan berulang'])
+            ->assertRedirect(route('claims.index'))
+            ->assertSessionHas('claim_notice', 'Tuntutan ini telah diproses atau tidak lagi tersedia untuk ditolak.');
+
+        $this->assertDatabaseHas('expense_claims', ['id' => $claim->id, 'status' => 'approved', 'review_notes' => null]);
+        $this->assertDatabaseCount('notifications', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
     public function test_only_treasurer_can_review_pending_claim_before_admin_decision(): void
     {
         Mail::fake();

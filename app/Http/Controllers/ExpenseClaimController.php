@@ -271,6 +271,23 @@ class ExpenseClaimController extends Controller
 
     public function reject(Request $request, ExpenseClaim $claim): RedirectResponse
     {
+        $user = $request->user();
+        abort_unless($user->hasRole('treasurer', 'admin'), 403);
+
+        $canRejectAtCurrentStage = ($user->hasRole('treasurer') && $claim->status === 'pending')
+            || ($user->hasRole('admin') && $claim->status === 'treasurer_verified');
+
+        if (! $canRejectAtCurrentStage) {
+            // An Admin must still be explicitly denied while a claim is at
+            // the Treasurer stage. Friendly feedback is for stale actions
+            // after a claim has already moved beyond a review stage.
+            if ($user->hasRole('admin') && $claim->status === 'pending') {
+                Gate::authorize('reject', $claim);
+            }
+
+            return redirect()->route('claims.index')->with('claim_notice', 'Tuntutan ini telah diproses atau tidak lagi tersedia untuk ditolak.');
+        }
+
         Gate::authorize('reject', $claim);
 
         $data = $request->validate(['review_notes' => ['required', 'string', 'max:1000']], [
