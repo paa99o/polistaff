@@ -278,13 +278,24 @@ class PaymentSubmissionController extends Controller
             'proof.max' => 'Bukti bayaran tidak boleh melebihi 4MB.',
         ]);
 
-        $outstanding = (float) MemberFeeBill::where('user_id', $payment->user_id)
-            ->whereIn('status', ['unpaid', 'partial', 'overdue'])
-            ->get()->sum(fn (MemberFeeBill $bill): float => $bill->remainingAmount());
-        $pendingAmount = (float) PaymentSubmission::where('user_id', $payment->user_id)
-            ->where('status', 'pending')->where('id', '!=', $payment->id)->sum('amount');
-        if ((float) $data['amount'] > max(0, $outstanding - $pendingAmount) + 0.005) {
+        $user = $request->user();
+        [$availableBills, , $availableAmount] = $this->availableBillsForPayment($user);
+        if ((float) $data['amount'] > $availableAmount + 0.005) {
             return back()->withInput()->withErrors(['amount' => 'Jumlah bayaran melebihi tunggakan yang tersedia. Bayaran akan mengikut bulan paling lama dahulu.']);
+        }
+
+        // Rejected submissions may point to bills that another approved payment
+        // has already settled. Recalculate the reserved bills before returning
+        // this submission to the pending queue.
+        $remainingToAllocate = (float) $data['amount'];
+        $billIds = [];
+        foreach ($availableBills as $bill) {
+            if ($remainingToAllocate <= 0.005) {
+                break;
+            }
+
+            $billIds[] = $bill->id;
+            $remainingToAllocate -= min($remainingToAllocate, (float) $bill->payment_available_amount);
         }
 
         $oldProofPath = $payment->proof_path;
@@ -300,6 +311,7 @@ class PaymentSubmissionController extends Controller
             'reviewed_at' => null,
             'transaction_id' => null,
             'allocated_amount' => 0,
+            'bill_ids' => $billIds,
         ]);
 
         Storage::disk('private')->delete($oldProofPath);
@@ -532,25 +544,32 @@ class PaymentSubmissionController extends Controller
         $remaining = (float) $payment->amount;
         $allocated = 0.0;
 
-        MemberFeeBill::where('user_id', $payment->user_id)
+        $bills = MemberFeeBill::where('user_id', $payment->user_id)
             ->whereIn('status', ['unpaid', 'partial', 'overdue'])
-            ->when(! empty($payment->bill_ids), fn ($query) => $query->whereIn('id', $payment->bill_ids))
             ->orderBy('billing_month')
             ->lockForUpdate()
-            ->get()
-            ->each(function (MemberFeeBill $bill) use (&$remaining, &$allocated): void {
-                if ($remaining <= 0) {
-                    return;
-                }
+            ->get();
 
-                $applied = min($remaining, $bill->remainingAmount());
-                $bill->paid_amount = (float) $bill->paid_amount + $applied;
-                $bill->status = $bill->remainingAmount() <= 0 ? 'paid' : 'partial';
-                $bill->save();
+        $selectedIds = collect($payment->bill_ids ?? [])->map(fn ($id) => (int) $id)->all();
+        $allocationOrder = $selectedIds
+            ? $bills->whereIn('id', $selectedIds)->sortBy('billing_month')->concat(
+                $bills->reject(fn (MemberFeeBill $bill) => in_array((int) $bill->id, $selectedIds, true))->sortBy('billing_month'),
+            )
+            : $bills;
 
-                $remaining -= $applied;
-                $allocated += $applied;
-            });
+        $allocationOrder->each(function (MemberFeeBill $bill) use (&$remaining, &$allocated): void {
+            if ($remaining <= 0) {
+                return;
+            }
+
+            $applied = min($remaining, $bill->remainingAmount());
+            $bill->paid_amount = (float) $bill->paid_amount + $applied;
+            $bill->status = $bill->remainingAmount() <= 0 ? 'paid' : 'partial';
+            $bill->save();
+
+            $remaining -= $applied;
+            $allocated += $applied;
+        });
 
         return $allocated;
     }
